@@ -1,0 +1,149 @@
+/* Garante que as seções ocupem a largura correta e as imagens não fiquem gigantes */
+header.bg-dark {
+    padding: 5rem 0; /* Dá respiro no topo e base */
+}
+
+.feature-icon {
+    width: 3rem;
+    height: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .75rem;
+}
+
+img.shadow-lg {
+    transition: transform 0.3s ease;
+}
+
+    img.shadow-lg:hover {
+        transform: scale(1.02); /* Efeito suave ao passar o mouse */
+    }
+
+html {
+    scroll-padding-top: 72px; /* Ajuste este valor de acordo com a altura da sua barra */
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+/* Garante que o scroll pare antes de bater no menu fixo */
+html {
+    scroll-padding-top: 70px;
+}
+
+.navbar-brand {
+    letter-spacing: 1px;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+    /* Efeito de hover nos itens do menu */
+    .nav-link:hover {
+        color: #0d6efd !important; /* Azul do Bootstrap */
+    }
+/* Força um cinza bem suave e profissional */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* Garante que não haja bordas brancas entre as seções */
+section {
+    border: none !important;
+}
+
+/* Estilo para os cards de características */
+#features .card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-radius: 1rem; /* Bordas arredondadas modernas */
+    background-color: #ffffff; /* Fundo branco para destacar no cinza */
+}
+
+    /* Efeito de levante ao passar o mouse */
+    #features .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+    }
+
+/* Cor do ícone */
+.feature {
+    height: 4rem;
+    width: 4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Garante que o quadrado do ícone vire um círculo perfeito */
+.feature {
+    flex-shrink: 0; /* Impede que o círculo amasse */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Alinhamento do texto dentro do card */
+.card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centraliza horizontalmente */
+    justify-content: center; /* Centraliza verticalmente se necessário */
+}
+
+    .card-body h2 {
+        margin-top: 15px;
+    }
+
+/* Ajuste para o dropdown de idiomas */
+#langDrop {
+    border-radius: 20px;
+    padding: 5px 15px;
+    transition: all 0.3s ease;
+}
+
+    #langDrop:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+.dropdown-item span {
+    font-size: 1.2rem; /* Aumenta um pouco o tamanho da bandeira */
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Evita barra de rolagem horizontal chata */
+}
+
+/* Remove qualquer margem estranha que o último parágrafo do footer possa ter */
+footer p {
+    margin-bottom: 0;
+}

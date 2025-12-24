@@ -1,0 +1,88 @@
+﻿@using MasterStack
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<SharedResource> Localizer
+@{
+    ViewData["Title"] = Localizer["HeroTitle"];
+}
+
+<header class="py-5 bg-dark text-white">
+    <div class="container px-5">
+        <div class="row gx-5 align-items-center justify-content-center">
+            <div class="col-lg-8 col-xl-7 col-xxl-6">
+                <div class="my-5 text-center text-xl-start">
+                    <h1 class="display-5 fw-bolder text-white mb-2">@Localizer["HeroTitle"]</h1>
+                    <p class="lead fw-normal text-white-50 mb-4">@Localizer["HeroSubtitle"]</p>
+                    <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
+                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="#features">@Localizer["LearnMore"]</a>
+                        <a class="btn btn-outline-light btn-lg px-4" href="/Tutorials">@Localizer["GetStarted"]</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center">
+                <img class="img-fluid rounded-3 my-5 shadow-lg" src="~/img/home/hero-fullstack.png" alt="MasterStack Hero" />
+            </div>
+        </div>
+    </div>
+</header>
+
+<section class="py-5 bg-light" id="features">
+    <div class="container px-5 my-5">
+        <div class="row gx-5">
+
+            <div class="col-lg-4 mb-5">
+                <div class="card h-100 shadow border-0 p-4">
+                    <div class="card-body text-center">
+                        <div class="feature bg-primary bg-gradient text-white rounded-circle mb-4 d-inline-flex align-items-center justify-content-center"
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-globe fs-1"></i>
+                        </div>
+
+                        <h2 class="h4 fw-bolder">Web Development</h2>
+                        <p class="text-muted">@Localizer["WebDesc"]</p>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-5">
+                <div class="card h-100 shadow border-0 p-4">
+                    <div class="card-body text-center">
+                        <div class="feature bg-primary bg-gradient text-white rounded-circle mb-4 d-inline-flex align-items-center justify-content-center"
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-phone fs-2"></i>
+                        </div>
+                        <h2 class="h4 fw-bolder">Mobile Edge</h2>
+                        <p class="text-muted">@Localizer["MobileDesc"]</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-5">
+                <div class="card h-100 shadow border-0 p-4">
+                    <div class="card-body text-center">
+                        <div class="feature bg-primary bg-gradient text-white rounded-circle mb-4 d-inline-flex align-items-center justify-content-center"
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-cpu fs-2"></i>
+                        </div>
+                        <h2 class="h4 fw-bolder">Hardware & IoT</h2>
+                        <p class="text-muted">@Localizer["HardwareDesc"]</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-light">
+    <div class="container px-5 my-5">
+        <div class="row gx-5 align-items-center">
+            <div class="col-lg-6">
+                <img class="img-fluid rounded mb-5 mb-lg-0 shadow" src="~/img/home/why-masterstack.png" alt="@Localizer["WhyMasterstackAlt"]" />
+            </div>
+            <div class="col-lg-6">
+                <h2 class="fw-bolder">@Localizer["WhyTitle"]</h2>
+                <p class="lead fw-normal text-muted mb-0">@Localizer["WhyText"]</p>
+            </div>
+        </div>
+    </div>
+</section>
