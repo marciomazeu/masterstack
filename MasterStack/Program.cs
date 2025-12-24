@@ -1,7 +1,9 @@
 using MasterStack;
+using MasterStack.Data;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 
@@ -44,6 +46,10 @@ builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(typeof(CultureFilter));
 });
+
+//conexao com o banco de dados
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
