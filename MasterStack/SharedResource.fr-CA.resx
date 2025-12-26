@@ -186,4 +186,7 @@
   <data name="FooterPrivacy" xml:space="preserve">
     <value>Confidentialité</value>
   </data>
+  <data name="MenuBlog" xml:space="preserve">
+    <value>Blogue</value>
+  </data>
 </root>

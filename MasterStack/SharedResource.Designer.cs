@@ -88,6 +88,33 @@ namespace MasterStack {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Contact.
+        /// </summary>
+        public static string FooterContact {
+            get {
+                return ResourceManager.GetString("FooterContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to All rights reserved..
+        /// </summary>
+        public static string FooterCopyright {
+            get {
+                return ResourceManager.GetString("FooterCopyright", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Privacy Policy.
+        /// </summary>
+        public static string FooterPrivacy {
+            get {
+                return ResourceManager.GetString("FooterPrivacy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Get Started.
         /// </summary>
         public static string GetStarted {
@@ -156,6 +183,15 @@ namespace MasterStack {
         public static string MenuAbout {
             get {
                 return ResourceManager.GetString("MenuAbout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Blog.
+        /// </summary>
+        public static string MenuBlog {
+            get {
+                return ResourceManager.GetString("MenuBlog", resourceCulture);
             }
         }
         

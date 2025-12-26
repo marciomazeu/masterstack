@@ -1,0 +1,52 @@
+﻿@model IEnumerable<MasterStack.Models.BlogPost>
+
+@{
+    ViewData["Title"] = "Blog";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h1 class="display-4 fw-bold text-primary">@Localizer["MenuBlog"]</h1>
+        <a asp-action="Create" asp-route-culture="@Context.GetRouteValue("culture")" class="btn btn-success btn-lg shadow-sm">
+            <i class="fas fa-plus"></i> Novo Post
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <p class="lead text-muted">Ainda não há publicações neste idioma.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var item in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge bg-light text-primary border">@item.Culture</span>
+                                <small class="text-muted">@item.CreatedAt.ToShortDateString()</small>
+                            </div>
+                            <h5 class="card-title fw-bold">@item.Title</h5>
+                            <p class="card-text text-secondary">
+                                @(item.Content.Length > 120 ? item.Content.Substring(0, 120) + "..." : item.Content)
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white border-top-0 pb-3">
+                            <div class="d-grid gap-2">
+                                <a asp-action="Details" asp-route-id="@item.Id" asp-route-culture="@item.Culture" class="btn btn-outline-primary">Ler Mais</a>
+                                <div class="d-flex justify-content-center gap-2 mt-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" asp-route-culture="@item.Culture" class="btn btn-link btn-sm text-decoration-none">Editar</a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" asp-route-culture="@item.Culture" class="btn btn-link btn-sm text-danger text-decoration-none">Excluir</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

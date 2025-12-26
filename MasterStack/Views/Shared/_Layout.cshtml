@@ -34,6 +34,12 @@
                         <a class="nav-link" href="#features">@SharedResource.MenuFeatures</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link text-white" asp-area="" asp-controller="BlogPosts" asp-action="Index"
+                           asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name">
+                            @SharedResource.MenuBlog
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="#tutorials">@SharedResource.MenuTutorials</a>
                     </li>
                     <li class="nav-item">
