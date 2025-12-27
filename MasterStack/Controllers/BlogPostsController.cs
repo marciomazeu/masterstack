@@ -67,14 +67,57 @@ namespace MasterStack.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("Create")]
-        public async Task<IActionResult> Create([Bind("Id,Culture,Title,Content,CreatedAt")] BlogPost blogPost)
+        public async Task<IActionResult> Create([Bind("Id,Culture,Title,Content,CreatedAt")] BlogPost blogPost, IFormFile foto)
         {
+            // Removemos o ImageUrl da validação inicial pois vamos preenchê-lo manualmente
+            ModelState.Remove("ImageUrl");
+
             if (ModelState.IsValid)
             {
-                _context.Add(blogPost);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index), new { culture = blogPost.Culture });
+                try
+                {
+                    if (foto != null && foto.Length > 0)
+                    {
+                        string extensao = Path.GetExtension(foto.FileName).ToLower();
+
+                        // Limpeza robusta do título para o nome do arquivo
+                        string tituloLimpo = blogPost.Title ?? "post";
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                        {
+                            tituloLimpo = tituloLimpo.Replace(c, '-');
+                        }
+                        tituloLimpo = tituloLimpo.Replace(" ", "-").ToLower();
+
+                        string novoNomeArquivo = $"{tituloLimpo}-{Guid.NewGuid().ToString().Substring(0, 8)}{extensao}";
+                        string caminhoPasta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+                        if (!Directory.Exists(caminhoPasta))
+                        {
+                            Directory.CreateDirectory(caminhoPasta);
+                        }
+
+                        string caminhoCompleto = Path.Combine(caminhoPasta, novoNomeArquivo);
+
+                        using (var stream = new FileStream(caminhoCompleto, FileMode.Create))
+                        {
+                            await foto.CopyToAsync(stream);
+                        }
+
+                        blogPost.ImageUrl = "/uploads/" + novoNomeArquivo;
+                    }
+
+                    _context.Add(blogPost);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index), new { culture = blogPost.Culture });
+                }
+                catch (Exception ex)
+                {
+                    // Adiciona o erro para aparecer na tela se algo falhar no salvamento
+                    ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
+                }
             }
+
+            // Se chegou aqui, algo falhou. Vamos devolver a View com os erros.
             return View(blogPost);
         }
 
@@ -100,32 +143,30 @@ namespace MasterStack.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Culture,Title,Content,CreatedAt")] BlogPost blogPost)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Culture,Title,Content,CreatedAt")] BlogPost blogPost, IFormFile foto)
         {
-            if (id != blogPost.Id)
-            {
-                return NotFound();
-            }
+            if (id != blogPost.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
                 try
                 {
+                    // 1. Busca a versão que está no banco agora, sem rastreamento para evitar conflito
+                    var postNoBanco = await _context.BlogPosts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+
+                    if (postNoBanco == null) return NotFound();
+
+                    // 2. Força o Entity Framework a entender que este objeto foi modificado
                     _context.Update(blogPost);
                     await _context.SaveChangesAsync();
+
+                    return RedirectToAction(nameof(Index), new { culture = blogPost.Culture });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!BlogPostExists(blogPost.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!BlogPostExists(blogPost.Id)) return NotFound();
+                    else throw;
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(blogPost);
         }
@@ -134,17 +175,11 @@ namespace MasterStack.Controllers
         [Route("Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var blogPost = await _context.BlogPosts
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (blogPost == null)
-            {
-                return NotFound();
-            }
+            if (blogPost == null) return NotFound();
 
             return View(blogPost);
         }
@@ -152,16 +187,19 @@ namespace MasterStack.Controllers
         // POST: BlogPosts/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Route("Delete/{id}")] // Certifique-se que esta rota existe aqui
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var blogPost = await _context.BlogPosts.FindAsync(id);
             if (blogPost != null)
             {
+                // Opcional: Se você estiver salvando arquivos locais, delete o arquivo da pasta uploads aqui
                 _context.BlogPosts.Remove(blogPost);
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            // Importante: Redirecionar mantendo a cultura
+            return RedirectToAction(nameof(Index), new { culture = RouteData.Values["culture"] });
         }
 
         private bool BlogPostExists(int id)

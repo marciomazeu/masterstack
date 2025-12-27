@@ -37,9 +37,17 @@
         </dd>
     </dl>
     
-    <form asp-action="Delete">
+    <form asp-action="Delete" asp-route-id="@Model.Id" asp-route-culture="@ViewContext.RouteData.Values["culture"]" method="post">
         <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
+
+        <div class="mt-4 shadow-sm p-3 bg-light rounded border">
+            <p class="text-danger fw-bold">Tem certeza que deseja excluir permanentemente este post?</p>
+            <button type="submit" class="btn btn-danger btn-lg">
+                <i class="fas fa-trash-alt"></i> Confirmar Exclusão
+            </button>
+            <a asp-action="Index" asp-route-culture="@ViewContext.RouteData.Values["culture"]" class="btn btn-outline-secondary btn-lg">
+                Cancelar
+            </a>
+        </div>
     </form>
 </div>

@@ -19,5 +19,8 @@ namespace MasterStack.Models
         public string Content { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Display(Name = "URL da Imagem")]
+        public string? ImageUrl { get; set; } // O '?' permite que seja opcional
     }
 }

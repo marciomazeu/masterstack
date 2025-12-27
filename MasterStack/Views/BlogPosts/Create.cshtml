@@ -10,7 +10,8 @@
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Create">
+        @* Adicione enctype para permitir envio de arquivos *@
+        <form asp-action="Create" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="Culture" class="control-label"></label>
@@ -36,6 +37,10 @@
                 <input asp-for="CreatedAt" class="form-control" />
                 <span asp-validation-for="CreatedAt" class="text-danger"></span>
             </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Imagem de Capa</label>
+                <input type="file" name="foto" class="form-control" accept="image/*" />
+            </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
@@ -46,6 +51,7 @@
 <div>
     <a asp-action="Index">Back to List</a>
 </div>
+<div asp-validation-summary="All" class="text-danger"></div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
