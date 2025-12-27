@@ -67,10 +67,12 @@ namespace MasterStack.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("Create")]
-        public async Task<IActionResult> Create([Bind("Id,Culture,Title,Content,CreatedAt")] BlogPost blogPost, IFormFile foto)
+        public async Task<IActionResult> Create([Bind("Id,Culture,Title,Content")] BlogPost blogPost, IFormFile foto)
         {
             // Removemos o ImageUrl da validação inicial pois vamos preenchê-lo manualmente
             ModelState.Remove("ImageUrl");
+
+            blogPost.CreatedAt = DateTime.Now; // A data é gerada aqui, no servidor
 
             if (ModelState.IsValid)
             {
@@ -143,23 +145,40 @@ namespace MasterStack.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Culture,Title,Content,CreatedAt")] BlogPost blogPost, IFormFile foto)
+        [Route("Edit/{id}")]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Culture,Title,Content,CreatedAt,ImageUrl")] BlogPost blogPost, IFormFile? foto)
         {
             if (id != blogPost.Id) return NotFound();
+
+            // Removemos ImageUrl da validação pois ela pode ser mantida ou vir do novo upload
+            ModelState.Remove("ImageUrl");
+            ModelState.Remove("foto");
+            ModelState.Remove("CreatedAt");
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    // 1. Busca a versão que está no banco agora, sem rastreamento para evitar conflito
-                    var postNoBanco = await _context.BlogPosts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+                    // 1. Lógica de Upload (se uma nova foto for selecionada)
+                    if (foto != null && foto.Length > 0)
+                    {
+                        string nomeArquivo = Guid.NewGuid().ToString().Substring(0, 8) + "_" + foto.FileName;
+                        string caminho = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads", nomeArquivo);
+                        using (var stream = new FileStream(caminho, FileMode.Create))
+                        {
+                            await foto.CopyToAsync(stream);
+                        }
+                        blogPost.ImageUrl = "/uploads/" + nomeArquivo;
+                    }
 
-                    if (postNoBanco == null) return NotFound();
-
-                    // 2. Força o Entity Framework a entender que este objeto foi modificado
+                    blogPost.CreatedAt = DateTime.Now;
+                    // 2. Atualiza o banco
                     _context.Update(blogPost);
+                    //_context.Entry(blogPost).Property(x => x.CreatedAt).IsModified = true;
+
                     await _context.SaveChangesAsync();
 
+                    // 3. REDIRECIONAMENTO CRÍTICO: Usa a nova cultura selecionada no post
                     return RedirectToAction(nameof(Index), new { culture = blogPost.Culture });
                 }
                 catch (DbUpdateConcurrencyException)
