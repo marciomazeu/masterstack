@@ -1,10 +1,16 @@
 ﻿@using MasterStack
 @using Microsoft.AspNetCore.Mvc.Localization
-@inject IHtmlLocalizer<SharedResource> Localizer
+@inject IHtmlLocalizer<SharedResource> SharedLocalizer
 
 @{
     // Isso evita o erro CS1061 ao acessar propriedades dinâmicas
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+
+    // Captura os dados da rota onde o usuário está agora
+    var routeData = ViewContext.RouteData.Values;
+    var currentController = routeData["controller"]?.ToString();
+    var currentAction = routeData["action"]?.ToString();
+    var currentId = routeData["id"]?.ToString();
 }
 
 <!DOCTYPE html>
@@ -31,19 +37,19 @@
             <div class="collapse navbar-collapse" id="navContent">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="#features">@SharedResource.MenuFeatures</a>
+                        <a class="nav-link" href="#features">@SharedLocalizer["MenuFeatures"]</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-white" asp-area="" asp-controller="BlogPosts" asp-action="Index"
                            asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name">
-                            @SharedResource.MenuBlog
+                            @SharedLocalizer["MenuBlog"]
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#tutorials">@SharedResource.MenuTutorials</a>
+                        <a class="nav-link" href="#tutorials">@SharedLocalizer["MenuTutorials"]</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#about">@SharedResource.MenuAbout</a>
+                        <a class="nav-link" href="#about">@SharedLocalizer["MenuAbout"]</a>
                     </li>
                     
                     <li class="nav-item dropdown ms-lg-3">
@@ -58,21 +64,33 @@
                                 };
                             }
                             <img src="@flagUrl" width="18" class="me-1" style="vertical-align: middle;">
- @SharedResource.Language
+                            @SharedLocalizer["Language"]
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="langDrop">
                             <li>
-                                <a class="dropdown-item d-flex align-items-center" href="/pt-BR">
+                                <a class="dropdown-item d-flex align-items-center"
+                                asp-controller="@currentController"
+                                asp-action="@currentAction"
+                                asp-route-id="@currentId"
+                                asp-route-culture="pt-BR">
                                     <img src="https://flagcdn.com/w20/br.png" class="me-2" width="20" alt="Brasil"> Português
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center" href="/en-US">
+                                <a class="dropdown-item d-flex align-items-center" 
+                                asp-controller="@currentController"
+                                   asp-action="@currentAction"
+                                   asp-route-id="@currentId"
+                                   asp-route-culture="en-US">
                                     <img src="https://flagcdn.com/w20/us.png" class="me-2" width="20" alt="USA"> English
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center" href="/fr-CA">
+                                <a class="dropdown-item d-flex align-items-center" 
+                                asp-controller="@currentController"
+                                   asp-action="@currentAction"
+                                   asp-route-id="@currentId"
+                                   asp-route-culture="fr-CA">
                                     <img src="https://flagcdn.com/w20/ca.png" class="me-2" width="20" alt="Canada"> Français
                                 </a>
                             </li>

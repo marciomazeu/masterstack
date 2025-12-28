@@ -21,7 +21,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="SharedResource.Designer.cs">
+	  <Compile Update="Resources\SharedResource.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>SharedResource.resx</DependentUpon>
@@ -29,13 +29,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="SharedResource.resx">
+	  <EmbeddedResource Update="Resources\SharedResource.resx">
 	    <Generator>PublicResXFileCodeGenerator</Generator>
 	    <LastGenOutput>SharedResource.Designer.cs</LastGenOutput>
+	    <CustomToolNamespace>MasterStack</CustomToolNamespace>
 	  </EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Resources\Views\Home\" />
 	  <Folder Include="wwwroot\uploads\" />
 	</ItemGroup>
 
