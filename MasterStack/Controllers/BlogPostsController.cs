@@ -213,9 +213,33 @@ namespace MasterStack.Controllers
             if (blogPost != null)
             {
                 // Opcional: Se você estiver salvando arquivos locais, delete o arquivo da pasta uploads aqui
-                _context.BlogPosts.Remove(blogPost);
+                // 1. Verificar se existe um caminho de imagem salvo
+                if (!string.IsNullOrEmpty(blogPost.ImageUrl))
+                {
+                    // 2. Construir o caminho físico completo no servidor
+                    // ImageUrl geralmente é "/uploads/nome.jpg", precisamos remover a primeira "/"
+                    var caminhoRelativo = blogPost.ImageUrl.TrimStart('/');
+                    var caminhoCompleto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", caminhoRelativo);
+
+                    try
+                    {
+                        // 3. Verificar se o arquivo realmente existe na pasta e deletar
+                        if (System.IO.File.Exists(caminhoCompleto))
+                        {
+                            System.IO.File.Delete(caminhoCompleto);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Opcional: Logar erro se o arquivo estiver sendo usado por outro processo
+                        // Mas não paramos a execução para garantir que o post saia do banco
+                    }
+                }
+                
             }
 
+            // 4. Remover o registro do banco de dados
+            _context.BlogPosts.Remove(blogPost);
             await _context.SaveChangesAsync();
             // Importante: Redirecionar mantendo a cultura
             return RedirectToAction(nameof(Index), new { culture = RouteData.Values["culture"] });
