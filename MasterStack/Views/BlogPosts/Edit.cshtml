@@ -1,57 +1,68 @@
-﻿@model MasterStack.Models.BlogPost
+﻿@model MasterStack.Models.BlogPostTranslation
 
 @{
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit</h1>
+<div class="container py-5">
+    <h1>Editar Tradução (@Model.Culture)</h1>
 
-<h4>BlogPost</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit" enctype="multipart/form-data">
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="CreatedAt" />
-            <input type="hidden" asp-for="ImageUrl" /> @* Mantém a imagem atual se não mudar *@
-            <div class="form-group">
-                <label asp-for="Culture" class="control-label">Idioma/Cultura</label>
-                <select asp-for="Culture" class="form-control">
-                    <option value="pt-BR">Português</option>
-                    <option value="en-US">English</option>
-                    <option value="es-ES">Español</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Content" class="control-label"></label>
-                <input asp-for="Content" class="form-control" />
-                <span asp-validation-for="Content" class="text-danger"></span>
-            </div>
-            @* <div class="form-group mb-3">
-                <label asp-for="CreatedAt" class="control-label">Data de Publicação</label>
-                <input asp-for="CreatedAt" class="form-control" type="datetime-local" step="1" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-            </div> *@
-            <div class="form-group mb-3">
-                <label class="control-label">Alterar Imagem (opcional)</label>
-                <input type="file" name="foto" class="form-control" />
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
+    <form asp-action="Edit" asp-route-culture="@Model.Culture">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="BlogPostId" />
+        <input type="hidden" asp-for="Culture" />
+
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Content" class="form-label"></label>
+            <textarea asp-for="Content" class="form-control" rows="10"></textarea>
+            <span asp-validation-for="Content" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Slug" class="form-label"></label>
+            <input asp-for="Slug" class="form-control" />
+            <span asp-validation-for="Slug" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        <a asp-action="Index" asp-route-culture="@Model.Culture" class="btn btn-secondary">Voltar</a>
+    </form>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <!-- Place the first <script> tag in your HTML's <head> -->
+    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+
+    <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+    <script>
+        tinymce.init({
+          selector: 'textarea',
+          plugins: [
+            // Core editing features
+            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+            // Your account includes a free trial of TinyMCE premium features
+            // Try the most popular premium features until Jan 11, 2026:
+            'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'ai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
+          ],
+          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+          tinycomments_mode: 'embedded',
+          tinycomments_author: 'Author name',
+          mergetags_list: [
+            { value: 'First.Name', title: 'First Name' },
+            { value: 'Email', title: 'Email' },
+          ],
+          ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
+          uploadcare_public_key: 'a58a779d6579575581a1',
+        });
+    </script>
 }

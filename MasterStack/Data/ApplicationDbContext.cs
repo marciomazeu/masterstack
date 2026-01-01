@@ -12,5 +12,7 @@ namespace MasterStack.Data
 
         // Isso aqui vai virar a tabela de posts no banco de dados
         public DbSet<BlogPost> BlogPosts { get; set; }
+        public DbSet<BlogPostTranslation> BlogPostTranslations { get; set; }
+        public DbSet<Language> Languages { get; set; }
     }
 }

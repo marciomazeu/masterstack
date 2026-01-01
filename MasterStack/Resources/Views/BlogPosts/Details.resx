@@ -118,42 +118,9 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BackToList" xml:space="preserve">
-    <value>Voltar para a lista</value>
+    <value>Back to list</value>
   </data>
-  <data name="ConfirmDelete" xml:space="preserve">
-    <value>Tem certeza que deseja excluir?</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>Apagar</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
-    <value>Editar</value>
-  </data>
-  <data name="LatestPosts" xml:space="preserve">
-    <value>Últimas Publicações</value>
-  </data>
-  <data name="NewPostBtn" xml:space="preserve">
-    <value>Novo Post</value>
-  </data>
-  <data name="NoImage" xml:space="preserve">
-    <value>Sem imagem disponível</value>
-  </data>
-  <data name="NoPostsFound" xml:space="preserve">
-    <value>Nenhum Artigo</value>
-  </data>
-  <data name="PostDate" xml:space="preserve">
-    <value>Publicado em</value>
-  </data>
-  <data name="PostImageAlt" xml:space="preserve">
-    <value>Imagem do post: {0}</value>
-  </data>
-  <data name="ReadMore" xml:space="preserve">
-    <value>Ler mais</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>Salvar Alterações</value>
-  </data>
-  <data name="Search" xml:space="preserve">
-    <value>Pesquisa</value>
+  <data name="PublishedOn" xml:space="preserve">
+    <value>Published on</value>
   </data>
 </root>

@@ -1,55 +1,58 @@
-﻿@model MasterStack.Controllers.BlogPostCreateViewModel
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<SharedResource> Localizer
-@using MasterStack
-@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer Localizer
-@{
-    ViewData["Title"] = Localizer["CreatePageTitle"];
-}
-<style>
-    .tox-tinymce-aux {
-        z-index: 999999 !important;
-    }</style>
-<div class="container mt-4">
-    <h1>@Localizer["CreatePageTitle"]</h1>
-    <hr />
+﻿@model MasterStack.Controllers.BlogPostTranslationViewModel
 
-    <div class="row">
-        <div class="col-md-8">
-                @* Adicione explicitamente a cultura na rota do formulário *@
-                <form asp-action="Create" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" enctype="multipart/form-data">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="container py-5">
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h4>Adicionar Tradução (@Model.Culture)</h4>
+        </div>
+        <div class="card-body">
+            @* Importante: enctype para upload de arquivo *@
+            <form asp-action="AddTranslation" asp-route-id="@Model.BlogPostId" enctype="multipart/form-data" method="post">
+                <input type="hidden" asp-for="BlogPostId" />
+                <input type="hidden" asp-for="Culture" />
 
                 <div class="mb-3">
-                    <label asp-for="Title" class="form-label">@Localizer["TitleLabel"]</label>
-                    <input asp-for="Title" class="form-control" placeholder="@Localizer["TitlePlaceholder"]" />
+                    <label asp-for="Culture" class="form-label fw-bold">Idioma da Tradução</label>
+                    <select asp-for="Culture" class="form-select" readonly>
+                        <option value="@Model.Culture">@Model.Culture (Confirmado)</option>
+                    </select>
+                    <small class="text-muted">Você está traduzindo para este idioma específico.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-bold">Título</label>
+                    <input asp-for="Title" class="form-control" />
                     <span asp-validation-for="Title" class="text-danger"></span>
                 </div>
 
+                
+
                 <div class="mb-3">
-                    <label asp-for="Content" class="form-label">@Localizer["ContentLabel"]</label>
-                    <textarea asp-for="Content" id="ContentEditor" class="form-control" rows="15"></textarea>
+                    <label asp-for="Content" class="form-label fw-bold">Conteúdo</label>
+                    <textarea asp-for="Content" class="form-control" rows="10"></textarea>
                     <span asp-validation-for="Content" class="text-danger"></span>
                 </div>
+                @* Campo de Imagem igual ao Create *@
                 <div class="mb-3">
-                    <label asp-for="ImageFile" class="form-label">Selecionar Imagem</label>
+                    <label asp-for="ImageFile" class="form-label fw-bold">Imagem do Post</label>
                     <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
-                    <span asp-validation-for="ImageFile" class="text-danger"></span>
+                    <small class="text-muted">Se selecionar uma imagem, ela atualizará a imagem global do post.</small>
                 </div>
-                               <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-primary">@Localizer["SaveBtn"]</button>
-                    <a asp-action="Index" class="btn btn-secondary">@Localizer["BackBtn"]</a>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-5">Salvar em @Model.Culture</button>
                 </div>
             </form>
-           </div>
+        </div>
     </div>
 </div>
+
 
 @section Scripts {
 
     <!-- Place the first <script> tag in your HTML's <head> -->
     <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
-       
+
     <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
     <script>
         tinymce.init({
@@ -72,5 +75,5 @@
           uploadcare_public_key: 'a58a779d6579575581a1',
         });
     </script>
-   
+
 }

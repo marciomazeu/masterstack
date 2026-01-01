@@ -1,42 +1,48 @@
-﻿@model MasterStack.Models.BlogPost
+﻿@model MasterStack.Models.BlogPostTranslation
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Details";
+    // Usamos o operador ? para evitar o erro se o BlogPost for nulo
+    ViewData["Title"] = Model?.Title ?? "Post";
+    var dataCriacao = Model?.BlogPost?.CreatedAt.ToString("D") ?? "Data indisponível";
+    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 }
 
-<h1>Details</h1>
 
-<div>
-    <h4>BlogPost</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Culture)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Culture)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Content)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Content)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+<article class="container py-5">
+    <div class="mb-4">
+        <a asp-action="Index"
+           asp-controller="BlogPosts"
+           asp-route-culture="@currentCulture"
+           class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar para a Lista
+        </a>
+    </div>
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning">@TempData["Warning"]</div>
+    }
+
+    @if (Model != null)
+    {
+        @if (!string.IsNullOrEmpty(Model.BlogPost?.ImageUrl))
+        {
+            <img src="@Model.BlogPost.ImageUrl" class="img-fluid rounded mb-4" />
+        }
+        else
+        {
+            <img src="/images/default-post.jpg" class="img-fluid rounded mb-4" />
+        }
+        <h1 class="display-3">@Model.Title</h1>
+        <p class="text-muted">Publicado em: @dataCriacao</p>
+
+        <div class="content">
+            @Html.Raw(Model.Content)
+        </div>
+    }
+    else
+    {
+        <p>Conteúdo não encontrado.</p>
+    }
+</article>

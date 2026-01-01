@@ -144,6 +144,9 @@
   <data name="PostDate" xml:space="preserve">
     <value>Publié le</value>
   </data>
+  <data name="PostImageAlt" xml:space="preserve">
+    <value>Image de l'article : {0}</value>
+  </data>
   <data name="ReadMore" xml:space="preserve">
     <value>Lire la suite</value>
   </data>

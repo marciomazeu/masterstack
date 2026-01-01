@@ -144,6 +144,9 @@
   <data name="PostDate" xml:space="preserve">
     <value>Published on</value>
   </data>
+  <data name="PostImageAlt" xml:space="preserve">
+    <value>Post image: {0}</value>
+  </data>
   <data name="ReadMore" xml:space="preserve">
     <value>Read More</value>
   </data>

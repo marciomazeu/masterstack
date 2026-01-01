@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MasterStack.Models
 {
@@ -7,20 +8,14 @@ namespace MasterStack.Models
         [Key]
         public int Id { get; set; }
 
-        // Chave para identificar qual idioma este post pertence (pt-BR, en-US, etc)
         [Required]
-        public string Culture { get; set; }
-
-        [Required]
-        [StringLength(200)]
-        public string Title { get; set; }
-
-        [Required]
-        public string Content { get; set; }
-
+        [Display(Name = "Data de Criação")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [Display(Name = "URL da Imagem")]
-        public string? ImageUrl { get; set; } // O '?' permite que seja opcional
+        public string? ImageUrl { get; set; }
+
+        // Propriedade de Navegação: Um Post tem muitas Traduções
+        public virtual ICollection<BlogPostTranslation> Translations { get; set; } = new List<BlogPostTranslation>();
     }
 }

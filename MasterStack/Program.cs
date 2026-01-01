@@ -1,5 +1,6 @@
 using MasterStack;
 using MasterStack.Data;
+using MasterStack.Models;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.Razor;
@@ -58,6 +59,24 @@ var localizationOptions = new RequestLocalizationOptions()
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures);
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<ApplicationDbContext>();
+
+    if (!context.Languages.Any())
+    {
+        context.Languages.AddRange(
+            new Language { Name = "Português", Code = "pt-BR", IsActive = true },
+            new Language { Name = "English", Code = "en-US", IsActive = true },
+            new Language { Name = "Español", Code = "es-ES", IsActive = true },
+             new Language { Name = "Français", Code = "fr-CA", IsActive = true },
+             new Language { Name = "Français", Code = "fr-FR", IsActive = true }
+        );
+        context.SaveChanges();
+    }
+}
+
 // Isso força o sistema a olhar para a URL primeiro
 localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultureProvider());
 
@@ -82,6 +101,12 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseRequestLocalization(localizationOptions); // DEVE vir antes de UseAuthorization e MapControllerRoute
 app.UseAuthorization();
+
+// 1. Rota Específica para o SEO do Blog (DEVE VIR PRIMEIRO)
+app.MapControllerRoute(
+    name: "blog_details",
+    pattern: "{culture}/BlogPosts/post/{slug}",
+    defaults: new { controller = "BlogPosts", action = "Details" });
 
 // 3. Rota Globalizada para SEO: ex: masterstack.com/pt-BR/Home/Index
 app.MapControllerRoute(
