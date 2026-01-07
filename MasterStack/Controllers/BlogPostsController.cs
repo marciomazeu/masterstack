@@ -48,40 +48,42 @@ namespace MasterStack.Controllers
 
         // GET: /pt-BR/BlogPosts/post/5
         [HttpGet]
-        public async Task<IActionResult> Details(int? id, string culture)
+        [Route("{culture}/blog/{slug}")]
+        public async Task<IActionResult> Details(string culture, string slug)
         {
-            if (id == null) return NotFound();
+            if (string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(culture)) return NotFound();
 
-            var blogPost = await _context.BlogPosts
-                .Include(p => p.Translations)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (blogPost == null) return NotFound();
-
-            // Normalizamos a cultura pedida (ex: "en-US" vira "en-us")
-            string requested = (culture ?? "pt-BR").Trim().ToLower();
-
-            // 1. Tenta achar a tradução exata (ignorando Case Sensitive)
-            var translation = blogPost.Translations
-                .FirstOrDefault(t => t.Culture.Trim().ToLower() == requested);
-
+            // 1. Buscamos a tradução DIRETAMENTE pelo slug e cultura
+            var translation = await _context.BlogPostTranslations
+                .Include(t => t.BlogPost)
+                .ThenInclude(p => p.Translations) // Importante para o menu de idiomas na View
+                .FirstOrDefaultAsync(t => t.Slug == slug && t.Culture.ToLower() == culture.ToLower());
+            
+            // 2. Se não encontrou nada com esse SLUG e nessa CULTURA
             if (translation == null)
             {
-                // 2. FALLBACK: Se não achou a pedida, pega a pt-BR ou a primeira que existir
-                translation = blogPost.Translations.FirstOrDefault(t => t.Culture.ToLower() == "pt-br")
-                              ?? blogPost.Translations.FirstOrDefault();
+                // REALISMO: Tentar achar o post apenas pelo Slug (talvez a cultura na URL esteja errada)
+                var fallbackTranslation = await _context.BlogPostTranslations
+                    .FirstOrDefaultAsync(t => t.Slug == slug);
 
-                ViewBag.TranslationWarning = true;
-                ViewBag.RequestedCulture = culture ?? "pt-BR"; // O que o usuário viu na URL
-                ViewBag.ActualCulture = translation?.Culture; // O que o banco entregou
-            }
-            else
-            {
-                ViewBag.TranslationWarning = false;
+                if (fallbackTranslation != null)
+                {
+                    // Redireciona para a cultura correta desse slug (SEO Friendly - Redirect 301)
+                    return RedirectToAction(nameof(Details), new
+                    {
+                        culture = fallbackTranslation.Culture,
+                        slug = fallbackTranslation.Slug
+                    });
+                }
+
+                return NotFound();
             }
 
+            // 3. Passamos a tradução via ViewBag ou ViewModel para a View usar
             ViewBag.CurrentTranslation = translation;
-            return View(blogPost);
+
+            // Retornamos o BlogPost pai, mas a View deve focar no ViewBag.CurrentTranslation
+            return View(translation.BlogPost);
         }
 
         // GET: /pt-BR/BlogPosts/Create
@@ -99,7 +101,7 @@ namespace MasterStack.Controllers
         // POST: BlogPosts/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost] // Certifique-se que este atributo existe
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BlogPostCreateViewModel model)
         {
@@ -108,20 +110,23 @@ namespace MasterStack.Controllers
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // 1. Criar o registro Pai (BlogPost)
+                    // 1. Gerar o Slug UNICO e PROFISSIONAL (usando o que criamos)
+                    string uniqueSlug = await GetUniqueSlugAsync(model.Title);
+
+                    // 2. Criar o registro Pai
                     var post = new BlogPost { CreatedAt = DateTime.Now };
                     _context.BlogPosts.Add(post);
                     await _context.SaveChangesAsync();
 
-                    // 2. Processar o Upload da Imagem
+                    // 3. Processar o Upload da Imagem
                     string? fileName = null;
                     if (model.ImageFile != null && model.ImageFile.Length > 0)
                     {
-                        // Gera um nome único para o arquivo
                         fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.ImageFile.FileName);
-                        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/blog");
 
-                        // Garante que a pasta física existe no servidor
+                        // Usar WebRootPath é mais seguro que GetCurrentDirectory
+                        var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
+
                         if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
 
                         var filePath = Path.Combine(uploadPath, fileName);
@@ -131,46 +136,86 @@ namespace MasterStack.Controllers
                         }
                     }
 
-                    // 3. Criar a Tradução (BlogPostTranslation) vinculada ao post
+                    // 4. Criar a Tradução vinculada
                     var translation = new BlogPostTranslation
                     {
                         BlogPostId = post.Id,
+                        // Usamos a cultura atual do sistema
                         Culture = System.Globalization.CultureInfo.CurrentCulture.Name,
                         Title = model.Title,
                         Content = model.Content,
-                        Slug = model.Title?.ToLower().Trim().Replace(" ", "-") ?? "sem-slug",
-
-                        // CORREÇÃO AQUI:
-                        // ImageUrl é a string que vai para o banco.
-                        // fileName é a string que você gerou lá em cima.
+                        Slug = uniqueSlug, // <--- AQUI: usamos o slug validado e limpo
                         ImageUrl = fileName
                     };
 
                     _context.BlogPostTranslations.Add(translation);
                     await _context.SaveChangesAsync();
 
-                    // 4. Confirmar no banco de dados
                     await transaction.CommitAsync();
 
+                    TempData["Success"] = "Post criado com sucesso!";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    ModelState.AddModelError("", "Erro ao salvar no banco: " + ex.Message);
+                    // Realismo: Logue o erro ex.Message internamente, mas não exponha detalhes técnicos ao usuário se for produção
+                    ModelState.AddModelError("", "Ocorreu um erro ao processar o post. Tente novamente.");
                 }
             }
 
-            // Se houver erro de validação, volta para a tela de criação
             return View(model);
         }
 
-        private string GenerateSlug(string title)
+        private string GenerateSlug(string phrase)
         {
-            var slug = title.ToLower().Trim();
-            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
-            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-").Trim('-');
-            return slug;
+            // Exemplo de lógica de verificação (Simplificada)
+            int count = 1;
+            string originalSlug = phrase;
+            while (_context.BlogPostTranslations.Any(t => t.Slug == phrase))
+            {
+                phrase = $"{originalSlug}-{count}";
+                count++;
+            }
+            if (string.IsNullOrEmpty(phrase)) return "";
+
+            // 1. Converte para minúsculo
+            string str = phrase.ToLower();
+
+            // 2. Remove acentos (Normalização)
+            str = System.Text.Encoding.ASCII.GetString(System.Text.Encoding.GetEncoding("Cyrillic").GetBytes(str));
+
+            // 3. Remove caracteres inválidos (Regex)
+            // Substitui qualquer coisa que não seja letra, número ou espaço por nada
+            str = System.Text.RegularExpressions.Regex.Replace(str, @"[^a-z0-9\s-]", "");
+
+            // 4. Converte múltiplos espaços em um único espaço
+            str = System.Text.RegularExpressions.Regex.Replace(str, @"\s+", " ").Trim();
+
+            // 5. Corta o tamanho máximo (opcional, ex: 60 caracteres)
+            str = str.Substring(0, str.Length <= 60 ? str.Length : 60).Trim();
+
+            // 6. Troca espaços por hífens
+            str = System.Text.RegularExpressions.Regex.Replace(str, @"\s", "-");
+
+            return str;
+        }
+
+        private async Task<string> GetUniqueSlugAsync(string title, int? currentId = null)
+        {
+            string slug = GenerateSlug(title); // Sua função que remove acentos e símbolos
+            string uniqueSlug = slug;
+            int count = 1;
+
+            // O loop continua enquanto houver alguém usando esse slug (exceto o próprio post que estamos editando)
+            while (await _context.BlogPostTranslations
+                .AnyAsync(t => t.Slug == uniqueSlug && (!currentId.HasValue || t.Id != currentId.Value)))
+            {
+                uniqueSlug = $"{slug}-{count}";
+                count++;
+            }
+
+            return uniqueSlug;
         }
 
         // GET: BlogPosts/Edit/5?culture=en-US
@@ -195,63 +240,58 @@ namespace MasterStack.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title,Content,ImageUrl,Slug")] BlogPostTranslation translation, IFormFile? novaImagem)
         public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title,Content,ImageUrl,Slug")] BlogPostTranslation translation, IFormFile? novaImagem)
         {
-           
             if (id != translation.Id) return NotFound();
-            // Forçamos a criação do Slug para o ModelState não reclamar
-            if (string.IsNullOrEmpty(translation.Slug) && !string.IsNullOrEmpty(translation.Title))
-            {
-                translation.Slug = translation.Title.ToLower().Replace(" ", "-"); // Lógica simples de slug
-            }
 
-            // Remova o erro do Slug do ModelState manualmente se necessário
+            // 1. Gerar o Slug de forma definitiva
+            //translation.Slug = GenerateSlug(translation.Title);
+            // Passamos o ID para ignorar o registro atual na verificação
+            translation.Slug = await GetUniqueSlugAsync(translation.Title, translation.Id);
             ModelState.Remove("Slug");
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    // 1. Verificar se uma nova imagem foi enviada
                     if (novaImagem != null && novaImagem.Length > 0)
                     {
-                        // No Controller Edit POST:
                         string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
-
-                        // Garanta que a subpasta existe
                         if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-                        // Criar nome único para o novo arquivo
+                        // --- AQUI ESTÁ A CORREÇÃO CRÍTICA ---
+                        // Buscamos o nome real da imagem antiga que está no banco AGORA (Sem rastreamento)
+                        var imagemAntigaNoBanco = await _context.BlogPostTranslations
+                            .Where(t => t.Id == id)
+                            .Select(t => t.ImageUrl)
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync();
+
+                        // Criar a nova
                         string uniqueFileName = Guid.NewGuid().ToString() + "_" + novaImagem.FileName;
                         string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-                        // Salvar o novo arquivo no disco
                         using (var fileStream = new FileStream(filePath, FileMode.Create))
                         {
                             await novaImagem.CopyToAsync(fileStream);
                         }
 
-                        // 2. DELETAR a imagem antiga se ela existir (Limpeza)
-                        if (!string.IsNullOrEmpty(translation.ImageUrl))
+                        // Deletar a antiga SOMENTE se o nome for diferente e ela existir
+                        if (!string.IsNullOrEmpty(imagemAntigaNoBanco))
                         {
-                            string oldPath = Path.Combine(uploadsFolder, translation.ImageUrl);
+                            string oldPath = Path.Combine(uploadsFolder, imagemAntigaNoBanco);
                             if (System.IO.File.Exists(oldPath))
                             {
                                 System.IO.File.Delete(oldPath);
                             }
                         }
 
-                        // 3. Atualizar o caminho da imagem no objeto
                         translation.ImageUrl = uniqueFileName;
-                        _context.Entry(translation).Property(x => x.ImageUrl).IsModified = true;
                     }
-
-                    // Atualizar o Slug caso o título tenha mudado
-                    translation.Slug = GenerateSlug(translation.Title);
 
                     _context.Update(translation);
                     await _context.SaveChangesAsync();
+                    TempData["Success"] = "Tradução atualizada com sucesso!";
                 }
                 catch (DbUpdateConcurrencyException)
                 {

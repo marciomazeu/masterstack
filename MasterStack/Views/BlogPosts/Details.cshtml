@@ -8,7 +8,7 @@
 
     // Busca tradução atual ou a primeira disponível
     // 1. Pegamos a tradução que o Controller já escolheu e validou
-    var t = ViewBag.CurrentTranslation as MasterStack.Models.BlogPostTranslation;
+    var t = ViewBag.CurrentTranslation as BlogPostTranslation;
 
     // 2. Pegamos o estado do aviso
     var isFallback = ViewBag.TranslationWarning != null && (bool)ViewBag.TranslationWarning;

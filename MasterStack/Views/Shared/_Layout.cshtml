@@ -82,12 +82,38 @@
                         <ul class="dropdown-menu">
                             @foreach (var lang in _context.Languages.Where(l => l.IsActive))
                             {
+                                // Lógica realista: Se estivermos no Details, buscamos o slug daquele idioma específico
+                                string targetSlug = null;
+                                if (ViewContext.RouteData.Values["action"]?.ToString() == "Details" && ViewBag.CurrentTranslation != null)
+                                {
+                                    var currentPost = (BlogPostTranslation)ViewBag.CurrentTranslation;
+                                    // Tenta achar na lista de traduções do post pai uma que combine com o idioma do loop
+                                    targetSlug = currentPost.BlogPost.Translations
+                                    .FirstOrDefault(t => t.Culture == lang.Culture)?.Slug;
+                                }
+
                                 <li>
-                                    <a class="dropdown-item"
-                                       asp-route-culture="@lang.Culture"
-                                       asp-route-id="@ViewContext.RouteData.Values["id"]">
-                                        <span class="fi @lang.FlagClass me-2"></span> @lang.Name
-                                    </a>
+                                    @if (targetSlug != null)
+                                    {
+                                        @* Se houver tradução, manda para o post traduzido *@
+                                        <a class="dropdown-item"
+                                           asp-controller="BlogPosts"
+                                           asp-action="Details"
+                                           asp-route-culture="@lang.Culture"
+                                           asp-route-slug="@targetSlug">
+                                            <span class="fi @lang.FlagClass me-2"></span> @lang.Name
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        @* Se NÃO houver tradução para aquele idioma, manda para a Index do blog naquele idioma *@
+                                        <a class="dropdown-item"
+                                           asp-controller="BlogPosts"
+                                           asp-action="Index"
+                                           asp-route-culture="@lang.Culture">
+                                            <span class="fi @lang.FlagClass me-2"></span> @lang.Name
+                                        </a>
+                                    }
                                 </li>
                             }
                         </ul>

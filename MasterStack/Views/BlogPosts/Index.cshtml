@@ -60,10 +60,11 @@
                                 </p>
 
                                 <div class="mt-auto pt-3">
-                                    <a asp-action="Details"
-                                       asp-route-id="@item.Id"
+                                    <a asp-controller="BlogPosts"
+                                       asp-action="Details"
                                        asp-route-culture="@currentCulture"
-                                       class="btn btn-primary w-100">
+                                       asp-route-slug="@translation.Slug"
+                                       class="btn btn-primary">
                                         @Localizer["ReadMore"]
                                     </a>
                                 </div>
