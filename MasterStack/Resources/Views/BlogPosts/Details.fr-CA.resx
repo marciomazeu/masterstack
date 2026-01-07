@@ -120,6 +120,9 @@
   <data name="BackToList" xml:space="preserve">
     <value>Retour à la liste</value>
   </data>
+  <data name="NoAvailable" xml:space="preserve">
+    <value>Ce contenu n'est pas encore disponible en français</value>
+  </data>
   <data name="PublishedOn" xml:space="preserve">
     <value>Publié le</value>
   </data>

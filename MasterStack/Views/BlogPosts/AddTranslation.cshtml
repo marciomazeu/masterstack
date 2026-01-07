@@ -1,4 +1,4 @@
-﻿@model MasterStack.Controllers.BlogPostTranslationViewModel
+﻿@model MasterStack.Models.BlogPostTranslation
 
 <div class="container py-5">
     <div class="card shadow">
@@ -7,16 +7,27 @@
         </div>
         <div class="card-body">
             @* Importante: enctype para upload de arquivo *@
-            <form asp-action="AddTranslation" asp-route-id="@Model.BlogPostId" enctype="multipart/form-data" method="post">
+            <form asp-controller="BlogPosts" asp-action="AddTranslation" method="post" enctype="multipart/form-data">
                 <input type="hidden" asp-for="BlogPostId" />
                 <input type="hidden" asp-for="Culture" />
 
+                @* Remova a repetição abaixo que estava no seu código *@
+                @* <input type="hidden" asp-for="BlogPostId" value="@Model.BlogPostId" /> *@
+
+                @* Se quiser ter 100% de certeza, adicione este input desabilitado para conferência *@
+                <div class="mb-3">
+                    <label class="form-label text-muted">ID do Post Pai (Apenas leitura)</label>
+                    <input class="form-control bg-light" value="@Model.BlogPostId" readonly />
+                </div>
+
                 <div class="mb-3">
                     <label asp-for="Culture" class="form-label fw-bold">Idioma da Tradução</label>
-                    <select asp-for="Culture" class="form-select" readonly>
-                        <option value="@Model.Culture">@Model.Culture (Confirmado)</option>
+                    @* REMOVIDO: readonly e onfocus para permitir a seleção *@
+                    <select readonly asp-for="Culture" class="form-select"
+                            asp-items="ViewBag.Languages">
+                        <option value="">-- Selecione o Idioma --</option>
                     </select>
-                    <small class="text-muted">Você está traduzindo para este idioma específico.</small>
+                    <span asp-validation-for="Culture" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">

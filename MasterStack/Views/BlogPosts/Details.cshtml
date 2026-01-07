@@ -1,48 +1,105 @@
-﻿@model MasterStack.Models.BlogPostTranslation
-@using Microsoft.AspNetCore.Mvc.Localization
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@model MasterStack.Models.BlogPost
 @inject IViewLocalizer Localizer
 
 @{
-    // Usamos o operador ? para evitar o erro se o BlogPost for nulo
-    ViewData["Title"] = Model?.Title ?? "Post";
-    var dataCriacao = Model?.BlogPost?.CreatedAt.ToString("D") ?? "Data indisponível";
+    ViewData["Title"] = "Details";
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+
+    // Busca tradução atual ou a primeira disponível
+    // 1. Pegamos a tradução que o Controller já escolheu e validou
+    var t = ViewBag.CurrentTranslation as MasterStack.Models.BlogPostTranslation;
+
+    // 2. Pegamos o estado do aviso
+    var isFallback = ViewBag.TranslationWarning != null && (bool)ViewBag.TranslationWarning;
+
+    // 3. Definimos o título da página
+    ViewData["Title"] = t?.Title ?? "Detalhes do Post";
+    var principalTranslation = Model.Translations.FirstOrDefault();
 }
 
 
-<article class="container py-5">
+
+<div class="container mt-4">
+    @* Mensagem de Aviso (Apenas se estiver usando Fallback) *@
+    @if (isFallback)
+    {
+        <div class="alert alert-info py-2">
+            @if (currentCulture.StartsWith("en"))
+            {
+                <text>Content not available in English. Showing original version.</text>
+            }
+            else if (currentCulture.StartsWith("fr"))
+            {
+
+                <text>Contenu non disponible en Français. Affichage de la version originale.</text>
+            }
+            else
+            {
+
+                <text>Conteúdo não disponível em Português. Exibindo original.</text>
+            }
+        </div>
+    }
     <div class="mb-4">
+
         <a asp-action="Index"
            asp-controller="BlogPosts"
            asp-route-culture="@currentCulture"
            class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar para a Lista
+
+            <i class="fas fa-arrow-left"></i> @Localizer["BackToList"]
+
         </a>
+
     </div>
-    @if (TempData["Warning"] != null)
+    @* @if (ViewBag.TranslationWarning == true)
     {
-        <div class="alert alert-warning">@TempData["Warning"]</div>
-    }
+        <div class="alert alert-danger border-3">
+            @if (currentCulture.StartsWith("en"))
+            {
+                <text>Content not available in English. Showing original version.</text>
+            }
+            else if (currentCulture.StartsWith("fr"))
+            {
 
-    @if (Model != null)
+                <text>Contenu non disponible en Français. Affichage de la version originale.</text>
+            }
+            else
+            {
+
+                <text>Conteúdo não disponível em Português. Exibindo original.</text>
+            }
+        </div>
+    } *@
+    @if (t  != null)
     {
-        @if (!string.IsNullOrEmpty(Model.BlogPost?.ImageUrl))
-        {
-            <img src="@Model.BlogPost.ImageUrl" class="img-fluid rounded mb-4" />
-        }
-        else
-        {
-            <img src="/images/default-post.jpg" class="img-fluid rounded mb-4" />
-        }
-        <h1 class="display-3">@Model.Title</h1>
-        <p class="text-muted">Publicado em: @dataCriacao</p>
+        <h1 class="mb-3">@t?.Title</h1>
 
-        <div class="content">
-            @Html.Raw(Model.Content)
+        <div>
+            @* <dt class="col-sm-2">Capa</dt> *@
+            <dd class="col-sm-10">
+                @if (t != null && !string.IsNullOrEmpty(t.ImageUrl))
+                {
+                    <img src="/uploads/blog/@t.ImageUrl" class="img-fluid" style="max-width:300px" />
+                }
+                else
+                {
+                    <span>Sem imagem disponível</span>
+                }
+            </dd>
+        </div>
+
+        <div class="post-content">
+            @Html.Raw(t?.Content)
         </div>
     }
     else
     {
-        <p>Conteúdo não encontrado.</p>
+        <p class="text-danger">Conteúdo não encontrado.</p>
     }
-</article>
+
+    @* <div class="mt-5 border-top pt-3">
+        <a asp-action="Index" class="btn btn-secondary">Voltar</a>
+    </div> *@
+</div>

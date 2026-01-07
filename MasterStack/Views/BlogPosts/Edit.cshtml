@@ -1,39 +1,54 @@
 ﻿@model MasterStack.Models.BlogPostTranslation
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit Translation";
+    var blogPost = (MasterStack.Models.BlogPost)ViewBag.BlogPost;
+    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 }
 
-<div class="container py-5">
-    <h1>Editar Tradução (@Model.Culture)</h1>
+<div class="row">
+    <div class="col-md-8">
+        @* Forçamos o destino exato para onde os dados devem ir *@
+        
 
-    <form asp-action="Edit" asp-route-culture="@Model.Culture">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="BlogPostId" />
-        <input type="hidden" asp-for="Culture" />
+        <form asp-action="Edit" enctype="multipart/form-data" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @* ESSENCIAIS: Sem estes 4, o Update falha *@
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="BlogPostId" />
+            <input type="hidden" asp-for="Culture" />
+            <input type="hidden" asp-for="ImageUrl" />
+            <input type="hidden" asp-for="Slug" />
 
-        <div class="mb-3">
-            <label asp-for="Title" class="form-label"></label>
-            <input asp-for="Title" class="form-control" />
-            <span asp-validation-for="Title" class="text-danger"></span>
-        </div>
+            <div class="mb-3">
+                <label>Capa desta Tradução (@Model.Culture)</label>
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="~/uploads/blog/@Model.ImageUrl" width="200" class="d-block mb-2" />
+                }
+                <input type="file" name="novaImagem" class="form-control" />
+            </div>
 
-        <div class="mb-3">
-            <label asp-for="Content" class="form-label"></label>
-            <textarea asp-for="Content" class="form-control" rows="10"></textarea>
-            <span asp-validation-for="Content" class="text-danger"></span>
-        </div>
+                       <div class="mb-3">
+                <label>Título Traduzido</label>
+                <input asp-for="Title" class="form-control" />
+            </div>
 
-        <div class="mb-3">
-            <label asp-for="Slug" class="form-label"></label>
-            <input asp-for="Slug" class="form-control" />
-            <span asp-validation-for="Slug" class="text-danger"></span>
-        </div>
+            <div class="mb-3">
+                <label>Conteúdo da Tradução</label>
+                <textarea asp-for="Content" class="form-control"></textarea>
+            </div>
 
-        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-        <a asp-action="Index" asp-route-culture="@Model.Culture" class="btn btn-secondary">Voltar</a>
-    </form>
+            <button type="submit" class="btn btn-primary">Salvar Tradução Independente</button>
+        </form>
+    </div>
+
+    @* Mostra a imagem original ao lado para ajudar na tradução *@
+    @if (blogPost != null && !string.IsNullOrEmpty(@Model.ImageUrl))
+    {
+        @* O ~/ garante que o ASP.NET parta da raiz do site, ignorando o /fr-CA/ *@
+        <img src="~/uploads/@Model.ImageUrl.Replace("/uploads/", "")" class="img-fluid" />
+    }
 </div>
 
 
@@ -65,4 +80,5 @@
           uploadcare_public_key: 'a58a779d6579575581a1',
         });
     </script>
+    
 }

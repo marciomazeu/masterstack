@@ -189,4 +189,7 @@
   <data name="MenuBlog" xml:space="preserve">
     <value>Blog</value>
   </data>
+  <data name="AdminBlog" xml:space="preserve">
+    <value>Gerenciar Blog</value>
+  </data>
 </root>

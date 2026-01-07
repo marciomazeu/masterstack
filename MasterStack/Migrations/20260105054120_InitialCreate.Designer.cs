@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MasterStack.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260101194457_AddLanguagesTable")]
-    partial class AddLanguagesTable
+    [Migration("20260105054120_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,9 +35,6 @@ namespace MasterStack.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -61,8 +58,11 @@ namespace MasterStack.Migrations
 
                     b.Property<string>("Culture")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -78,22 +78,19 @@ namespace MasterStack.Migrations
 
                     b.HasIndex("BlogPostId");
 
+                    b.HasIndex("Culture");
+
                     b.ToTable("BlogPostTranslations");
                 });
 
             modelBuilder.Entity("MasterStack.Models.Language", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.Property<string>("Culture")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
+                    b.Property<string>("FlagClass")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FlagIcon")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
@@ -103,9 +100,32 @@ namespace MasterStack.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("Culture");
 
                     b.ToTable("Languages");
+
+                    b.HasData(
+                        new
+                        {
+                            Culture = "pt-BR",
+                            FlagClass = "fi-br",
+                            IsActive = false,
+                            Name = "Português"
+                        },
+                        new
+                        {
+                            Culture = "en-US",
+                            FlagClass = "fi-us",
+                            IsActive = false,
+                            Name = "English"
+                        },
+                        new
+                        {
+                            Culture = "es-ES",
+                            FlagClass = "fi-es",
+                            IsActive = false,
+                            Name = "Español"
+                        });
                 });
 
             modelBuilder.Entity("MasterStack.Models.BlogPostTranslation", b =>
@@ -116,7 +136,15 @@ namespace MasterStack.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MasterStack.Models.Language", "Language")
+                        .WithMany()
+                        .HasForeignKey("Culture")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("BlogPost");
+
+                    b.Navigation("Language");
                 });
 
             modelBuilder.Entity("MasterStack.Models.BlogPost", b =>

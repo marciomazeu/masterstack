@@ -2,7 +2,8 @@
 @using Microsoft.AspNetCore.Mvc.Localization
 @using Microsoft.EntityFrameworkCore
 @inject IHtmlLocalizer<SharedResource> SharedLocalizer
-@inject MasterStack.Data.ApplicationDbContext _context
+@using MasterStack.Data
+@inject ApplicationDbContext _context
 
 @{
     // Isso evita o erro CS1061 ao acessar propriedades dinâmicas
@@ -16,11 +17,17 @@
 
     // Busca os idiomas ativos do banco de dados
     var dbLanguages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-    
+    // Busca os idiomas direto do banco para o menu
+    // var idiomasDisponiveis = _context.Languages.Where(l => l.IsActive).ToList();
+    // Obtém a cultura da página atual
+    //var currentCulture = CultureInfo.CurrentCulture.Name;
+    // Busca no banco qual idioma corresponde a essa cultura para mostrar o nome/bandeira no botão
+    var currentLang = _context.Languages.FirstOrDefault(l => l.Culture == currentCulture);
+
 }
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -34,6 +41,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="d-flex flex-column min-vh-100">
+    
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
         <div class="container px-5">
@@ -60,59 +68,69 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            @{
-                                // Procura o idioma completo no banco com base na sigla da URL
-                                var currentLang = dbLanguages.FirstOrDefault(l => l.Code == currentCulture);
-                            }
-
-                            @* Mostra a bandeira *@
-                            <span class="@(currentLang?.FlagIcon ?? "fi fi-un") me-2"></span>
-
-                            @* Mostra o Nome (Português) em vez da sigla (PT-BR) *@
-                            <span>@(currentLang?.Name ?? currentCulture.ToUpper())</span>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="langDropdown">
-                            @foreach (var lang in dbLanguages)
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown">
+                            @if (currentLang != null)
                             {
-                                // 1. Pegamos o caminho atual da URL (ex: /en-US/BlogPosts/Details/5)
-                                var currentPath = Context.Request.Path.Value ?? "/";
-                                var newPath = "/";
-
-                                // 2. Lógica para trocar a cultura na URL
-                                // Se a URL tem o formato /xx-XX/restante
-                                if (currentPath.Length >= 6 && currentPath.StartsWith("/"))
-                                {
-                                    // Mantém tudo que vem depois do código de cultura (/pt-BR/...)
-                                    newPath = $"/{lang.Code}{currentPath.Substring(6)}";
-                                }
-                                else
-                                {
-                                    // Fallback para quando a URL é apenas "/"
-                                    newPath = $"/{lang.Code}";
-                                }
-
+                                <span class="fi @currentLang.FlagClass me-2"></span> 
+                                @currentLang.Name
+                            }
+                            else
+                            {
+                                <span>Idiomas</span>
+                            }
+                        </a>
+                        <ul class="dropdown-menu">
+                            @foreach (var lang in _context.Languages.Where(l => l.IsActive))
+                            {
                                 <li>
-                                    <a class="dropdown-item @(currentCulture == lang.Code ? "active" : "")"
-                                       href="@newPath">
-                                        <span class="@lang.FlagIcon me-2"></span> @lang.Name
+                                    <a class="dropdown-item"
+                                       asp-route-culture="@lang.Culture"
+                                       asp-route-id="@ViewContext.RouteData.Values["id"]">
+                                        <span class="fi @lang.FlagClass me-2"></span> @lang.Name
                                     </a>
                                 </li>
                             }
                         </ul>
                     </li>
+                    <li class="nav-item">
+                        @* <a class="nav-link" asp-controller="BlogPosts" asp-action="Admin">@SharedLocalizer["AdminBlog"]</a> *@
+                        <a class="nav-link" asp-controller="BlogPosts" asp-action="Admin" asp-route-culture="">@SharedLocalizer["AdminBlog"]</a>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
-   
-       <div class="container-fluid p-0">
-        <main role="main" class="flex-grow-1">
-            @RenderBody()
-        </main>
-    </div>
-    
+    </nav>
 
+    @* Removida a div container-fluid solta para evitar espaços fantasmas *@
+    <main role="main" class="flex-grow-1">
+        @* O container de alertas só deve ter margem se houver algo dentro *@
+        @if (TempData["Success"] != null || TempData["Error"] != null)
+        {
+            <div class="container mt-3">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+            </div>
+        }
+
+        @* O conteúdo da página vem aqui *@
+        @RenderBody()
+    </main>
+
+    <footer class="bg-dark text-white pt-5 pb-4 mt-auto">
     <footer class="bg-dark text-white pt-5 pb-4 mt-auto">
         <div class="container text-center text-md-start">
             <div class="row text-center text-md-start">

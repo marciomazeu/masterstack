@@ -8,14 +8,11 @@ namespace MasterStack.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
         [Display(Name = "Data de Criação")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        [Display(Name = "URL da Imagem")]
-        public string? ImageUrl { get; set; }
-
-        // Propriedade de Navegação: Um Post tem muitas Traduções
+        // O Post Pai não tem mais Título, Conteúdo ou ImageUrl.
+        // Tudo isso agora vive na lista abaixo (BlogPostTranslations).
         public virtual ICollection<BlogPostTranslation> Translations { get; set; } = new List<BlogPostTranslation>();
     }
 }

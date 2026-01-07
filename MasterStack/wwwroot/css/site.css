@@ -229,3 +229,14 @@ footer p {
     .post-excerpt img {
         display: none;
     }
+
+/* Impede que a tabela corte o dropdown */
+.table-responsive {
+    overflow: visible !important;
+}
+
+/* Garante que a célula da ação tenha prioridade visual */
+td {
+    position: relative;
+}
+

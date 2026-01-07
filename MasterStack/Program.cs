@@ -61,19 +61,32 @@ var localizationOptions = new RequestLocalizationOptions()
 
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<ApplicationDbContext>();
-
-    if (!context.Languages.Any())
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
     {
-        context.Languages.AddRange(
-            new Language { Name = "Português", Code = "pt-BR", IsActive = true },
-            new Language { Name = "English", Code = "en-US", IsActive = true },
-            new Language { Name = "Español", Code = "es-ES", IsActive = true },
-             new Language { Name = "Français", Code = "fr-CA", IsActive = true },
-             new Language { Name = "Français", Code = "fr-FR", IsActive = true }
-        );
+        // 1. Defina a lista de idiomas desejados
+        var seedLanguages = new List<Language>
+        {
+            new Language { Culture = "pt-BR", Name = "Português", FlagClass = "fi-br", IsActive = true },
+            new Language { Culture = "en-US", Name = "English", FlagClass = "fi-us", IsActive = true },
+            new Language { Culture = "fr-CA", Name = "Français", FlagClass = "fi-ca", IsActive = true }
+        };
+
+        // 2. Só insere se o idioma ainda não existir no banco
+        foreach (var lang in seedLanguages)
+        {
+            if (!context.Languages.Any(l => l.Culture == lang.Culture))
+            {
+                context.Languages.Add(lang);
+            }
+        }
+
         context.SaveChanges();
+        Console.WriteLine("Sucesso: Sincronização de idiomas concluída (sem apagar dados).");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("ERRO AO ACESSAR TABELA: " + ex.Message);
     }
 }
 
@@ -102,16 +115,15 @@ app.UseRouting();
 app.UseRequestLocalization(localizationOptions); // DEVE vir antes de UseAuthorization e MapControllerRoute
 app.UseAuthorization();
 
-// 1. Rota Específica para o SEO do Blog (DEVE VIR PRIMEIRO)
+// 1. Rota Localizada (Captura idiomas primeiro)
 app.MapControllerRoute(
-    name: "blog_details",
-    pattern: "{culture}/BlogPosts/post/{slug}",
-    defaults: new { controller = "BlogPosts", action = "Details" });
+    name: "localized",
+    pattern: "{culture:regex(^[a-z]{{2}}(-[A-Z]{{2}})?$)}/{controller=Home}/{action=Index}/{id?}");
 
-// 3. Rota Globalizada para SEO: ex: masterstack.com/pt-BR/Home/Index
+// 2. Rota Padrão (Fallback para quando não houver cultura na URL)
 app.MapControllerRoute(
     name: "default",
-    pattern: "{culture=en-US}/{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 
 app.Run();

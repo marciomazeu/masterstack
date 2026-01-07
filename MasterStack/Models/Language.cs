@@ -1,11 +1,15 @@
-﻿namespace MasterStack.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MasterStack.Models
 {
     public class Language
     {
-        public int Id { get; set; }
-        public string Name { get; set; }  // Ex: "English", "Português"
-        public string Code { get; set; }  // Ex: "en-US", "pt-BR"
-        public string? FlagIcon { get; set; } // Opcional: ícone ou classe CSS
-        public bool IsActive { get; set; } = true;
+        [Key]
+        [StringLength(15)]
+        public string Culture { get; set; } // Mude de Code para Culture aqui
+        public string Name { get; set; }
+        public string FlagClass { get; set; }
+        public bool IsActive { get; set; }
+
     }
 }

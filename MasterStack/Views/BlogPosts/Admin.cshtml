@@ -1,0 +1,90 @@
+﻿@model IEnumerable<MasterStack.Models.BlogPost>
+<style>
+    /* Força o contêiner a não esconder o que sai dele */
+    .card, .card-body, .table-responsive {
+        overflow: visible !important;
+    }
+
+    /* Ajuste para que o dropdown não fique por baixo de outras linhas */
+    .dropdown-menu {
+        position: fixed !important;
+    }
+
+    @@media (max-width: 768px) {
+        /* Garante que a coluna de ações não fique esmagada no celular */
+        .table td:last-child {
+            min-width: 140px;
+        }
+        /* Diminui um pouco o tamanho das imagens para ganhar espaço */
+        .table img {
+            width: 60px !important;
+            height: 40px !important;
+        }
+    }
+
+    /* O pulo do gato: remove o overflow hidden apenas onde o dropdown precisa respirar */
+    .card-body {
+        overflow: visible !important;
+    }
+</style>
+<div class="container-fluid px-4 py-5">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <h2 class="fw-bold m-0"><i class="bi bi-kanban me-2"></i>Gestão de Conteúdo</h2>
+            <p class="text-secondary">Controle total sobre os posts e suas versões internacionais.</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <a asp-action="Create" class="btn btn-dark shadow-sm px-4 py-2">
+                <i class="bi bi-plus-lg me-2"></i>Novo Artigo
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-0">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título (PT-BR)</th>
+                        <th>Data</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>
+                                @{
+                                    // Buscamos a tradução em português (ou a primeira que existir)
+                                    var t = item.Translations.FirstOrDefault(x => x.Culture == "pt-BR")
+                                    ?? item.Translations.FirstOrDefault();
+                                }
+                                @if (t != null)
+                                {
+                                    <strong>@t.Title</strong>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Sem tradução</span>
+                                }
+                            </td>
+                            <td>
+                                @foreach (var trans in item.Translations)
+                                {
+                                    <span class="badge bg-secondary">@trans.Culture</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+}

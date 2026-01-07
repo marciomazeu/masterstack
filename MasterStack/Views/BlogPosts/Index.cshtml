@@ -8,7 +8,12 @@
     ViewData["Title"] = Localizer["PageTitle"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 }
-
+@* @if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+} *@
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-4 fw-bold text-primary">@Localizer["LatestPosts"]</h1>
@@ -22,7 +27,6 @@
         {
             @foreach (var item in Model)
             {
-                // Busca a tradução para o idioma atual ou a primeira disponível (fallback)
                 var translation = item.Translations.FirstOrDefault(t => t.Culture == currentCulture)
                 ?? item.Translations.FirstOrDefault();
 
@@ -30,11 +34,18 @@
                 {
                     <div class="col">
                         <div class="card h-100 shadow-sm border-0">
-                            @{
-                                <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/uploads/default-post.jpg" : item.ImageUrl)"
-                                     class="card-img-top object-fit-cover" style="height: 200px;" alt="@translation.Title">
-                            }
-                            @* <img src="@imgUrl" class="card-img-top object-fit-cover" style="height: 200px;" alt="@translation.Title"> *@
+                            @* Bloco de Imagem Corrigido *@
+                            <div style="height: 200px; overflow: hidden;">
+                                @* Note que agora usamos 'translation' em vez de 'item' *@
+                                @if (translation != null && !string.IsNullOrEmpty(translation.ImageUrl))
+                                {
+                                    <img src="/uploads/blog/@translation.ImageUrl" class="card-img-top h-100 w-100 object-fit-cover" alt="@translation.Title">
+                                }
+                                else
+                                {
+                                    <img src="/uploads/default-post.jpg" class="card-img-top h-100 w-100 object-fit-cover" alt="Imagem Padrão">
+                                }
+                            </div>
 
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title fw-bold">@translation.Title</h5>
@@ -48,43 +59,47 @@
                                     @resumo
                                 </p>
 
-                                <div class="mt-auto">
-                                    @* Link usando o ID fixo e a Cultura *@
-                                    <a href="/@currentCulture/BlogPosts/post/@item.Id" class="btn btn-primary w-100">
+                                <div class="mt-auto pt-3">
+                                    <a asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       asp-route-culture="@currentCulture"
+                                       class="btn btn-primary w-100">
                                         @Localizer["ReadMore"]
                                     </a>
                                 </div>
                             </div>
 
-                            <div class="card-footer bg-transparent border-top-0 pb-3">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <a href="/@currentCulture/BlogPosts/Edit/@item.Id" class="btn btn-outline-secondary btn-sm">Editar</a>
-                                    <a href="/@currentCulture/BlogPosts/Delete/@item.Id" class="btn btn-outline-danger btn-sm">Apagar</a>
+                            @* Footer com botões de tradução e edição *@
+                            <div class="card-footer bg-light border-top-0 pb-3">
+                                <div class="d-flex justify-content-between gap-2 mb-2">
+                                    <a asp-action="Edit" 
+                                    asp-route-id="@translation.Id" 
+                                    asp-route-culture="@currentCulture" 
+                                    class="btn btn-sm btn-outline-primary flex-grow-1">@Localizer["Edit"]</a>
+                                    @* <a href="/@currentCulture/BlogPosts/Delete/@item.Id" class="btn btn-sm btn-outline-danger flex-grow-1">Apagar</a> *@
+                                    @* Botão para apagar apenas esta tradução específica *@
+                                    <form asp-action="DeleteTranslation" asp-route-id="@translation.Id" method="post"
+                                          onsubmit="return confirm('Tem certeza que deseja apagar esta tradução? Se for a última, o post sumirá completamente.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Apagar esta versão</button>
+                                    </form>
                                 </div>
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 mt-2">
 
-                                @foreach (var lang in (List<MasterStack.Models.Language>)ViewBag.Languages)
-                                {
-                                   currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-                                    bool jaExisteTraducao = item.Translations.Any(t => t.Culture == lang.Code);
-
-                                    
-                                    @* Só mostra o botão se não for a cultura atual e se a tradução não existir *@
-                                    if (lang.Code != currentCulture && !jaExisteTraducao)
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var lang in (List<MasterStack.Models.Language>)ViewBag.Languages)
                                     {
-                                        <a asp-action="AddTranslation"
-                                           asp-route-id="@item.Id"
-                                           asp-route-targetCulture="@lang.Code"
-                                           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center shadow-sm">
-
-                                            @* A BANDEIRA AQUI *@
-                                            <span class="@lang.FlagIcon me-2"></span>
-
-                                            <span>Traduzir para @lang.Name</span>
-                                        </a>
+                                        bool jaExisteTraducao = item.Translations.Any(t => t.Culture == lang.Culture);
+                                        if (lang.Culture != currentCulture && !jaExisteTraducao)
+                                        {
+                                            <a asp-action="AddTranslation"
+                                               asp-route-id="@item.Id"
+                                               asp-route-targetCulture="@lang.Culture"
+                                               class="btn btn-xs btn-light border d-inline-flex align-items-center p-1" style="font-size: 0.75rem;">
+                                                <span class="@lang.FlagClass me-1"></span>
+                                                <span>+ @lang.Name</span>
+                                            </a>
+                                        }
                                     }
-                                }
+                                </div>
                             </div>
                         </div>
                     </div>

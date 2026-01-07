@@ -79,6 +79,15 @@ namespace MasterStack {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Manage Blog.
+        /// </summary>
+        public static string AdminBlog {
+            get {
+                return ResourceManager.GetString("AdminBlog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Extreme Performance.
         /// </summary>
         public static string Feature1Title {

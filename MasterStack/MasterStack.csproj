@@ -38,6 +38,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Resources\Views\Home\" />
+	  <Folder Include="wwwroot\uploads\blog\" />
 	</ItemGroup>
 
 </Project>
