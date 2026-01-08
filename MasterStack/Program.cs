@@ -4,6 +4,7 @@ using MasterStack.Models;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Globalization;
@@ -50,6 +51,14 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// 1. Adiciona o serviço de compressão
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "image/svg+xml", "application/javascript", "text/css" });
+});
+
 var app = builder.Build();
 
 // 2. Configura os idiomas (PT-BR, EN-CA, FR-CA)
@@ -93,10 +102,6 @@ using (var scope = app.Services.CreateScope())
 // Isso força o sistema a olhar para a URL primeiro
 localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultureProvider());
 
-
-
-
-
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -110,6 +115,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // A ordem das linhas abaixo é CRÍTICA:
+app.UseResponseCompression();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRequestLocalization(localizationOptions); // DEVE vir antes de UseAuthorization e MapControllerRoute

@@ -17,11 +17,7 @@
 
     // Busca os idiomas ativos do banco de dados
     var dbLanguages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-    // Busca os idiomas direto do banco para o menu
-    // var idiomasDisponiveis = _context.Languages.Where(l => l.IsActive).ToList();
-    // Obtém a cultura da página atual
-    //var currentCulture = CultureInfo.CurrentCulture.Name;
-    // Busca no banco qual idioma corresponde a essa cultura para mostrar o nome/bandeira no botão
+    
     var currentLang = _context.Languages.FirstOrDefault(l => l.Culture == currentCulture);
 
 }
@@ -39,6 +35,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.2/css/flag-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    @RenderSection("Head", required: false)
 </head>
 <body class="d-flex flex-column min-vh-100">
     
@@ -80,36 +79,36 @@
                             }
                         </a>
                         <ul class="dropdown-menu">
-                            @foreach (var lang in _context.Languages.Where(l => l.IsActive))
+                            @foreach (var lang in dbLanguages)
                             {
-                                // Lógica realista: Se estivermos no Details, buscamos o slug daquele idioma específico
                                 string targetSlug = null;
-                                if (ViewContext.RouteData.Values["action"]?.ToString() == "Details" && ViewBag.CurrentTranslation != null)
+                                string targetController = currentController ?? "Home";
+                                string targetAction = currentAction ?? "Index";
+
+                                // CENÁRIO A: Se estiver no Details do Blog, tenta achar o slug traduzido
+                                if (currentAction == "Details" && currentController == "BlogPosts" && ViewBag.CurrentTranslation != null)
                                 {
-                                    var currentPost = (BlogPostTranslation)ViewBag.CurrentTranslation;
-                                    // Tenta achar na lista de traduções do post pai uma que combine com o idioma do loop
-                                    targetSlug = currentPost.BlogPost.Translations
-                                    .FirstOrDefault(t => t.Culture == lang.Culture)?.Slug;
+                                    var currentTrans = ViewBag.CurrentTranslation as MasterStack.Models.BlogPostTranslation;
+                                    targetSlug = currentTrans?.BlogPost?.Translations
+                                    .FirstOrDefault(t => t.Culture.ToLower() == lang.Culture.ToLower())?.Slug;
+
+                                    targetController = "BlogPosts";
+                                    targetAction = "Details";
                                 }
 
                                 <li>
-                                    @if (targetSlug != null)
+                                    @if (targetAction == "Details" && !string.IsNullOrEmpty(targetSlug))
                                     {
-                                        @* Se houver tradução, manda para o post traduzido *@
-                                        <a class="dropdown-item"
-                                           asp-controller="BlogPosts"
-                                           asp-action="Details"
-                                           asp-route-culture="@lang.Culture"
-                                           asp-route-slug="@targetSlug">
+                                        @* Link para Post Específico *@
+                                        <a class="dropdown-item" asp-controller="@targetController" asp-action="@targetAction"
+                                           asp-route-culture="@lang.Culture" asp-route-slug="@targetSlug">
                                             <span class="fi @lang.FlagClass me-2"></span> @lang.Name
                                         </a>
                                     }
                                     else
                                     {
-                                        @* Se NÃO houver tradução para aquele idioma, manda para a Index do blog naquele idioma *@
-                                        <a class="dropdown-item"
-                                           asp-controller="BlogPosts"
-                                           asp-action="Index"
+                                        @* Link para Home ou Outras Páginas (Mantém onde o usuário está) *@
+                                        <a class="dropdown-item" asp-controller="@targetController" asp-action="@targetAction"
                                            asp-route-culture="@lang.Culture">
                                             <span class="fi @lang.FlagClass me-2"></span> @lang.Name
                                         </a>
@@ -192,13 +191,13 @@
                     <div class="text-center text-md-end">
                         <ul class="list-unstyled list-inline">
                             <li class="list-inline-item">
-                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="fab fa-facebook"></i></a>
+                                    <a href="#" class="btn-floating btn-sm text-white" aria-label="Facebook" style="font-size: 23px;"><i class="fab fa-facebook"></i></a>
                             </li>
                             <li class="list-inline-item">
-                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="fab fa-linkedin"></i></a>
+                                    <a href="#" class="btn-floating btn-sm text-white" aria-label="LinkedIn" style="font-size: 23px;"><i class="fab fa-linkedin"></i></a>
                             </li>
                             <li class="list-inline-item">
-                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="fab fa-github"></i></a>
+                                    <a href="#" class="btn-floating btn-sm text-white" aria-label="Github" style="font-size: 23px;"><i class="fab fa-github"></i></a>
                             </li>
                         </ul>
                     </div>

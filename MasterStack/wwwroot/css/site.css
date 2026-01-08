@@ -1,62 +1,18 @@
-/* Garante que as seções ocupem a largura correta e as imagens não fiquem gigantes */
-header.bg-dark {
-    padding: 5rem 0; /* Dá respiro no topo e base */
-}
-
-.feature-icon {
-    width: 3rem;
-    height: 3rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: .75rem;
-}
-
-img.shadow-lg {
-    transition: transform 0.3s ease;
-}
-
-    img.shadow-lg:hover {
-        transform: scale(1.02); /* Efeito suave ao passar o mouse */
-    }
-
+/* --- 1. CONFIGURAÇÕES GLOBAIS E RESET --- */
 html {
-    scroll-padding-top: 72px; /* Ajuste este valor de acordo com a altura da sua barra */
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    scroll-padding-top: 75px; /* Ajuste para sua Navbar fixa */
+    position: relative;
+    min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    color: #212529; /* Melhor contraste global */
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
-}
-
-/* Garante que o scroll pare antes de bater no menu fixo */
-html {
-    scroll-padding-top: 70px;
-}
-
+/* --- 2. NAVEGAÇÃO --- */
 .navbar-brand {
     letter-spacing: 1px;
     font-size: 1.5rem;
@@ -64,65 +20,14 @@ html {
 
 .nav-link {
     font-weight: 500;
-    transition: color 0.2s;
+    transition: color 0.2s ease;
 }
 
-    /* Efeito de hover nos itens do menu */
     .nav-link:hover {
-        color: #0d6efd !important; /* Azul do Bootstrap */
-    }
-/* Força um cinza bem suave e profissional */
-.bg-light {
-    background-color: #f8f9fa !important;
-}
-
-/* Garante que não haja bordas brancas entre as seções */
-section {
-    border: none !important;
-}
-
-/* Estilo para os cards de características */
-#features .card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border-radius: 1rem; /* Bordas arredondadas modernas */
-    background-color: #ffffff; /* Fundo branco para destacar no cinza */
-}
-
-    /* Efeito de levante ao passar o mouse */
-    #features .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+        color: #4dabff !important; /* Azul de alto contraste */
     }
 
-/* Cor do ícone */
-.feature {
-    height: 4rem;
-    width: 4rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Garante que o quadrado do ícone vire um círculo perfeito */
-.feature {
-    flex-shrink: 0; /* Impede que o círculo amasse */
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Alinhamento do texto dentro do card */
-.card-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Centraliza horizontalmente */
-    justify-content: center; /* Centraliza verticalmente se necessário */
-}
-
-    .card-body h2 {
-        margin-top: 15px;
-    }
-
-/* Ajuste para o dropdown de idiomas */
+/* Dropdown de idiomas */
 #langDrop {
     border-radius: 20px;
     padding: 5px 15px;
@@ -133,91 +38,67 @@ section {
         background-color: rgba(255, 255, 255, 0.2);
     }
 
-.dropdown-item span {
-    font-size: 1.2rem; /* Aumenta um pouco o tamanho da bandeira */
-}
-
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden; /* Evita barra de rolagem horizontal chata */
-}
-
-/* Remove qualquer margem estranha que o último parágrafo do footer possa ter */
-footer p {
-    margin-bottom: 0;
-}
+/* --- 3. COMPONENTES E ANIMAÇÕES --- */
 .transition-hover {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
     .transition-hover:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+    }
+
+img.shadow-lg {
+    transition: transform 0.3s ease;
+}
+
+    img.shadow-lg:hover {
+        transform: scale(1.02);
     }
 
 .object-fit-cover {
     object-fit: cover;
 }
-/* CSS para impedir que o texto vaze e manter 3 linhas */
-.text-truncate-3 {
+
+/* Foco para Acessibilidade */
+.btn:focus, .form-control:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+/* --- 4. SEÇÃO FEATURES (HOME) --- */
+#features .card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-radius: 1rem;
+    background-color: #ffffff;
+    border: none;
+}
+
+    #features .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+    }
+
+.feature {
+    height: 4rem;
+    width: 4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin: 0 auto;
+}
+
+/* --- 5. BLOG (LISTA E DETALHES) --- */
+/* Limita texto a 3 linhas e limpa lixo do editor HTML */
+.post-excerpt, .card-text-custom, .line-clamp {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    height: 4.5em; /* Ajusta a altura fixa para alinhar os cards */
-}
-
-.transition-hover {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-    .transition-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
-
-.object-fit-cover {
-    object-fit: cover;
-}
-.card-text-custom {
-    display: -webkit-box;
-    -webkit-line-clamp: 3; /* Número de linhas que você quer mostrar */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    word-break: break-word; /* Força a quebra de palavras gigantes */
-}
-.card {
-    overflow: hidden; /* Garante que nada saia dos limites do card */
-}
-
-.card-body {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-}
-
-.line-clamp {
-    display: -webkit-box;
-    -webkit-line-clamp: 3; /* Número de linhas que deseja mostrar */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Limita o texto a 3 linhas e remove excessos do HTML do Editor */
-.post-excerpt {
-    display: -webkit-box;
-    -webkit-line-clamp: 3; /* Número de linhas visíveis */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 0.9rem;
     line-height: 1.5;
 }
 
-    /* Remove margens de parágrafos e títulos que o editor injeta, 
-   evitando que o texto "pule" para baixo no card */
     .post-excerpt * {
         margin: 0 !important;
         padding: 0 !important;
@@ -225,18 +106,35 @@ footer p {
         font-weight: normal !important;
     }
 
-    /* Garante que imagens coladas no editor não apareçam no card da lista */
     .post-excerpt img {
-        display: none;
+        display: none; /* Não mostra imagens do editor no card da lista */
     }
 
-/* Impede que a tabela corte o dropdown */
+.post-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+/* --- 6. FOOTER (ACESSIBILIDADE 100%) --- */
+footer .text-primary {
+    color: #4dabff !important;
+}
+
+footer p, footer a {
+    color: #e0e0e0 !important;
+}
+
+    footer a:hover {
+        color: #ffffff !important;
+        text-decoration: underline;
+    }
+
+/* --- 7. UTILITÁRIOS --- */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
 .table-responsive {
-    overflow: visible !important;
+    overflow: visible !important; /* Permite dropdowns dentro de tabelas */
 }
-
-/* Garante que a célula da ação tenha prioridade visual */
-td {
-    position: relative;
-}
-

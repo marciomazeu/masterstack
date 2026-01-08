@@ -1,13 +1,9 @@
 ﻿using MasterStack.Data; // Ajuste para o seu namespace de dados
 using MasterStack.Models;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
-using System.Text.RegularExpressions;
-
+using SkiaSharp;
 namespace MasterStack.Controllers
 {
     
@@ -51,39 +47,42 @@ namespace MasterStack.Controllers
         [Route("{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)
         {
-            if (string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(culture)) return NotFound();
-
-            // 1. Buscamos a tradução DIRETAMENTE pelo slug e cultura
-            var translation = await _context.BlogPostTranslations
+            // 1. Busca a tradução exata pelo slug fornecido
+            var currentTranslation = await _context.BlogPostTranslations
                 .Include(t => t.BlogPost)
-                .ThenInclude(p => p.Translations) // Importante para o menu de idiomas na View
-                .FirstOrDefaultAsync(t => t.Slug == slug && t.Culture.ToLower() == culture.ToLower());
-            
-            // 2. Se não encontrou nada com esse SLUG e nessa CULTURA
-            if (translation == null)
-            {
-                // REALISMO: Tentar achar o post apenas pelo Slug (talvez a cultura na URL esteja errada)
-                var fallbackTranslation = await _context.BlogPostTranslations
-                    .FirstOrDefaultAsync(t => t.Slug == slug);
+                .ThenInclude(p => p.Translations)
+                .FirstOrDefaultAsync(t => t.Slug == slug);
 
-                if (fallbackTranslation != null)
+            if (currentTranslation == null) return NotFound();
+
+            bool isFallback = false;
+
+            // 2. REALISMO: O slug existe, mas é da cultura certa?
+            // Se o slug for "receita-de-bolo" (PT) mas a URL pedir "en-US"
+            if (currentTranslation.Culture.ToLower() != culture.ToLower())
+            {
+                // Tenta ver se o "Pai" deste post tem uma tradução para a cultura pedida (en-US)
+                var targetTranslation = currentTranslation.BlogPost.Translations
+                    .FirstOrDefault(t => t.Culture.ToLower() == culture.ToLower());
+
+                if (targetTranslation != null)
                 {
-                    // Redireciona para a cultura correta desse slug (SEO Friendly - Redirect 301)
+                    // Redireciona para o slug correto daquela língua! (SEO Friendly)
                     return RedirectToAction(nameof(Details), new
                     {
-                        culture = fallbackTranslation.Culture,
-                        slug = fallbackTranslation.Slug
+                        culture = targetTranslation.Culture,
+                        slug = targetTranslation.Slug
                     });
                 }
 
-                return NotFound();
+                // Se o pai não tem tradução para a língua pedida, aí sim usamos o Fallback
+                isFallback = true;
             }
 
-            // 3. Passamos a tradução via ViewBag ou ViewModel para a View usar
-            ViewBag.CurrentTranslation = translation;
+            ViewBag.CurrentTranslation = currentTranslation;
+            ViewBag.TranslationWarning = isFallback;
 
-            // Retornamos o BlogPost pai, mas a View deve focar no ViewBag.CurrentTranslation
-            return View(translation.BlogPost);
+            return View(currentTranslation.BlogPost);
         }
 
         // GET: /pt-BR/BlogPosts/Create
@@ -110,7 +109,7 @@ namespace MasterStack.Controllers
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // 1. Gerar o Slug UNICO e PROFISSIONAL (usando o que criamos)
+                    // 1. Gerar o Slug UNICO
                     string uniqueSlug = await GetUniqueSlugAsync(model.Title);
 
                     // 2. Criar o registro Pai
@@ -118,34 +117,49 @@ namespace MasterStack.Controllers
                     _context.BlogPosts.Add(post);
                     await _context.SaveChangesAsync();
 
-                    // 3. Processar o Upload da Imagem
+                    // 3. Processar o Upload com Conversão para WebP
                     string? fileName = null;
                     if (model.ImageFile != null && model.ImageFile.Length > 0)
                     {
-                        fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.ImageFile.FileName);
-
-                        // Usar WebRootPath é mais seguro que GetCurrentDirectory
+                        // Forçamos a extensão .webp para o banco e para o arquivo
+                        fileName = Guid.NewGuid().ToString() + ".webp";
                         var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
 
                         if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
 
                         var filePath = Path.Combine(uploadPath, fileName);
-                        using (var stream = new FileStream(filePath, FileMode.Create))
+
+                        // --- INÍCIO DA LÓGICA SKIASHARP ---
+                        using (var inputMemoryStream = new MemoryStream())
                         {
-                            await model.ImageFile.CopyToAsync(stream);
+                            await model.ImageFile.CopyToAsync(inputMemoryStream);
+                            inputMemoryStream.Position = 0;
+
+                            using (var managedStream = new SKManagedStream(inputMemoryStream))
+                            using (var bitmap = SKBitmap.Decode(managedStream))
+                            {
+                                if (bitmap == null) throw new Exception("Formato de imagem inválido.");
+
+                                using (var image = SKImage.FromBitmap(bitmap))
+                                using (var data = image.Encode(SKEncodedImageFormat.Webp, 75)) // Qualidade 75 (Lighthouse ama isso)
+                                using (var saveStream = System.IO.File.OpenWrite(filePath))
+                                {
+                                    data.SaveTo(saveStream);
+                                }
+                            }
                         }
+                        // --- FIM DA LÓGICA SKIASHARP ---
                     }
 
                     // 4. Criar a Tradução vinculada
                     var translation = new BlogPostTranslation
                     {
                         BlogPostId = post.Id,
-                        // Usamos a cultura atual do sistema
                         Culture = System.Globalization.CultureInfo.CurrentCulture.Name,
                         Title = model.Title,
                         Content = model.Content,
-                        Slug = uniqueSlug, // <--- AQUI: usamos o slug validado e limpo
-                        ImageUrl = fileName
+                        Slug = uniqueSlug,
+                        ImageUrl = fileName // Nome salvo já com .webp
                     };
 
                     _context.BlogPostTranslations.Add(translation);
@@ -159,8 +173,8 @@ namespace MasterStack.Controllers
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    // Realismo: Logue o erro ex.Message internamente, mas não exponha detalhes técnicos ao usuário se for produção
-                    ModelState.AddModelError("", "Ocorreu um erro ao processar o post. Tente novamente.");
+                    // Realismo: Logar o erro internamente aqui (ex: _logger.LogError(ex, "Erro ao criar post"))
+                    ModelState.AddModelError("", "Erro ao processar imagem ou salvar dados. Verifique o formato do arquivo.");
                 }
             }
 

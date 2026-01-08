@@ -3,103 +3,76 @@
 @inject IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Details";
-    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-
-    // Busca tradução atual ou a primeira disponível
-    // 1. Pegamos a tradução que o Controller já escolheu e validou
     var t = ViewBag.CurrentTranslation as BlogPostTranslation;
+    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+    var request = Context.Request;
+    bool isFallback = ViewBag.TranslationWarning ?? false;
 
-    // 2. Pegamos o estado do aviso
-    var isFallback = ViewBag.TranslationWarning != null && (bool)ViewBag.TranslationWarning;
+    if (t != null)
+    {
+        ViewData["Title"] = t.Title;
 
-    // 3. Definimos o título da página
-    ViewData["Title"] = t?.Title ?? "Detalhes do Post";
-    var principalTranslation = Model.Translations.FirstOrDefault();
+        // Limpeza de HTML para Meta Description
+        var plainText = System.Text.RegularExpressions.Regex.Replace(t.Content ?? "", "<.*?>", string.Empty);
+        ViewData["MetaDescription"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
+        ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
+
+        // Lógica de Fallback de Imagem
+        var imageFileName = "/images/default-post.jpg";
+        if (!string.IsNullOrEmpty(t.ImageUrl))
+        {
+            var physicalPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/blog", t.ImageUrl);
+            if (System.IO.File.Exists(physicalPath))
+            {
+                imageFileName = "/uploads/blog/" + t.ImageUrl;
+            }
+        }
+        ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
+        ViewBag.FinalImagePath = imageFileName;
+    }
 }
 
-
-
 <div class="container mt-4">
-    @* Mensagem de Aviso (Apenas se estiver usando Fallback) *@
     @if (isFallback)
     {
-        <div class="alert alert-info py-2">
-            @if (currentCulture.StartsWith("en"))
-            {
-                <text>Content not available in English. Showing original version.</text>
-            }
-            else if (currentCulture.StartsWith("fr"))
-            {
-
-                <text>Contenu non disponible en Français. Affichage de la version originale.</text>
-            }
-            else
-            {
-
-                <text>Conteúdo não disponível em Português. Exibindo original.</text>
-            }
+        <div class="alert alert-info py-2 shadow-sm">
+            <i class="fas fa-info-circle me-2"></i>
+            @Localizer["FallbackWarning", currentCulture]
         </div>
     }
+
     <div class="mb-4">
-
-        <a asp-action="Index"
-           asp-controller="BlogPosts"
-           asp-route-culture="@currentCulture"
-           class="btn btn-outline-secondary">
-
+        <a asp-action="Index" asp-controller="BlogPosts" asp-route-culture="@currentCulture" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left"></i> @Localizer["BackToList"]
-
         </a>
-
     </div>
-    @* @if (ViewBag.TranslationWarning == true)
+
+    @if (t != null)
     {
-        <div class="alert alert-danger border-3">
-            @if (currentCulture.StartsWith("en"))
-            {
-                <text>Content not available in English. Showing original version.</text>
-            }
-            else if (currentCulture.StartsWith("fr"))
-            {
+        <h1 class="mb-3 fw-bold">@t.Title</h1>
 
-                <text>Contenu non disponible en Français. Affichage de la version originale.</text>
-            }
-            else
-            {
-
-                <text>Conteúdo não disponível em Português. Exibindo original.</text>
-            }
-        </div>
-    } *@
-    @if (t  != null)
-    {
-        <h1 class="mb-3">@t?.Title</h1>
-
-        <div>
-            @* <dt class="col-sm-2">Capa</dt> *@
-            <dd class="col-sm-10">
-                @if (t != null && !string.IsNullOrEmpty(t.ImageUrl))
-                {
-                    <img src="/uploads/blog/@t.ImageUrl" class="img-fluid" style="max-width:300px" />
-                }
-                else
-                {
-                    <span>Sem imagem disponível</span>
-                }
-            </dd>
+        <div class="mb-4">
+            <img src="@ViewBag.FinalImagePath" class="img-fluid rounded shadow w-100" style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
         </div>
 
-        <div class="post-content">
-            @Html.Raw(t?.Content)
+        <div class="post-content fs-5 leading-relaxed">
+            @Html.Raw(t.Content)
         </div>
     }
-    else
-    {
-        <p class="text-danger">Conteúdo não encontrado.</p>
-    }
-
-    @* <div class="mt-5 border-top pt-3">
-        <a asp-action="Index" class="btn btn-secondary">Voltar</a>
-    </div> *@
 </div>
+
+@section Head {
+    @* Meta Tags dinâmicas para Redes Sociais *@
+    <meta name="description" content="@ViewData["MetaDescription"]" />
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:image" content="@ViewData["MetaImage"]" />
+    <meta property="og:url" content="@ViewData["CanonicalUrl"]" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    @* Tags hreflang para o Google entender as versões *@
+    @foreach (var alt in Model.Translations)
+    {
+        <link rel="alternate" hreflang="@alt.Culture.ToLower()"
+              href="@Url.Action("Details", "BlogPosts", new { culture = alt.Culture, slug = alt.Slug }, request.Scheme)" />
+    }
+}
