@@ -88,6 +88,15 @@ namespace MasterStack {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Clear search.
+        /// </summary>
+        public static string ClearSearch {
+            get {
+                return ResourceManager.GetString("ClearSearch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Extreme Performance.
         /// </summary>
         public static string Feature1Title {
@@ -237,6 +246,24 @@ namespace MasterStack {
         public static string MobileTitle {
             get {
                 return ResourceManager.GetString("MobileTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Search....
+        /// </summary>
+        public static string SearchPlaceholder {
+            get {
+                return ResourceManager.GetString("SearchPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Results for.
+        /// </summary>
+        public static string SearchResultsFor {
+            get {
+                return ResourceManager.GetString("SearchResultsFor", resourceCulture);
             }
         }
         

@@ -192,4 +192,13 @@
   <data name="AdminBlog" xml:space="preserve">
     <value>Gérer le Blog</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Chercher...</value>
+  </data>
+  <data name="SearchResultsFor" xml:space="preserve">
+    <value>Résultats pour</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Effacer la recherche</value>
+  </data>
 </root>

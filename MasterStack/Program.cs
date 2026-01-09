@@ -121,10 +121,19 @@ app.UseRouting();
 app.UseRequestLocalization(localizationOptions); // DEVE vir antes de UseAuthorization e MapControllerRoute
 app.UseAuthorization();
 
+app.MapControllerRoute(
+    name: "sitemap",
+    pattern: "sitemap.xml",
+    defaults: new { controller = "BlogPosts", action = "Sitemap" });
 // 1. Rota Localizada (Captura idiomas primeiro)
 app.MapControllerRoute(
     name: "localized",
     pattern: "{culture:regex(^[a-z]{{2}}(-[A-Z]{{2}})?$)}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "blog_details",
+    pattern: "{culture}/blog/{slug}",
+    defaults: new { controller = "BlogPosts", action = "Details" });
 
 // 2. Rota Padrão (Fallback para quando não houver cultura na URL)
 app.MapControllerRoute(

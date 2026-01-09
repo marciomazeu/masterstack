@@ -1,9 +1,13 @@
 ﻿using MasterStack.Data; // Ajuste para o seu namespace de dados
 using MasterStack.Models;
+using MasterStack.ViewModels;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using SkiaSharp;
+using System.Text;
 namespace MasterStack.Controllers
 {
     
@@ -12,34 +16,67 @@ namespace MasterStack.Controllers
         private readonly List<string> _supportedCultures = new List<string> { "pt-BR", "en-US", "fr-FR" };
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IStringLocalizer<BlogPostsController> _localizer; // Adicione esta linha
 
-        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
+        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStringLocalizer<BlogPostsController> localizer)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
+            _localizer = localizer; // Atribua ao campo privado
         }
 
         // GET: /pt-BR/BlogPosts
         [HttpGet]
-        public async Task<IActionResult> Index(string culture)
+        public async Task<IActionResult> Index(string culture, int page = 1, string searchTerm = "", bool notfound = false)
         {
-            // 1. Obtemos a cultura atual (ex: "pt-BR", "en-US")
+            if (notfound)
+            {
+                TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
+            }
+
+            int pageSize = 6;
             var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 
-            // Carregamos o Post e TODAS as suas traduções
-            var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-            ViewBag.Languages = languages; // Passa a lista para a View
-
-            // 3. (Opcional) Se quiser que a Index SÓ mostre posts que JÁ TÊM tradução no idioma atual:
-            var posts = await _context.BlogPosts
+            // 1. Iniciamos a Query básica (apenas posts que tenham o idioma atual)
+            var query = _context.BlogPosts
                 .Include(p => p.Translations)
+                .Where(p => p.Translations.Any(t => t.Culture == currentCulture))
+                .AsQueryable(); // Importante para permitir adicionar filtros depois
+
+            // 2. AQUI ESTAVA O PROBLEMA: Aplicar o filtro de busca ANTES de contar e paginar
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                searchTerm = searchTerm.Trim();
+                query = query.Where(p => p.Translations.Any(t =>
+                    t.Culture == currentCulture &&
+                    (t.Title.Contains(searchTerm) || t.Content.Contains(searchTerm))
+                ));
+            }
+
+            // 3. Ordenação (sempre depois dos filtros)
+            query = query.OrderByDescending(p => p.CreatedAt);
+
+            // 4. Agora sim: Contagem total baseada no resultado (com ou sem busca)
+            var totalPosts = await query.CountAsync();
+
+            // 5. Paginação Real (Skip/Take)
+            var posts = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
-            posts = posts.Where(p => p.Translations.Any(t => t.Culture == currentCulture)).ToList();
 
-            // 4. Passamos a lista de idiomas para os botões continuarem a funcionar
+            var viewModel = new BlogPostListViewModel
+            {
+                Posts = posts,
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling(totalPosts / (double)pageSize),
+                Culture = culture
+            };
+
             ViewBag.Languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+            ViewBag.SearchTerm = searchTerm; // Devolve para a View manter o valor no input/links
 
-            return View(posts);
+            return View(viewModel);
         }
 
         // GET: /pt-BR/BlogPosts/post/5
@@ -529,7 +566,41 @@ namespace MasterStack.Controllers
         {
             return _context.BlogPostTranslations.Any(e => e.Id == id);
         }
+
+        [Route("sitemap.xml")]
+        public async Task<IActionResult> Sitemap()
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var posts = await _context.BlogPosts
+                .Include(p => p.Translations)
+                .ToListAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+
+            foreach (var post in posts)
+            {
+                foreach (var trans in post.Translations)
+                {
+                    // Gera a URL para cada tradução do post
+                    var url = $"{baseUrl}/{trans.Culture}/blog/{trans.Slug}";
+                    sb.AppendLine("  <url>");
+                    sb.AppendLine($"    <loc>{url}</loc>");
+                    sb.AppendLine($"    <lastmod>{post.UpdatedAt.ToString("yyyy-MM-dd")}</lastmod>");
+                    sb.AppendLine("    <changefreq>monthly</changefreq>");
+                    sb.AppendLine("    <priority>0.8</priority>");
+                    sb.AppendLine("  </url>");
+                }
+            }
+
+            sb.AppendLine("</urlset>");
+
+            return Content(sb.ToString(), "application/xml");
+        }
     }
 
-       
-}
+    
+
+
+    }

@@ -138,3 +138,40 @@ footer p, footer a {
 .table-responsive {
     overflow: visible !important; /* Permite dropdowns dentro de tabelas */
 }
+/* Customização da Paginação */
+.pagination .page-link {
+    color: #4dabff; /* Aquele azul de alto contraste que definimos */
+    border-radius: 5px;
+    margin: 0 3px;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white !important;
+}
+
+.pagination .page-item.disabled .page-link {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+/* Estilo para a busca na Navbar */
+.input-group input[name="searchTerm"] {
+    transition: all 0.3s ease;
+}
+
+    /* Efeito de expansão ao focar (opcional, dá um toque premium) */
+    .input-group input[name="searchTerm"]:focus {
+        max-width: 250px !important;
+        background-color: #fff !important;
+        color: #000 !important;
+        border-color: #4dabff !important;
+    }
+
+/* Ajuste para mobile: na navbar colapsada, a busca ocupa 100% */
+@media (max-width: 991.98px) {
+    .input-group input[name="searchTerm"] {
+        max-width: 100% !important;
+    }
+}

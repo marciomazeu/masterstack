@@ -11,6 +11,8 @@ namespace MasterStack.Models
         [Display(Name = "Data de Criação")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        public DateTime UpdatedAt { get; set; } = DateTime.Now; // Adicione esta linha
+
         // O Post Pai não tem mais Título, Conteúdo ou ImageUrl.
         // Tudo isso agora vive na lista abaixo (BlogPostTranslations).
         public virtual ICollection<BlogPostTranslation> Translations { get; set; } = new List<BlogPostTranslation>();

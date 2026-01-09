@@ -65,7 +65,24 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#about">@SharedLocalizer["MenuAbout"]</a>
                     </li>
-
+                    <form class="d-flex me-3" asp-controller="BlogPosts" asp-action="Index" method="get">
+                        <input type="hidden" name="culture" value="@System.Globalization.CultureInfo.CurrentCulture.Name" />
+                        <div class="input-group">
+                            <input type="text"
+                                   name="searchTerm"
+                                   class="form-control border-secondary bg-dark text-white shadow-none"
+                                   placeholder="@Localizer["SearchPlaceholder"]"
+                                   value="@Context.Request.Query["searchTerm"]"
+                                   aria-label="Search"
+                                   @* A mágica acontece aqui: *@
+                                   value="@Context.Request.Query["searchTerm"]"
+                                   style="max-width: 180px; border-color: rgba(255,255,255,0.2) !important;">
+                            <button class="btn btn-outline-primary btn-sm" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button
+                         
+                        </div>
+                    </form>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown">
                             @if (currentLang != null)
@@ -78,42 +95,42 @@
                                 <span>Idiomas</span>
                             }
                         </a>
+                        
                         <ul class="dropdown-menu">
                             @foreach (var lang in dbLanguages)
                             {
-                                string targetSlug = null;
-                                string targetController = currentController ?? "Home";
-                                string targetAction = currentAction ?? "Index";
+                                // ... (mantenha sua lógica de targetController e targetAction anterior)
 
-                                // CENÁRIO A: Se estiver no Details do Blog, tenta achar o slug traduzido
-                                if (currentAction == "Details" && currentController == "BlogPosts" && ViewBag.CurrentTranslation != null)
+                                if (currentController == "BlogPosts" && currentAction == "Details")
                                 {
                                     var currentTrans = ViewBag.CurrentTranslation as MasterStack.Models.BlogPostTranslation;
-                                    targetSlug = currentTrans?.BlogPost?.Translations
+                                    var targetSlug = currentTrans?.BlogPost?.Translations
                                     .FirstOrDefault(t => t.Culture.ToLower() == lang.Culture.ToLower())?.Slug;
 
-                                    targetController = "BlogPosts";
-                                    targetAction = "Details";
-                                }
-
-                                <li>
-                                    @if (targetAction == "Details" && !string.IsNullOrEmpty(targetSlug))
+                                    if (!string.IsNullOrEmpty(targetSlug))
                                     {
-                                        @* Link para Post Específico *@
-                                        <a class="dropdown-item" asp-controller="@targetController" asp-action="@targetAction"
+                                        // Se tem tradução, link normal
+                                        <a class="dropdown-item" asp-controller="BlogPosts" asp-action="Details"
                                            asp-route-culture="@lang.Culture" asp-route-slug="@targetSlug">
                                             <span class="fi @lang.FlagClass me-2"></span> @lang.Name
                                         </a>
                                     }
                                     else
                                     {
-                                        @* Link para Home ou Outras Páginas (Mantém onde o usuário está) *@
-                                        <a class="dropdown-item" asp-controller="@targetController" asp-action="@targetAction"
-                                           asp-route-culture="@lang.Culture">
+                                        // Se NÃO tem tradução, manda para Index com um aviso
+                                        <a class="dropdown-item" asp-controller="BlogPosts" asp-action="Index"
+                                           asp-route-culture="@lang.Culture" asp-route-notfound="true">
                                             <span class="fi @lang.FlagClass me-2"></span> @lang.Name
                                         </a>
                                     }
-                                </li>
+                                }
+                                else
+                                {
+                                    @* Link padrão para outras páginas *@
+                                    <a class="dropdown-item" asp-route-culture="@lang.Culture">
+                                        <span class="fi @lang.FlagClass me-2"></span> @lang.Name
+                                    </a>
+                                }
                             }
                         </ul>
                     </li>

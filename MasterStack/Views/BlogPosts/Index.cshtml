@@ -1,19 +1,20 @@
-﻿@using MasterStack.Models
+﻿@model MasterStack.ViewModels.BlogPostListViewModel
 @using Microsoft.AspNetCore.Mvc.Localization
-@model IEnumerable<MasterStack.Models.BlogPost>
 @inject IViewLocalizer Localizer
 
 @{
-    var supportedCultures = new[] { "pt-BR", "en-US", "fr-FR" };
+    
     ViewData["Title"] = Localizer["PageTitle"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 }
-@* @if (TempData["SuccessMessage"] != null)
+@if (TempData["Warning"] != null)
 {
-    <div class="alert alert-success">
-        @TempData["SuccessMessage"]
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-} *@
+}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-4 fw-bold text-primary">@Localizer["LatestPosts"]</h1>
@@ -21,11 +22,37 @@
             <i class="fas fa-plus"></i> @Localizer["NewPostBtn"]
         </a>
     </div>
+    @* Se houver um termo de busca, mostramos o feedback e o botão de limpar *@
+    @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
+    {
+        <div class="alert alert-light border d-flex justify-content-between align-items-center shadow-sm mb-4">
+            <span>
+                <i class="fas fa-search text-muted me-2"></i>
+                @Localizer["SearchResultsFor"]: <strong>"@ViewBag.SearchTerm"</strong>
+            </span>
 
+            <a asp-action="Index"
+               asp-route-culture="@Model.Culture"
+               class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-times me-1"></i> @Localizer["ClearSearch"]
+            </a>
+        </div>
+    }
+    @if (!Model.Posts.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
+            <h3>@Localizer["NoResultsTitle"]</h3>
+            <p class="text-muted">@Localizer["NoResultsMessage"]</p>
+            <a asp-action="Index" asp-route-culture="@Model.Culture" class="btn btn-primary">
+                @Localizer["BackToBlog"]
+            </a>
+        </div>
+    }
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        @if (Model != null && Model.Any())
+        @if (Model != null && Model.Posts.Any())
         {
-            @foreach (var item in Model)
+            @foreach (var item in Model.Posts)
             {
                 var translation = item.Translations.FirstOrDefault(t => t.Culture == currentCulture)
                 ?? item.Translations.FirstOrDefault();
@@ -108,4 +135,46 @@
             }
         }
     </div>
+        @* Controles de Paginação *@
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Navegação de páginas" class="mt-5 mb-5">
+                <ul class="pagination justify-content-center">
+
+                    @* Botão Anterior *@
+                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-culture="@Model.Culture"
+                       asp-route-page="@(Model.CurrentPage - 1)"
+                       asp-route-searchTerm="@ViewBag.SearchTerm">
+                        &laquo;
+                    </a>
+                    </li>
+
+                    @* Números das Páginas *@
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-culture="@Model.Culture"
+                           asp-route-page="@i"
+                           asp-route-searchTerm="@ViewBag.SearchTerm">@i</a>
+                        </li>
+                    }
+
+                    @* Botão Próximo *@
+                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-culture="@Model.Culture"
+                       asp-route-page="@(Model.CurrentPage + 1)"
+                       asp-route-searchTerm="@ViewBag.SearchTerm">
+                        &raquo;
+                    </a>
+                    </li>
+                </ul>
+            </nav>
+        }
 </div>
