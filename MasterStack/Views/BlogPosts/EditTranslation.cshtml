@@ -1,49 +1,55 @@
-﻿@model MasterStack.ViewModels.AddTranslationViewModel
+﻿@model MasterStack.ViewModels.EditTranslationViewModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 
 <div class="container py-5">
-    <div class="card shadow">
-        <div class="card-header bg-info text-white">
-            <h4>Adicionar Tradução (@Model.SelectedCulture)</h4>
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">@Localizer["EditTranslation"] - @Model.Culture.ToUpper()</h4>
         </div>
         <div class="card-body">
-            @* Importante: enctype para upload de arquivo *@
-            <form asp-controller="BlogPosts" asp-action="AddTranslation" asp-route-postId="@Model.BlogPostId" method="post" enctype="multipart/form-data">
-                <input type="hidden" asp-for="BlogPostId" />
-                <input type="hidden" asp-for="SelectedCulture" />
-
-                @* Remova a repetição abaixo que estava no seu código *@
-                @* <input type="hidden" asp-for="BlogPostId" value="@Model.BlogPostId" /> *@
-
-                @* Se quiser ter 100% de certeza, adicione este input desabilitado para conferência *@
-                <div class="mb-3">
-                    <label class="form-label text-muted">ID do Post Pai (Apenas leitura)</label>
-                    <input class="form-control bg-light" value="@Model.BlogPostId" readonly />
-                </div>
-
-                
+            <form asp-action="EditTranslation" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TranslationId" />
+                <input type="hidden" asp-for="Culture" />
 
                 <div class="mb-3">
-                    <label asp-for="Title" class="form-label fw-bold">Título</label>
+                    <label asp-for="Title" class="form-label">@Localizer["Title"]</label>
                     <input asp-for="Title" class="form-control" />
                     <span asp-validation-for="Title" class="text-danger"></span>
                 </div>
 
-                
+                <div class="mb-3">
+                    <label class="form-label">@Localizer["CurrentImage"]</label>
+                    @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                    {
+                        <div class="mb-2">
+                            <img src="~/uploads/blog/@Model.CurrentImageUrl" alt="Current Image" class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small">@Localizer["NoImage"]</p>
+                    }
+                </div>
 
                 <div class="mb-3">
-                    <label asp-for="Content" class="form-label fw-bold">Conteúdo</label>
-                    <textarea asp-for="Content" class="form-control" rows="10"></textarea>
+                    <label asp-for="NewImage" class="form-label">@Localizer["UploadNewImage"]</label>
+                    <input asp-for="NewImage" type="file" class="form-control" />
+                    <small class="text-muted">@Localizer["ImageHelpText"]</small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Content" class="form-label fw-bold">Conteúdo da Tradução</label>
+                    @* O segredo está em deixar o asp-for cuidar do binding. 
+       O TinyMCE vai ler o valor que estiver dentro da tag. *@
+                    <textarea asp-for="Content" class="form-control" rows="15"></textarea>
                     <span asp-validation-for="Content" class="text-danger"></span>
                 </div>
-                @* Campo de Imagem igual ao Create *@
-                <div class="mb-3">
-                    <label asp-for="ImageFile" class="form-label fw-bold">Imagem do Post</label>
-                    <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
-                    <small class="text-muted">Se selecionar uma imagem, ela atualizará a imagem global do post.</small>
-                </div>
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <a asp-controller="Admin"asp-action="Dashboard" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary px-5">Salvar em @Model.SelectedCulture</button>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">@Localizer["Save"]</button>
+                    <a asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@Model.Culture" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
                 </div>
             </form>
         </div>

@@ -17,6 +17,7 @@ namespace MasterStack.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            
             // MANTENHA ESTA LINHA SEMPRE NO TOPO DO MÉTODO
             base.OnModelCreating(modelBuilder);
 
@@ -39,6 +40,9 @@ namespace MasterStack.Data
                 .HasForeignKey(t => t.Culture);
 
             // --- ATÉ AQUI ---
+            modelBuilder.Entity<BlogPostTranslation>()
+    .HasIndex(t => new { t.BlogPostId, t.Culture })
+    .IsUnique();
         }
 
     }

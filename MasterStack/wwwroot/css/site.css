@@ -175,3 +175,11 @@ footer p, footer a {
         max-width: 100% !important;
     }
 }
+#postTitleToDelete {
+    word-wrap: break-word;
+    max-height: 100px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limita a 2 linhas e coloca reticências */
+    -webkit-box-orient: vertical;
+}

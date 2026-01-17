@@ -18,9 +18,7 @@
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-4 fw-bold text-primary">@Localizer["LatestPosts"]</h1>
-        <a href="/@currentCulture/BlogPosts/Create" class="btn btn-success btn-lg shadow-sm">
-            <i class="fas fa-plus"></i> @Localizer["NewPostBtn"]
-        </a>
+        
     </div>
     @* Se houver um termo de busca, mostramos o feedback e o botão de limpar *@
     @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
@@ -44,9 +42,9 @@
             <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
             <h3>@Localizer["NoResultsTitle"]</h3>
             <p class="text-muted">@Localizer["NoResultsMessage"]</p>
-            <a asp-action="Index" asp-route-culture="@Model.Culture" class="btn btn-primary">
+            @* <a asp-action="Index" asp-route-culture="@Model.Culture" class="btn btn-primary">
                 @Localizer["BackToBlog"]
-            </a>
+            </a> *@
         </div>
     }
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
@@ -66,7 +64,7 @@
                                 @* Note que agora usamos 'translation' em vez de 'item' *@
                                 @if (translation != null && !string.IsNullOrEmpty(translation.ImageUrl))
                                 {
-                                    <img src="/uploads/blog/@translation.ImageUrl" class="card-img-top h-100 w-100 object-fit-cover" alt="@translation.Title">
+                                    <img src="@translation.ImageUrl" class="card-img-top h-100 w-100 object-fit-cover" alt="@translation.Title">
                                 }
                                 else
                                 {
@@ -94,39 +92,6 @@
                                        class="btn btn-primary">
                                         @Localizer["ReadMore"]
                                     </a>
-                                </div>
-                            </div>
-
-                            @* Footer com botões de tradução e edição *@
-                            <div class="card-footer bg-light border-top-0 pb-3">
-                                <div class="d-flex justify-content-between gap-2 mb-2">
-                                    <a asp-action="Edit" 
-                                    asp-route-id="@translation.Id" 
-                                    asp-route-culture="@currentCulture" 
-                                    class="btn btn-sm btn-outline-primary flex-grow-1">@Localizer["Edit"]</a>
-                                    @* <a href="/@currentCulture/BlogPosts/Delete/@item.Id" class="btn btn-sm btn-outline-danger flex-grow-1">Apagar</a> *@
-                                    @* Botão para apagar apenas esta tradução específica *@
-                                    <form asp-action="DeleteTranslation" asp-route-id="@translation.Id" method="post"
-                                          onsubmit="return confirm('Tem certeza que deseja apagar esta tradução? Se for a última, o post sumirá completamente.');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Apagar esta versão</button>
-                                    </form>
-                                </div>
-
-                                <div class="d-flex flex-wrap gap-1">
-                                    @foreach (var lang in (List<MasterStack.Models.Language>)ViewBag.Languages)
-                                    {
-                                        bool jaExisteTraducao = item.Translations.Any(t => t.Culture == lang.Culture);
-                                        if (lang.Culture != currentCulture && !jaExisteTraducao)
-                                        {
-                                            <a asp-action="AddTranslation"
-                                               asp-route-id="@item.Id"
-                                               asp-route-targetCulture="@lang.Culture"
-                                               class="btn btn-xs btn-light border d-inline-flex align-items-center p-1" style="font-size: 0.75rem;">
-                                                <span class="@lang.FlagClass me-1"></span>
-                                                <span>+ @lang.Name</span>
-                                            </a>
-                                        }
-                                    }
                                 </div>
                             </div>
                         </div>

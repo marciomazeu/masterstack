@@ -23,6 +23,19 @@ builder.Services.AddControllersWithViews()
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();
 
+builder.Services.AddAuthentication("MyCookieAuth")
+    .AddCookie("MyCookieAuth", options =>
+    {
+        options.Cookie.Name = "MasterStackAdmin";
+        options.Events.OnRedirectToLogin = context =>
+        {
+            // Tenta pegar a cultura da rota ou usa pt-BR como padrão
+            var culture = context.HttpContext.Request.RouteValues["culture"] ?? "pt-BR";
+            var loginUrl = $"/{culture}/Account/Login?ReturnUrl={context.Request.Path}";
+            context.Response.Redirect(loginUrl);
+            return Task.CompletedTask;
+        };
+    });
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -56,9 +69,14 @@ builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        new[] { "image/svg+xml", "application/javascript", "text/css" });
+        new[] {
+            "text/html",
+            "text/css",
+            "application/javascript",
+            "image/svg+xml",
+            "application/json"
+        });
 });
-
 var app = builder.Build();
 
 // 2. Configura os idiomas (PT-BR, EN-CA, FR-CA)
@@ -109,36 +127,34 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-
-// A ordem das linhas abaixo é CRÍTICA:
-app.UseResponseCompression();
+//app.UseResponseCompression();
 app.UseStaticFiles();
+
+// 1. PRIMEIRO: Localiza para onde a requisição vai
 app.UseRouting();
-app.UseRequestLocalization(localizationOptions); // DEVE vir antes de UseAuthorization e MapControllerRoute
+
+// 2. SEGUNDO: Define o idioma baseado na rota localizada
+app.UseRequestLocalization(localizationOptions);
+
+// 3. TERCEIRO: Identifica quem é o usuário (Cookie)
+app.UseAuthentication();
+
+// 4. QUARTO: Verifica se o usuário tem permissão ([Authorize])
 app.UseAuthorization();
 
+// 5. POR ÚLTIMO: Executa o Controller encontrado
 app.MapControllerRoute(
     name: "sitemap",
     pattern: "sitemap.xml",
     defaults: new { controller = "BlogPosts", action = "Sitemap" });
-// 1. Rota Localizada (Captura idiomas primeiro)
+
 app.MapControllerRoute(
     name: "localized",
     pattern: "{culture:regex(^[a-z]{{2}}(-[A-Z]{{2}})?$)}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
-    name: "blog_details",
-    pattern: "{culture}/blog/{slug}",
-    defaults: new { controller = "BlogPosts", action = "Details" });
-
-// 2. Rota Padrão (Fallback para quando não houver cultura na URL)
-app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 
 app.Run();

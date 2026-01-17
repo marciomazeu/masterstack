@@ -19,6 +19,7 @@
 	  </PackageReference>
 	  <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.22" />
 	  <PackageReference Include="SkiaSharp" Version="3.119.1" />
+	  <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="3.119.1" />
 	</ItemGroup>
 
 	<ItemGroup>

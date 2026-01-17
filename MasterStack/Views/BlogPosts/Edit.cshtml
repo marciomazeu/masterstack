@@ -1,55 +1,25 @@
-﻿@model MasterStack.Models.BlogPostTranslation
+﻿@using MasterStack.ViewModels
+@model EditTranslationViewModel
 
-@{
-    ViewData["Title"] = "Edit Translation";
-    var blogPost = (MasterStack.Models.BlogPost)ViewBag.BlogPost;
-    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-}
+<form asp-action="EditTranslation" method="post" enctype="multipart/form-data">
+    <input type="hidden" asp-for="TranslationId" />
 
-<div class="row">
-    <div class="col-md-8">
-        @* Forçamos o destino exato para onde os dados devem ir *@
-        
-
-        <form asp-action="Edit" enctype="multipart/form-data" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            @* ESSENCIAIS: Sem estes 4, o Update falha *@
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="BlogPostId" />
-            <input type="hidden" asp-for="Culture" />
-            <input type="hidden" asp-for="ImageUrl" />
-            <input type="hidden" asp-for="Slug" />
-
-            <div class="mb-3">
-                <label>Capa desta Tradução (@Model.Culture)</label>
-                @if (!string.IsNullOrEmpty(Model.ImageUrl))
-                {
-                    <img src="~/uploads/blog/@Model.ImageUrl" width="200" class="d-block mb-2" />
-                }
-                <input type="file" name="novaImagem" class="form-control" />
-            </div>
-
-                       <div class="mb-3">
-                <label>Título Traduzido</label>
-                <input asp-for="Title" class="form-control" />
-            </div>
-
-            <div class="mb-3">
-                <label>Conteúdo da Tradução</label>
-                <textarea asp-for="Content" class="form-control"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Salvar Tradução Independente</button>
-        </form>
+    <div class="mb-3">
+        <label>@Localizer["Título"] (@Model.Culture)</label>
+        <input asp-for="Title" class="form-control" />
     </div>
 
-    @* Mostra a imagem original ao lado para ajudar na tradução *@
-    @if (blogPost != null && !string.IsNullOrEmpty(@Model.ImageUrl))
-    {
-        @* O ~/ garante que o ASP.NET parta da raiz do site, ignorando o /fr-CA/ *@
-        <img src="~/uploads/@Model.ImageUrl.Replace("/uploads/", "")" class="img-fluid" />
-    }
-</div>
+    <div class="mb-3">
+        <label>@Localizer["Imagem Atual"]</label>
+        @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+        {
+            <img src="@Model.CurrentImageUrl" width="200" class="d-block mb-2" />
+        }
+        <input asp-for="NewImage" type="file" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">@Localizer["Salvar Alterações"]</button>
+</form>
 
 
 @section Scripts {

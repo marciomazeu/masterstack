@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using SkiaSharp;
 using System.Text;
+using System.Text.RegularExpressions;
 namespace MasterStack.Controllers
 {
     
@@ -84,7 +85,6 @@ namespace MasterStack.Controllers
         [Route("{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)
         {
-            // 1. Busca a tradução exata pelo slug fornecido
             var currentTranslation = await _context.BlogPostTranslations
                 .Include(t => t.BlogPost)
                 .ThenInclude(p => p.Translations)
@@ -92,32 +92,44 @@ namespace MasterStack.Controllers
 
             if (currentTranslation == null) return NotFound();
 
-            bool isFallback = false;
-
-            // 2. REALISMO: O slug existe, mas é da cultura certa?
-            // Se o slug for "receita-de-bolo" (PT) mas a URL pedir "en-US"
+            // 1. Lógica de Redirecionamento (Já estava ótima)
             if (currentTranslation.Culture.ToLower() != culture.ToLower())
             {
-                // Tenta ver se o "Pai" deste post tem uma tradução para a cultura pedida (en-US)
                 var targetTranslation = currentTranslation.BlogPost.Translations
                     .FirstOrDefault(t => t.Culture.ToLower() == culture.ToLower());
 
                 if (targetTranslation != null)
                 {
-                    // Redireciona para o slug correto daquela língua! (SEO Friendly)
                     return RedirectToAction(nameof(Details), new
                     {
                         culture = targetTranslation.Culture,
                         slug = targetTranslation.Slug
                     });
                 }
-
-                // Se o pai não tem tradução para a língua pedida, aí sim usamos o Fallback
-                isFallback = true;
+                ViewBag.TranslationWarning = true;
             }
 
+            // 2. LÓGICA DA IMAGEM (Onde estava o erro)
+            var imageFileName = "/uploads/default-post.jpg";
+            var request = HttpContext.Request;
+
+            if (!string.IsNullOrEmpty(currentTranslation.ImageUrl))
+            {
+                // Usando o ambiente injetado para validar o arquivo na wwwroot
+                var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, currentTranslation.ImageUrl.TrimStart('/'));
+
+                if (System.IO.File.Exists(physicalPath))
+                {
+                    imageFileName = currentTranslation.ImageUrl;
+                }
+            }
+
+            // Para as Meta Tags (Social Media)
+            ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName.Replace("\\", "/")}";
+            // Para a View usar no <img> tag
+            ViewBag.FinalImagePath = imageFileName;
+
             ViewBag.CurrentTranslation = currentTranslation;
-            ViewBag.TranslationWarning = isFallback;
 
             return View(currentTranslation.BlogPost);
         }
@@ -139,7 +151,7 @@ namespace MasterStack.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(BlogPostCreateViewModel model)
+        public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture)
         {
             if (ModelState.IsValid)
             {
@@ -158,13 +170,17 @@ namespace MasterStack.Controllers
                     string? fileName = null;
                     if (model.ImageFile != null && model.ImageFile.Length > 0)
                     {
-                        // Forçamos a extensão .webp para o banco e para o arquivo
+                        // Apenas o nome do arquivo
                         fileName = Guid.NewGuid().ToString() + ".webp";
-                        var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
 
-                        if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+                        // CAMINHO DA PASTA (Sem o nome do arquivo aqui!)
+                        var uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
 
-                        var filePath = Path.Combine(uploadPath, fileName);
+                        // Cria a pasta se não existir
+                        if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+
+                        // CAMINHO DO ARQUIVO FINAL
+                        var filePath = Path.Combine(uploadFolder, fileName);
 
                         // --- INÍCIO DA LÓGICA SKIASHARP ---
                         using (var inputMemoryStream = new MemoryStream())
@@ -178,25 +194,26 @@ namespace MasterStack.Controllers
                                 if (bitmap == null) throw new Exception("Formato de imagem inválido.");
 
                                 using (var image = SKImage.FromBitmap(bitmap))
-                                using (var data = image.Encode(SKEncodedImageFormat.Webp, 75)) // Qualidade 75 (Lighthouse ama isso)
+                                using (var data = image.Encode(SKEncodedImageFormat.Webp, 75))
                                 using (var saveStream = System.IO.File.OpenWrite(filePath))
                                 {
-                                    data.SaveTo(saveStream);
+                                    data.SaveTo(saveStream); // Grava o arquivo WebP real
                                 }
                             }
                         }
-                        // --- FIM DA LÓGICA SKIASHARP ---
                     }
 
                     // 4. Criar a Tradução vinculada
+                    //culture ??= System.Globalization.CultureInfo.CurrentCulture.Name;
+                    culture ??= Request.RouteValues["culture"]?.ToString() ?? "pt-BR"; // Prioriza a cultura da URL
                     var translation = new BlogPostTranslation
                     {
                         BlogPostId = post.Id,
-                        Culture = System.Globalization.CultureInfo.CurrentCulture.Name,
+                        Culture = culture,
                         Title = model.Title,
                         Content = model.Content,
                         Slug = uniqueSlug,
-                        ImageUrl = fileName // Nome salvo já com .webp
+                        ImageUrl = "/uploads/blog/" + fileName // Nome salvo já com .webp
                     };
 
                     _context.BlogPostTranslations.Add(translation);
@@ -205,7 +222,10 @@ namespace MasterStack.Controllers
                     await transaction.CommitAsync();
 
                     TempData["Success"] = "Post criado com sucesso!";
-                    return RedirectToAction(nameof(Index));
+                    //return RedirectToAction(nameof(Index));
+                    // Pegamos a cultura da rota atual para garantir o redirecionamento correto
+                    //var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+                    return RedirectToAction("Dashboard", "Admin", new { culture = culture });
                 }
                 catch (Exception ex)
                 {
@@ -354,6 +374,87 @@ namespace MasterStack.Controllers
             return View(translation);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> EditTranslation(int id)
+        {
+            var translation = await _context.BlogPostTranslations
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (translation == null) return NotFound();
+
+            var model = new EditTranslationViewModel
+            {
+                TranslationId = translation.Id,
+                Culture = translation.Culture,
+                Title = translation.Title,
+                Content = translation.Content,
+                CurrentImageUrl = translation.ImageUrl // Agora pegamos da tradução!
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditTranslation(EditTranslationViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var translation = await _context.BlogPostTranslations
+                .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
+
+            if (translation == null) return NotFound();
+
+            translation.Title = model.Title;
+            translation.Content = model.Content;
+
+            // Decisão realista: Só mude o slug se o título realmente mudou
+            // translation.Slug = GenerateSlug(model.Title); 
+
+            if (model.NewImage != null && model.NewImage.Length > 0)
+            {
+                // 1. Guardamos o caminho da imagem antiga antes de mudar o banco
+                string oldImagePath = translation.ImageUrl;
+
+                // 2. Processo de salvar a NOVA imagem (seu código atual)
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.NewImage.FileName);
+                string newPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads/blog", fileName);
+
+                // Salva o novo
+                using (var stream = new FileStream(newPath, FileMode.Create))
+                {
+                    await model.NewImage.CopyToAsync(stream);
+                }
+                // 3. Atualiza o banco com o novo caminho
+                translation.ImageUrl = "/uploads/blog/" + fileName;
+
+                // 4. LÓGICA DE LIMPEZA: Apaga a antiga do disco
+                if (!string.IsNullOrEmpty(oldImagePath) && !oldImagePath.Contains("default-post.jpg"))
+                {
+                    var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, oldImagePath.TrimStart('/'));
+                    if (System.IO.File.Exists(fullOldPath))
+                    {
+                        System.IO.File.Delete(fullOldPath);
+                    }
+                }
+
+                // SALVE O CAMINHO COMPLETO
+                //translation.ImageUrl = "/uploads/blog/" + uniqueFileName;
+            }
+
+            try
+            {
+                // O SaveChanges já entende as mudanças no objeto 'translation'
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                ModelState.AddModelError("", "Este registro foi alterado por outro usuário. Recarregue a página.");
+                return View(model);
+            }
+        }
+
         // GET: BlogPosts/Delete/5
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -420,16 +521,17 @@ namespace MasterStack.Controllers
 
         // 1. O GET (Para abrir o formulário)
         [HttpGet]
-        public async Task<IActionResult> AddTranslation(int id, string targetCulture)
+        [Route("{culture}/Admin/AddTranslation/{postId}")]
+        public async Task<IActionResult> AddTranslation(int postId, string targetCulture)
         {
-            var post = await _context.BlogPosts.FindAsync(id);
+            var post = await _context.BlogPosts.FindAsync(postId);
             if (post == null) return NotFound();
 
             // MUDANÇA AQUI: Use BlogPostTranslationViewModel em vez de Create
-            var viewModel = new BlogPostTranslation
+            var viewModel = new AddTranslationViewModel
             {
-                BlogPostId = id,
-                Culture = targetCulture
+                BlogPostId = postId,
+                SelectedCulture = targetCulture
             };
 
             var idiomas = await _context.Languages.Where(l => l.IsActive).ToListAsync();
@@ -438,117 +540,154 @@ namespace MasterStack.Controllers
             return View(viewModel);
         }
 
+        //[HttpPost]
+        //[Route("{culture}/Admin/AddTranslation/{postId}")]
+        //public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)
+        //{
+        //    // Verificação de Realismo: O post já tem esse idioma?
+        //    bool alreadyExists = await _context.BlogPostTranslations
+        //        .AnyAsync(t => t.BlogPostId == model.BlogPostId && t.Culture == model.SelectedCulture);
+
+        //    if (alreadyExists)
+        //    {
+        //        ModelState.AddModelError("SelectedCulture", "Este post já possui uma tradução para o idioma selecionado.");
+        //        return View(model);
+        //    }
+        //    // 1. Onde está o arquivo? Precisamos recebê-lo do model (ViewModel)
+        //    string? fileName = null;
+        //    string? dbPath = null; // Criamos uma variável para o caminho do banco
+
+        //    if (model.ImageFile != null && model.ImageFile.Length > 0)
+        //    {
+        //        // Gerar o nome do arquivo
+        //        fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.ImageFile.FileName);
+        //        var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/blog", fileName);
+
+        //        // Salvar fisicamente na pasta
+        //        using (var stream = new FileStream(path, FileMode.Create))
+        //        {
+        //            await model.ImageFile.CopyToAsync(stream);
+        //        }
+        //        dbPath = "/uploads/blog/" + fileName;
+        //    }
+
+        //    // 2. Agora sim, criamos o objeto com dados REAIS e o nome da imagem
+        //    var translation = new BlogPostTranslation
+        //    {
+        //        BlogPostId = model.BlogPostId,
+        //        Culture = model.SelectedCulture, // Use a cultura que vem do formulário, não trave em "pt-BR"
+        //        Title = model.Title,
+        //        Content = model.Content,
+        //        Slug = model.Title?.ToLower().Trim().Replace(" ", "-") ?? "slug-" + DateTime.Now.Ticks,
+        //        ImageUrl = dbPath // Agora a variável existe e tem o nome do arquivo!
+        //    };
+
+        //    _context.BlogPostTranslations.Add(translation);
+        //    await _context.SaveChangesAsync();
+
+        //    TempData["SuccessMessage"] = "Tradução e imagem salvas com sucesso!";
+        //    return RedirectToAction("Dashboard", "Admin");
+        //}
         [HttpPost]
-        public async Task<IActionResult> AddTranslation(BlogPostTranslation model)
+        [Route("{culture}/Admin/AddTranslation/{postId}")]
+        public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)
         {
-            // 1. Onde está o arquivo? Precisamos recebê-lo do model (ViewModel)
-            string? fileName = null;
+            if (!ModelState.IsValid) return View(model);
 
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            // Verificação de existência
+            bool alreadyExists = await _context.BlogPostTranslations
+                .AnyAsync(t => t.BlogPostId == model.BlogPostId && t.Culture == model.SelectedCulture);
+
+            if (alreadyExists)
             {
-                // Gerar o nome do arquivo
-                fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.ImageFile.FileName);
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/blog", fileName);
-
-                // Salvar fisicamente na pasta
-                using (var stream = new FileStream(path, FileMode.Create))
-                {
-                    await model.ImageFile.CopyToAsync(stream);
-                }
+                ModelState.AddModelError("SelectedCulture", "Este idioma já existe para este post.");
+                return View(model);
             }
 
-            // 2. Agora sim, criamos o objeto com dados REAIS e o nome da imagem
+            // Processa a imagem usando o novo método
+            string? dbImagePath = null;
+            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            {
+                dbImagePath = await ProcessAndSaveWebP(model.ImageFile);
+            }
+
             var translation = new BlogPostTranslation
             {
                 BlogPostId = model.BlogPostId,
-                Culture = model.Culture, // Use a cultura que vem do formulário, não trave em "pt-BR"
+                Culture = model.SelectedCulture,
                 Title = model.Title,
                 Content = model.Content,
                 Slug = model.Title?.ToLower().Trim().Replace(" ", "-") ?? "slug-" + DateTime.Now.Ticks,
-                ImageUrl = fileName // Agora a variável existe e tem o nome do arquivo!
+                ImageUrl = dbImagePath // Salva o caminho completo: /uploads/blog/arquivo.webp
             };
 
             _context.BlogPostTranslations.Add(translation);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Tradução e imagem salvas com sucesso!";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Dashboard", "Admin", new { culture = model.SelectedCulture });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteTranslation(int id)
+        public async Task<IActionResult> DeleteTranslation(int id) // 'id' aqui é o ID da Tradução
         {
-            // 1. Busca os dados com rastreamento completo
-            var translation = await _context.BlogPostTranslations
-                .Include(t => t.BlogPost)
-                .ThenInclude(p => p.Translations)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var translation = await _context.BlogPostTranslations.FindAsync(id);
 
-            if (translation == null)
+            if (translation == null) return NotFound();
+
+            // 1. Descobrimos o ID do Post pai
+            var blogPostId = translation.BlogPostId;
+
+            // 2. Contamos quantas traduções esse Post específico tem
+            var totalTraducoes = await _context.BlogPostTranslations
+                .CountAsync(t => t.BlogPostId == blogPostId);
+
+            // 3. Trava de segurança: não apagar a última
+            if (totalTraducoes <= 1)
             {
-                TempData["Error"] = "Tradução não encontrada.";
-                return RedirectToAction(nameof(Index));
+                // Se for a última, avisamos o usuário
+                TempData["Error"] = "Você não pode apagar a última tradução. Apague o Post completo se desejar.";
+                return RedirectToAction("Dashboard", "Admin");
             }
 
-            var blogPost = translation.BlogPost;
-            var cultureName = translation.Culture;
-            string imagePath = null;
-
-            // Guardamos o caminho mas não apagamos ainda!
+            // 4. Se passou na trava, deleta a imagem física e o registro
+            // Apaga o arquivo físico primeiro
             if (!string.IsNullOrEmpty(translation.ImageUrl))
             {
-                imagePath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog", translation.ImageUrl);
+                var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, translation.ImageUrl.TrimStart('/'));
+                if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
             }
 
-            // Iniciamos uma Transação de Banco de Dados
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            _context.BlogPostTranslations.Remove(translation);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Dashboard", "Admin");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePost(int id)
+        {
+            var post = await _context.BlogPosts
+                .Include(p => p.Translations)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (post == null) return NotFound();
+
+            // REALISMO: Antes de apagar do banco, apague as imagens físicas do servidor
+            foreach (var translation in post.Translations)
             {
-                try
+                if (!string.IsNullOrEmpty(translation.ImageUrl))
                 {
-                    // 2. Remove a tradução do banco primeiro
-                    _context.BlogPostTranslations.Remove(translation);
-
-                    // 3. Se for a última tradução, remove o pai
-                    if (blogPost.Translations.Count <= 1)
-                    {
-                        _context.BlogPosts.Remove(blogPost);
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    // 4. SÓ AGORA tentamos apagar o arquivo físico
-                    if (imagePath != null && System.IO.File.Exists(imagePath))
-                    {
-                        try
-                        {
-                            System.IO.File.Delete(imagePath);
-                        }
-                        catch (IOException ex)
-                        {
-                            // Erro realista: O arquivo está sendo usado por outro processo
-                            // Logamos o erro mas permitimos que a transação do banco continue? 
-                            // Melhor avisar o usuário que o registro sumiu mas o arquivo ficou "preso".
-                            TempData["Error"] = "O registro foi apagado, mas a imagem está em uso pelo sistema e não pôde ser removida do disco.";
-                        }
-                    }
-
-                    // Se chegou aqui sem exceção fatal, confirma tudo no banco
-                    await transaction.CommitAsync();
-
-                    if (TempData["Error"] == null)
-                        TempData["Success"] = "Exclusão realizada com sucesso.";
-
-                    return RedirectToAction(nameof(Index), new { culture = cultureName });
-                }
-                catch (Exception ex)
-                {
-                    // Se houver qualquer erro no banco, desfaz TUDO (Rollback)
-                    await transaction.RollbackAsync();
-                    TempData["Error"] = "Erro crítico de banco de dados. Nada foi apagado. Detalhes: " + ex.Message;
-                    return RedirectToAction(nameof(Index));
+                    string path = Path.Combine(_webHostEnvironment.WebRootPath, translation.ImageUrl.TrimStart('/'));
+                    if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
                 }
             }
+
+            _context.BlogPosts.Remove(post);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Dashboard", "Admin");
         }
 
         public async Task<IActionResult> Admin(string culture = "pt-BR")
@@ -597,6 +736,44 @@ namespace MasterStack.Controllers
             sb.AppendLine("</urlset>");
 
             return Content(sb.ToString(), "application/xml");
+        }
+
+        private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
+        {
+            try
+            {
+                // 1. Define o nome e caminhos
+                string fileName = Guid.NewGuid().ToString() + ".webp";
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
+
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                string physicalPath = Path.Combine(uploadsFolder, fileName);
+
+                // 2. Conversão Real de Bytes para WebP
+                using (var inputStream = imageFile.OpenReadStream())
+                using (var managedStream = new SKManagedStream(inputStream))
+                using (var bitmap = SKBitmap.Decode(managedStream))
+                {
+                    if (bitmap == null) return null; // Arquivo corrompido ou formato inválido
+
+                    // Opcional: Redimensionar se for muito grande (ex: max 1200px largura)
+                    // Isso economiza MUITO espaço e banda
+                    using (var image = SKImage.FromBitmap(bitmap))
+                    using (var data = image.Encode(SKEncodedImageFormat.Webp, 80)) // Qualidade 80 (Equilíbrio perfeito)
+                    using (var outputStream = System.IO.File.OpenWrite(physicalPath))
+                    {
+                        data.SaveTo(outputStream);
+                    }
+                }
+
+                // Retorna o caminho virtual para o banco
+                return "/uploads/blog/" + fileName;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 

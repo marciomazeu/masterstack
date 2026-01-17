@@ -1,34 +1,36 @@
-﻿@using Microsoft.AspNetCore.Mvc.Localization
+﻿@using Microsoft.AspNetCore.Hosting
+@using Microsoft.AspNetCore.Mvc.Localization
 @model MasterStack.Models.BlogPost
 @inject IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _webHostEnvironment
 
 @{
+    // Defina as variáveis globais aqui, fora de qualquer IF
+    var request = Context.Request;
     var t = ViewBag.CurrentTranslation as BlogPostTranslation;
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-    var request = Context.Request;
     bool isFallback = ViewBag.TranslationWarning ?? false;
+    var imageFileName = "/uploads/default-post.jpg";
 
     if (t != null)
     {
         ViewData["Title"] = t.Title;
+        // ... (resto da sua lógica de limpeza de HTML) ...
 
-        // Limpeza de HTML para Meta Description
-        var plainText = System.Text.RegularExpressions.Regex.Replace(t.Content ?? "", "<.*?>", string.Empty);
-        ViewData["MetaDescription"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
-        ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
-
-        // Lógica de Fallback de Imagem
-        var imageFileName = "/images/default-post.jpg";
         if (!string.IsNullOrEmpty(t.ImageUrl))
         {
-            var physicalPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/blog", t.ImageUrl);
+            var relativePath = t.ImageUrl.TrimStart('~').TrimStart('/');
+            var physicalPath = System.IO.Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
+
             if (System.IO.File.Exists(physicalPath))
             {
-                imageFileName = "/uploads/blog/" + t.ImageUrl;
+                imageFileName = t.ImageUrl;
             }
         }
-        ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
+
         ViewBag.FinalImagePath = imageFileName;
+        ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
+        ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
     }
 }
 

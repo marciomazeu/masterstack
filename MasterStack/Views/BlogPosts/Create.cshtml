@@ -16,13 +16,23 @@
     <h1>@Localizer["CreatePageTitle"]</h1>
     <hr />
     @*abaixo uma nova versao do form*@
-
+    <div asp-validation-summary="All" class="text-danger"></div>
     <div class="row">
         <div class="col-md-8">
                 @* Adicione explicitamente a cultura na rota do formulário *@
-            <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <form asp-action="Create" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="mb-3">
+                    <label asp-for="SelectedCulture" class="form-label">Idioma Inicial</label>
+                    <select asp-for="SelectedCulture" class="form-select" required>
+                        <option value="pt-BR">Português</option>
+                        <option value="en-US">Inglês</option>
+                        <option value="es-ES">Espanhol</option>
+                    </select>
+                    <span asp-validation-for="SelectedCulture" class="text-danger"></span>
+                </div>
 
                 <div class="mb-3">
                     <label asp-for="Title" class="form-label">@Localizer["TitleLabel"]</label>
