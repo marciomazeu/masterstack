@@ -7,84 +7,147 @@
     ViewData["Title"] = Localizer["CreatePageTitle"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 }
-}
+
 <style>
     .tox-tinymce-aux {
         z-index: 999999 !important;
-    }</style>
-<div class="container mt-4">
-    <h1>@Localizer["CreatePageTitle"]</h1>
-    <hr />
-    @*abaixo uma nova versao do form*@
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <div class="row">
-        <div class="col-md-8">
-                @* Adicione explicitamente a cultura na rota do formulário *@
-            <form asp-action="Create" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data">
-                @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    }
 
-                <div class="mb-3">
-                    <label asp-for="SelectedCulture" class="form-label">Idioma Inicial</label>
-                    <select asp-for="SelectedCulture" class="form-select" required>
-                        <option value="pt-BR">Português</option>
-                        <option value="en-US">Inglês</option>
-                        <option value="es-ES">Espanhol</option>
-                    </select>
-                    <span asp-validation-for="SelectedCulture" class="text-danger"></span>
-                </div>
+    .image-preview-wrapper {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: 0.3s;
+    }
 
-                <div class="mb-3">
-                    <label asp-for="Title" class="form-label">@Localizer["TitleLabel"]</label>
-                    <input asp-for="Title" class="form-control" placeholder="@Localizer["TitlePlaceholder"]" />
-                    <span asp-validation-for="Title" class="text-danger"></span>
-                </div>
+        .image-preview-wrapper:hover {
+            background: #e9ecef;
+        }
 
-                <div class="mb-3">
-                    <label asp-for="Content" class="form-label">@Localizer["ContentLabel"]</label>
-                    <textarea asp-for="Content" id="Editor" class="form-control" rows="15"></textarea>
-                    <span asp-validation-for="Content" class="text-danger"></span>
-                </div>
-                <div class="mb-3">
-                    <label asp-for="ImageFile" class="form-label">Selecionar Imagem</label>
-                    <input asp-for="ImageFile" type="file" class="form-control" />
-                    <span asp-validation-for="ImageFile" class="text-danger"></span>
-                </div>
-                               <div class="form-group mt-4">
-                    <button type="submit" onclick="if(typeof tinymce !== 'undefined') tinymce.triggerSave();" class="btn btn-success w-100">@Localizer["SaveBtn"]</button>
-                    <a asp-action="Index" class="btn btn-secondary">@Localizer["BackBtn"]</a>
-                </div>
-            </form>
-           </div>
+    #imagePreview {
+        max-height: 250px;
+        display: none;
+        margin: 10px auto;
+        border-radius: 4px;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .sticky-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">@Localizer["CreatePageTitle"]</h1>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> @Localizer["BackBtn"]
+        </a>
     </div>
+
+    <form asp-action="Create" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data" id="createForm">
+        @Html.AntiForgeryToken()
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
+
+                        <div class="mb-4">
+                            <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
+                            <input asp-for="Title" class="form-control form-control-lg" placeholder="@Localizer["TitlePlaceholder"]" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-0">
+                            <label asp-for="Content" class="form-label fw-bold">@Localizer["ContentLabel"]</label>
+                            <textarea asp-for="Content" id="Editor" class="form-control"></textarea>
+                            <span asp-validation-for="Content" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="sticky-sidebar">
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Configurações</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="SelectedCulture" class="form-label small">Idioma da Publicação</label>
+                                <select asp-for="SelectedCulture" class="form-select">
+                                    <option value="pt-BR">🇧🇷 Português</option>
+                                    <option value="en-US">🇺🇸 Inglês</option>
+                                    <option value="es-ES">🇪🇸 Espanhol</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Imagem de Capa</div>
+                        <div class="card-body">
+                            <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
+                                <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted" id="uploadIcon"></i>
+                                <div id="uploadText" class="small text-muted">Clique para selecionar imagem</div>
+                                <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
+                            </div>
+                            <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
+                            <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                            <p class="mt-2 text-muted small"><i class="fas fa-info-circle"></i> Máximo 5MB (WebP Recomendado)</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <button type="submit" onclick="if(typeof tinymce !== 'undefined') tinymce.triggerSave();" class="btn btn-success w-100 mb-2 py-2">
+                                <i class="fas fa-save me-1"></i> @Localizer["SaveBtn"]
+                            </button>
+                            <button type="reset" class="btn btn-light w-100 btn-sm text-muted">Limpar Campos</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
-
-    <!-- Place the first <script> tag in your HTML's <head> -->
-    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
-       
-    <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
+        // Preview da Imagem
+        document.getElementById('ImageInput').onchange = evt => {
+            const [file] = evt.target.files;
+            if (file) {
+                const preview = document.getElementById('imagePreview');
+                const icon = document.getElementById('uploadIcon');
+                const text = document.getElementById('uploadText');
+
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+                icon.style.display = 'none';
+                text.style.display = 'none';
+            }
+        }
+
+        // TinyMCE Config
         tinymce.init({
-          selector: 'textarea',
-          plugins: [
-            // Core editing features
-            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-            // Your account includes a free trial of TinyMCE premium features
-            // Try the most popular premium features until Jan 11, 2026:
-            'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'ai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
-          ],
-          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-          tinycomments_mode: 'embedded',
-          tinycomments_author: 'Author name',
-          mergetags_list: [
-            { value: 'First.Name', title: 'First Name' },
-            { value: 'Email', title: 'Email' },
-          ],
-          ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
-          uploadcare_public_key: 'a58a779d6579575581a1',
+            selector: '#Editor',
+            height: 500,
+            plugins: 'anchor autolink charmap codesample link lists media table wordcount visualblocks emoticons',
+            toolbar: 'undo redo | blocks bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image codesample emoticons',
+            menubar: false,
+            skin: 'oxide',
+            content_css: 'default'
         });
     </script>
-   
 }

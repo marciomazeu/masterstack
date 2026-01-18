@@ -151,91 +151,55 @@ namespace MasterStack.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(52428800)] // 50MB
         public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid) return View(model);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
+                // 1. Gerar o Slug ÚNICO
+                string uniqueSlug = await GetUniqueSlugAsync(model.Title);
+
+                // 2. Criar o registro Pai
+                var post = new BlogPost { CreatedAt = DateTime.Now };
+                _context.BlogPosts.Add(post);
+                await _context.SaveChangesAsync();
+
+                // 3. Processar o Upload (Usando seu método centralizado)
+                // Se falhar ou for vazio, retorna null
+                string? imagePath = await ProcessAndSaveWebP(model.ImageFile);
+
+                // 4. Definir Cultura (Prioriza a rota, senão a model, senão padrão)
+                var currentCulture = culture ?? model.SelectedCulture ?? "pt-BR";
+
+                // 5. Criar a Tradução vinculada
+                var translation = new BlogPostTranslation
                 {
-                    // 1. Gerar o Slug UNICO
-                    string uniqueSlug = await GetUniqueSlugAsync(model.Title);
+                    BlogPostId = post.Id,
+                    Culture = currentCulture,
+                    Title = model.Title,
+                    Content = model.Content,
+                    Slug = uniqueSlug,
+                    ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg" // Fallback se não subir imagem
+                };
 
-                    // 2. Criar o registro Pai
-                    var post = new BlogPost { CreatedAt = DateTime.Now };
-                    _context.BlogPosts.Add(post);
-                    await _context.SaveChangesAsync();
+                _context.BlogPostTranslations.Add(translation);
+                await _context.SaveChangesAsync();
 
-                    // 3. Processar o Upload com Conversão para WebP
-                    string? fileName = null;
-                    if (model.ImageFile != null && model.ImageFile.Length > 0)
-                    {
-                        // Apenas o nome do arquivo
-                        fileName = Guid.NewGuid().ToString() + ".webp";
+                await transaction.CommitAsync();
 
-                        // CAMINHO DA PASTA (Sem o nome do arquivo aqui!)
-                        var uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
-
-                        // Cria a pasta se não existir
-                        if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
-
-                        // CAMINHO DO ARQUIVO FINAL
-                        var filePath = Path.Combine(uploadFolder, fileName);
-
-                        // --- INÍCIO DA LÓGICA SKIASHARP ---
-                        using (var inputMemoryStream = new MemoryStream())
-                        {
-                            await model.ImageFile.CopyToAsync(inputMemoryStream);
-                            inputMemoryStream.Position = 0;
-
-                            using (var managedStream = new SKManagedStream(inputMemoryStream))
-                            using (var bitmap = SKBitmap.Decode(managedStream))
-                            {
-                                if (bitmap == null) throw new Exception("Formato de imagem inválido.");
-
-                                using (var image = SKImage.FromBitmap(bitmap))
-                                using (var data = image.Encode(SKEncodedImageFormat.Webp, 75))
-                                using (var saveStream = System.IO.File.OpenWrite(filePath))
-                                {
-                                    data.SaveTo(saveStream); // Grava o arquivo WebP real
-                                }
-                            }
-                        }
-                    }
-
-                    // 4. Criar a Tradução vinculada
-                    //culture ??= System.Globalization.CultureInfo.CurrentCulture.Name;
-                    culture ??= Request.RouteValues["culture"]?.ToString() ?? "pt-BR"; // Prioriza a cultura da URL
-                    var translation = new BlogPostTranslation
-                    {
-                        BlogPostId = post.Id,
-                        Culture = culture,
-                        Title = model.Title,
-                        Content = model.Content,
-                        Slug = uniqueSlug,
-                        ImageUrl = "/uploads/blog/" + fileName // Nome salvo já com .webp
-                    };
-
-                    _context.BlogPostTranslations.Add(translation);
-                    await _context.SaveChangesAsync();
-
-                    await transaction.CommitAsync();
-
-                    TempData["Success"] = "Post criado com sucesso!";
-                    //return RedirectToAction(nameof(Index));
-                    // Pegamos a cultura da rota atual para garantir o redirecionamento correto
-                    //var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-                    return RedirectToAction("Dashboard", "Admin", new { culture = culture });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    // Realismo: Logar o erro internamente aqui (ex: _logger.LogError(ex, "Erro ao criar post"))
-                    ModelState.AddModelError("", "Erro ao processar imagem ou salvar dados. Verifique o formato do arquivo.");
-                }
+                TempData["Success"] = "Post criado com sucesso!";
+                return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
             }
-
-            return View(model);
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Logar o erro aqui ajudaria muito no futuro
+                ModelState.AddModelError("", "Ocorreu um erro interno ao salvar o post. Verifique os dados e a imagem.");
+                return View(model);
+            }
         }
 
         private string GenerateSlug(string phrase)
@@ -400,57 +364,59 @@ namespace MasterStack.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
+            // 1. Busca a tradução atual do banco
             var translation = await _context.BlogPostTranslations
                 .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
 
             if (translation == null) return NotFound();
 
+            // 2. Atualiza os campos de texto
             translation.Title = model.Title;
             translation.Content = model.Content;
 
-            // Decisão realista: Só mude o slug se o título realmente mudou
-            // translation.Slug = GenerateSlug(model.Title); 
-
+            // 3. Lógica de Imagem usando o seu método existente
             if (model.NewImage != null && model.NewImage.Length > 0)
             {
-                // 1. Guardamos o caminho da imagem antiga antes de mudar o banco
-                string oldImagePath = translation.ImageUrl;
+                // Guardamos o caminho antigo para deletar depois
+                string oldImageUrl = translation.ImageUrl;
 
-                // 2. Processo de salvar a NOVA imagem (seu código atual)
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.NewImage.FileName);
-                string newPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads/blog", fileName);
+                // Chamamos o seu método centralizado que já converte para WebP
+                string? newWebPPath = await ProcessAndSaveWebP(model.NewImage);
 
-                // Salva o novo
-                using (var stream = new FileStream(newPath, FileMode.Create))
+                if (newWebPPath != null)
                 {
-                    await model.NewImage.CopyToAsync(stream);
-                }
-                // 3. Atualiza o banco com o novo caminho
-                translation.ImageUrl = "/uploads/blog/" + fileName;
+                    // Atualiza o objeto com o novo caminho (/uploads/blog/guid.webp)
+                    translation.ImageUrl = newWebPPath;
 
-                // 4. LÓGICA DE LIMPEZA: Apaga a antiga do disco
-                if (!string.IsNullOrEmpty(oldImagePath) && !oldImagePath.Contains("default-post.jpg"))
-                {
-                    var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, oldImagePath.TrimStart('/'));
-                    if (System.IO.File.Exists(fullOldPath))
+                    // 4. Limpeza: Apaga a imagem antiga do disco
+                    if (!string.IsNullOrEmpty(oldImageUrl))
                     {
-                        System.IO.File.Delete(fullOldPath);
+                        // Remove a barra inicial para o Path.Combine funcionar corretamente
+                        var relativePath = oldImageUrl.TrimStart('/');
+                        var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
+
+                        if (System.IO.File.Exists(fullOldPath))
+                        {
+                            System.IO.File.Delete(fullOldPath);
+                        }
                     }
                 }
-
-                // SALVE O CAMINHO COMPLETO
-                //translation.ImageUrl = "/uploads/blog/" + uniqueFileName;
+                else
+                {
+                    ModelState.AddModelError("NewImage", "Erro ao processar a imagem. Tente outro arquivo.");
+                    return View(model);
+                }
             }
 
+            // 5. Salva no banco e redireciona
             try
             {
-                // O SaveChanges já entende as mudanças no objeto 'translation'
                 await _context.SaveChangesAsync();
                 return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
             }
             catch (DbUpdateConcurrencyException)
             {
-                ModelState.AddModelError("", "Este registro foi alterado por outro usuário. Recarregue a página.");
+                ModelState.AddModelError("", "Erro de concorrência. O registro foi alterado por outro usuário.");
                 return View(model);
             }
         }
@@ -540,54 +506,7 @@ namespace MasterStack.Controllers
             return View(viewModel);
         }
 
-        //[HttpPost]
-        //[Route("{culture}/Admin/AddTranslation/{postId}")]
-        //public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)
-        //{
-        //    // Verificação de Realismo: O post já tem esse idioma?
-        //    bool alreadyExists = await _context.BlogPostTranslations
-        //        .AnyAsync(t => t.BlogPostId == model.BlogPostId && t.Culture == model.SelectedCulture);
-
-        //    if (alreadyExists)
-        //    {
-        //        ModelState.AddModelError("SelectedCulture", "Este post já possui uma tradução para o idioma selecionado.");
-        //        return View(model);
-        //    }
-        //    // 1. Onde está o arquivo? Precisamos recebê-lo do model (ViewModel)
-        //    string? fileName = null;
-        //    string? dbPath = null; // Criamos uma variável para o caminho do banco
-
-        //    if (model.ImageFile != null && model.ImageFile.Length > 0)
-        //    {
-        //        // Gerar o nome do arquivo
-        //        fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.ImageFile.FileName);
-        //        var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/blog", fileName);
-
-        //        // Salvar fisicamente na pasta
-        //        using (var stream = new FileStream(path, FileMode.Create))
-        //        {
-        //            await model.ImageFile.CopyToAsync(stream);
-        //        }
-        //        dbPath = "/uploads/blog/" + fileName;
-        //    }
-
-        //    // 2. Agora sim, criamos o objeto com dados REAIS e o nome da imagem
-        //    var translation = new BlogPostTranslation
-        //    {
-        //        BlogPostId = model.BlogPostId,
-        //        Culture = model.SelectedCulture, // Use a cultura que vem do formulário, não trave em "pt-BR"
-        //        Title = model.Title,
-        //        Content = model.Content,
-        //        Slug = model.Title?.ToLower().Trim().Replace(" ", "-") ?? "slug-" + DateTime.Now.Ticks,
-        //        ImageUrl = dbPath // Agora a variável existe e tem o nome do arquivo!
-        //    };
-
-        //    _context.BlogPostTranslations.Add(translation);
-        //    await _context.SaveChangesAsync();
-
-        //    TempData["SuccessMessage"] = "Tradução e imagem salvas com sucesso!";
-        //    return RedirectToAction("Dashboard", "Admin");
-        //}
+        
         [HttpPost]
         [Route("{culture}/Admin/AddTranslation/{postId}")]
         public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)

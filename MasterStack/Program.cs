@@ -11,8 +11,6 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
 // 1. Configura a pasta de recursos
 builder.Services.AddLocalization();
 
@@ -76,6 +74,11 @@ builder.Services.AddResponseCompression(options =>
             "image/svg+xml",
             "application/json"
         });
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 52428800; // 50MB em bytes
 });
 var app = builder.Build();
 

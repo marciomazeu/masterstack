@@ -2,87 +2,163 @@
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
 
-<div class="container py-5">
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">@Localizer["EditTranslation"] - @Model.Culture.ToUpper()</h4>
+@{
+    ViewData["Title"] = $"{Localizer["EditTranslation"]} - {Model.Culture.ToUpper()}";
+}
+
+<style>
+    .tox-tinymce-aux {
+        z-index: 999999 !important;
+    }
+
+    .image-preview-wrapper {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+        .image-preview-wrapper:hover {
+            background: #e9ecef;
+        }
+
+    #imagePreview {
+        max-height: 200px;
+        display: none;
+        margin: 10px auto;
+        border-radius: 4px;
+        border: 2px solid #28a745;
+    }
+
+    .current-image-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .sticky-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">@Localizer["EditTranslation"]</h1>
+            <span class="badge bg-dark">@Model.Culture.ToUpper()</span>
         </div>
-        <div class="card-body">
-            <form asp-action="EditTranslation" method="post" enctype="multipart/form-data">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="TranslationId" />
-                <input type="hidden" asp-for="Culture" />
-
-                <div class="mb-3">
-                    <label asp-for="Title" class="form-label">@Localizer["Title"]</label>
-                    <input asp-for="Title" class="form-control" />
-                    <span asp-validation-for="Title" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">@Localizer["CurrentImage"]</label>
-                    @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
-                    {
-                        <div class="mb-2">
-                            <img src="~/uploads/blog/@Model.CurrentImageUrl" alt="Current Image" class="img-thumbnail" style="max-height: 200px;">
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted small">@Localizer["NoImage"]</p>
-                    }
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="NewImage" class="form-label">@Localizer["UploadNewImage"]</label>
-                    <input asp-for="NewImage" type="file" class="form-control" />
-                    <small class="text-muted">@Localizer["ImageHelpText"]</small>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Content" class="form-label fw-bold">Conteúdo da Tradução</label>
-                    @* O segredo está em deixar o asp-for cuidar do binding. 
-       O TinyMCE vai ler o valor que estiver dentro da tag. *@
-                    <textarea asp-for="Content" class="form-control" rows="15"></textarea>
-                    <span asp-validation-for="Content" class="text-danger"></span>
-                </div>
-
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">@Localizer["Save"]</button>
-                    <a asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@Model.Culture" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
-                </div>
-            </form>
-        </div>
+        <a asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@Model.Culture" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> @Localizer["Cancel"]
+        </a>
     </div>
+
+    <form asp-action="EditTranslation" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="TranslationId" />
+        <input type="hidden" asp-for="Culture" />
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                        <div class="mb-4">
+                            <label asp-for="Title" class="form-label fw-bold">@Localizer["Title"]</label>
+                            <input asp-for="Title" class="form-control form-control-lg" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-0">
+                            <label asp-for="Content" class="form-label fw-bold">@Localizer["Content"]</label>
+                            <textarea asp-for="Content" id="Editor" class="form-control">@Model.Content</textarea>
+                            <span asp-validation-for="Content" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="sticky-sidebar">
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">@Localizer["ImageSettings"]</div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                            {
+                                <div class="text-center mb-3 p-2 border rounded bg-light">
+                                    <label class="current-image-label d-block mb-2">@Localizer["CurrentImage"]</label>
+                                    <img src="@Model.CurrentImageUrl" alt="Current" class="img-fluid rounded shadow-sm" style="max-height: 150px;">
+                                </div>
+                            }
+
+                            <label class="form-label small fw-bold">@Localizer["UploadNewImage"]</label>
+                            <div class="image-preview-wrapper" onclick="document.getElementById('NewImageInput').click();">
+                                <i class="fas fa-sync-alt fa-2x mb-2 text-muted" id="uploadIcon"></i>
+                                <div id="uploadText" class="small text-muted">Clique para trocar a imagem</div>
+                                <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
+                            </div>
+                            <input asp-for="NewImage" type="file" class="d-none" id="NewImageInput" accept="image/*" />
+                            <span asp-validation-for="NewImage" class="text-danger small"></span>
+                            <div class="mt-2 text-muted" style="font-size: 0.7rem;">@Localizer["ImageHelpText"]</div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <button type="submit" onclick="if(typeof tinymce !== 'undefined') tinymce.triggerSave();" class="btn btn-primary w-100 mb-2 py-2">
+                                <i class="fas fa-save me-1"></i> @Localizer["Save"]
+                            </button>
+                            <a asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@Model.Culture" class="btn btn-light w-100 btn-sm text-muted">
+                                @Localizer["Cancel"]
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
-
 @section Scripts {
+    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin"></script>
 
-    <!-- Place the first <script> tag in your HTML's <head> -->
-    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
-
-    <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
     <script>
+        // Preview da Nova Imagem
+        document.getElementById('NewImageInput').onchange = evt => {
+            const [file] = evt.target.files;
+            if (file) {
+                const preview = document.getElementById('imagePreview');
+                const icon = document.getElementById('uploadIcon');
+                const text = document.getElementById('uploadText');
+
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+                icon.style.display = 'none';
+                text.innerText = "Nova imagem selecionada";
+            }
+        }
+
+        // TinyMCE Limpo (Sem excessos que expiram)
         tinymce.init({
-          selector: 'textarea',
-          plugins: [
-            // Core editing features
-            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-            // Your account includes a free trial of TinyMCE premium features
-            // Try the most popular premium features until Jan 11, 2026:
-            'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'ai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
-          ],
-          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-          tinycomments_mode: 'embedded',
-          tinycomments_author: 'Author name',
-          mergetags_list: [
-            { value: 'First.Name', title: 'First Name' },
-            { value: 'Email', title: 'Email' },
-          ],
-          ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
-          uploadcare_public_key: 'a58a779d6579575581a1',
+            selector: '#Editor',
+            height: 500,
+            plugins: 'anchor autolink charmap codesample link lists media table wordcount visualblocks emoticons',
+            toolbar: 'undo redo | blocks bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image codesample emoticons',
+            menubar: false,
+            skin: 'oxide',
+            content_css: 'default'
         });
     </script>
-
 }
