@@ -3,113 +3,127 @@
 @inject IViewLocalizer Localizer
 @using System.Web
 @{
-    ViewData["Title"] = Localizer["Painel Administrativo"];
+    ViewData["Title"] = Localizer["AdminDashboard"];
     var culture = ViewContext.RouteData.Values["culture"];
 }
 
+<style>
+    .table-main-row { background-color: #fcfcfc; border-top: 2px solid #dee2e6 !important; }
+    .table-sub-row { background-color: #ffffff; }
+    .post-id-badge { font-family: monospace; font-size: 0.75rem; color: #6c757d; }
+    .img-thumbnail-custom { width: 60px; height: 40px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .lang-indicator { width: 3px; height: 25px; display: inline-block; margin-right: 10px; border-radius: 2px; }
+    .btn-group-xs > .btn { padding: 0.15rem 0.4rem; font-size: 0.75rem; }
+    .dropdown-menu { font-size: 0.85rem; }
+</style>
+
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        @* <h1 class="h2"><i class="fas fa-tools me-2 text-secondary"></i>Painel Administrativo</h1> *@
-        <h1 class="h2"><i class="fas fa-tools me-2 text-secondary"></i>@Localizer["AdminDashboard"]</h1>
-        <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@culture" class="btn btn-success shadow-sm">
-            <i class="fas fa-plus me-1"></i>@Localizer["NewPost"]
+        <h1 class="h3"><i class="fas fa-layer-group me-2 text-primary"></i>@Localizer["AdminDashboard"]</h1>
+        <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@culture" class="btn btn-success px-4">
+            <i class="fas fa-plus me-1"></i> @Localizer["NewPost"]
         </a>
     </div>
 
     <div class="card shadow-sm border-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th>@Localizer["PostId"]</th>
-                        <th>@Localizer["Imagem"]</th>
-                        <th>@Localizer["Título"]</th>
-                        <th>@Localizer["Data"]</th>
-                        <th class="text-end">@Localizer["Ações"]</th>
+                        <th style="width: 80px;">@Localizer["ID"]</th>
+                        <th style="width: 100px;">@Localizer["Preview"]</th>
+                        <th>@Localizer["ContentInfo"]</th>
+                        <th style="width: 150px;">@Localizer["Date"]</th>
+                        <th class="text-end" style="width: 250px;">@Localizer["Actions"]</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        var principal = item.Translations.OrderBy(t => t.Id).FirstOrDefault()
-                        ?? new MasterStack.Models.BlogPostTranslation { Title = "Sem título" };
-
-                        @foreach (var t in item.Translations)
+                        var translations = item.Translations.OrderBy(t => t.Culture).ToList();
+                        var principal = translations.FirstOrDefault() ?? new MasterStack.Models.BlogPostTranslation { Title = "---" };
+                        
+                        @for (int i = 0; i < translations.Count; i++)
                         {
-                            <tr>
-                                <td>@item.Id</td>
-                                @* Miniatura da Imagem Real da Tradução *@
+                            var t = translations[i];
+                            var isFirst = (i == 0);
+
+                            <tr class="@(isFirst ? "table-main-row" : "table-sub-row border-top-0")">
+                                <td class="post-id-badge">
+                                    @(isFirst ? $"#{item.Id}" : "")
+                                </td>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(t.ImageUrl))
-                                    {
-                                        <img src="@t.ImageUrl" alt="Thumbnail" class="rounded shadow-sm" style="width: 50px; height: 35px; object-fit: cover;" />
-                                    }
-                                    else
-                                    {
-                                        
-                                            <img src="~/uploads/default-post.jpg" alt="Thumbnail" class="rounded shadow-sm" style="width: 50px; height: 35px; object-fit: cover;" />
-                                        
-                                    }
+                                    <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/uploads/default-post.jpg" : t.ImageUrl)" 
+                                         class="img-thumbnail-custom" alt="Thumb" />
                                 </td>
-
                                 <td>
-                                    <span class="badge bg-secondary me-2">@t.Culture.ToUpper()</span>
-                                    <strong>@t.Title</strong>
+                                    <div class="d-flex align-items-center">
+                                        @* Cor dinâmica baseada no idioma *@
+                                        @{ var badgeColor = t.Culture.StartsWith("pt") ? "bg-primary" : t.Culture.StartsWith("en") ? "bg-info" : "bg-secondary"; }
+                                        <span class="lang-indicator @badgeColor"></span>
+                                        <div>
+                                            <span class="badge @badgeColor mb-1" style="font-size: 0.65rem;">@t.Culture.ToUpper()</span>
+                                            <div class="fw-bold text-dark">@t.Title</div>
+                                        </div>
+                                    </div>
                                 </td>
-
-                                <td class="text-muted" style="font-size: 0.85rem;">
-                                    @item.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                <td class="text-muted small">
+                                    @item.CreatedAt.ToString("g")
                                 </td>
-
                                 <td class="text-end">
-                                    <div class="btn-group shadow-sm">
-                                        @* Adicionar Novo Idioma (Só aparece na primeira linha do post para não poluir) *@
-                                        @if (t == item.Translations.First())
+                                    <div class="btn-group btn-group-sm">
+                                        
+                                        @* Menu "Adicionar Tradução" apenas na linha principal para economizar espaço *@
+                                        @if (isFirst)
                                         {
-                                            <div class="btn-group" role="group">
-                                                <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
-                                                <ul class="dropdown-menu shadow border-0" aria-labelledby="btnGroupDrop1">
+                                                <ul class="dropdown-menu shadow">
                                                     <li><h6 class="dropdown-header">@Localizer["AddTranslation"]</h6></li>
                                                     @foreach (var lang in new[] { "pt-BR", "en-US", "fr-CA" })
                                                     {
-                                                        @* REGRA: Não permite criar idioma que já existe *@
                                                         if (!item.Translations.Any(trans => trans.Culture == lang))
                                                         {
-                                                            <li>
-                                                                <a class="dropdown-item"
-                                                                   href="/@culture/Admin/AddTranslation/@item.Id?targetCulture=@lang">
-                                                                    @lang.ToUpper()
-                                                                </a>
-                                                            </li>
+                                                            <li><a class="dropdown-item" href="/@culture/Admin/AddTranslation/@item.Id?targetCulture=@lang">@lang.ToUpper()</a></li>
                                                         }
                                                     }
                                                 </ul>
                                             </div>
                                         }
 
-                                        <a asp-controller="BlogPosts" asp-action="EditTranslation" asp-route-id="@t.Id" asp-route-culture="@culture" class="btn btn-sm btn-outline-warning" title="@Localizer["Edit"]">
+                                        <a asp-action="EditTranslation" asp-route-id="@t.Id" asp-route-culture="@culture" 
+                                           class="btn btn-outline-warning" title="@Localizer["Edit"]">
                                             <i class="fas fa-edit"></i>
                                         </a>
 
-                                        <a asp-controller="BlogPosts" asp-action="Details" asp-route-slug="@t.Slug" asp-route-culture="@t.Culture" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                        <a asp-controller="BlogPosts"
+                                           asp-action="Details"
+                                           asp-route-culture="@t.Culture"
+                                           asp-route-slug="@t.Slug"
+                                           asp-area=""
+                                           class="btn btn-sm btn-outline-secondary"
+                                           target="_blank"
+                                           title="@Localizer["View"]">
                                             <i class="fas fa-eye"></i>
                                         </a>
 
-                                        @if (item.Translations.Count() > 1)
+                                        @* Botão apagar TRADUÇÃO *@
+                                        @if (translations.Count > 1)
                                         {
-                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                    onclick="prepareDelete('@Url.Action("DeleteTranslation", "BlogPosts", new { id = t.Id, culture = culture })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(t.Title))', false)">
-                                                <i class="fas fa-trash"></i>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="prepareDelete('@Url.Action("DeleteTranslation", "BlogPosts", new { id = t.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(t.Title))', false)">
+                                                <i class="fas fa-trash-alt"></i>
                                             </button>
                                         }
 
-                                        @if (t == item.Translations.First())
+                                        @* Botão apagar POST COMPLETO *@
+                                        @if (isFirst)
                                         {
-                                            <button type="button" class="btn btn-sm btn-danger"
-                                                    onclick="prepareDelete('@Url.Action("DeletePost", "BlogPosts", new { id = item.Id, culture = culture })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(principal.Title))', true)"
-                                                    title="@Localizer["Excluir Post Completo"]">
+                                            <button type="button" class="btn btn-danger" 
+                                                    onclick="prepareDelete('@Url.Action("DeletePost", "BlogPosts", new { id = item.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(principal.Title))', true)"
+                                                    title="@Localizer["DeleteFullPost"]">
                                                 <i class="fas fa-bomb"></i>
                                             </button>
                                         }
@@ -117,11 +131,8 @@
                                 </td>
                             </tr>
                         }
-                        @* Linha de separação visual entre posts *@
-                        <tr class="table-light"><td colspan="4" style="height: 4px; padding: 0;"></td></tr>
                     }
                 </tbody>
-               
             </table>
         </div>
     </div>
@@ -131,52 +142,61 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>@Localizer["ConfirmarExclusao"]</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>@Localizer["ConfirmDelete"]
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 text-center">
-                <p id="deleteActionText" class="mb-0">@Localizer["Tem certeza que deseja apagar:"]</p>
-                <h5 id="postTitleToDelete" class="mt-2 fw-bold text-dark"></h5>
+                <p id="deleteActionText" class="mb-1 text-muted"></p>
+                <h5 id="postTitleToDelete" class="fw-bold text-dark mb-3"></h5>
 
-                <div id="fullDeleteWarning" class="alert alert-danger mt-3 d-none">
+                <div id="fullDeleteWarning" class="alert alert-warning border-0 d-none">
                     <i class="fas fa-bomb me-2"></i>
-                    <strong>@Localizer["Atenção:"]</strong> @Localizer["Isso removerá TODOS os idiomas deste post!"]
+                    <strong>@Localizer["Warning"]:</strong> @Localizer["ThisActionRemovesAllLanguages"]
                 </div>
 
-                <small class="text-muted d-block mt-3">@Localizer["AcaoIrreversivel"]</small>
+                <p class="text-danger small mb-0">
+                    <i class="fas fa-info-circle me-1"></i> @Localizer["IrreversibleAction"]
+                </p>
             </div>
             <div class="modal-footer bg-light border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["Cancelar"]</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
+
+                @* O FORMULÁRIO DE EXCLUSÃO REAL *@
                 <form id="deleteForm" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger px-4">@Localizer["SimApagar"]</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-4">
+                        @Localizer["ConfirmDeleteBtn"]
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    function prepareDelete(url, title, isFullPost) {
-        // Injeta o título
-        document.getElementById('postTitleToDelete').innerText = title;
+@section Scripts {
+    <script>
+        function prepareDelete(url, title, isFullPost) {
+            // 1. Injeta o título e a URL
+            document.getElementById('postTitleToDelete').innerText = title;
+            document.getElementById('deleteForm').action = url;
 
-        // Define a URL de destino
-        document.getElementById('deleteForm').action = url;
+            // 2. Controla a visibilidade dos alertas
+            const warning = document.getElementById('fullDeleteWarning');
+            const actionText = document.getElementById('deleteActionText');
 
-        // Altera o texto e o alerta se for exclusão total
-        const warning = document.getElementById('fullDeleteWarning');
-        const actionText = document.getElementById('deleteActionText');
+            if (isFullPost) {
+                warning.classList.remove('d-none');
+                actionText.innerText = "@Localizer["ConfirmFullDeleteMessage"]";
+            } else {
+                warning.classList.add('d-none');
+                actionText.innerText = "@Localizer["ConfirmTranslationDeleteMessage"]";
+            }
 
-        if (isFullPost) {
-            warning.classList.remove('d-none');
-            actionText.innerText = "@Localizer["Você está prestes a excluir o POST COMPLETO:"]";
-        } else {
-            warning.classList.add('d-none');
-            actionText.innerText = "@Localizer["Tem certeza que deseja apagar a tradução:"]";
+            // 3. Abre o modal manualmente via Bootstrap 5
+            var myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            myModal.show();
         }
-
-        var myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        myModal.show();
-    }
-</script>
+    </script>
+}

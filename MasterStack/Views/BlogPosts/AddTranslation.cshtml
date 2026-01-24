@@ -1,82 +1,153 @@
 ﻿@model MasterStack.ViewModels.AddTranslationViewModel
 
-<div class="container py-5">
-    <div class="card shadow">
-        <div class="card-header bg-info text-white">
-            <h4>Adicionar Tradução (@Model.SelectedCulture)</h4>
+@{
+    ViewData["Title"] = $"Adicionar Tradução - {Model.SelectedCulture}";
+}
+
+<style>
+    .tox-tinymce-aux {
+        z-index: 999999 !important;
+    }
+
+    .image-preview-wrapper {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: 0.3;
+    }
+
+        .image-preview-wrapper:hover {
+            background: #e9ecef;
+        }
+
+    #imagePreview {
+        max-height: 250px;
+        display: none;
+        margin: 10px auto;
+        border-radius: 4px;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .sticky-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Nova Tradução</h1>
+            <span class="badge bg-info text-dark">Idioma: @Model.SelectedCulture</span>
         </div>
-        <div class="card-body">
-            @* Importante: enctype para upload de arquivo *@
-            <form asp-controller="BlogPosts" asp-action="AddTranslation" asp-route-postId="@Model.BlogPostId" method="post" enctype="multipart/form-data">
-                <input type="hidden" asp-for="BlogPostId" />
-                <input type="hidden" asp-for="SelectedCulture" />
-
-                @* Remova a repetição abaixo que estava no seu código *@
-                @* <input type="hidden" asp-for="BlogPostId" value="@Model.BlogPostId" /> *@
-
-                @* Se quiser ter 100% de certeza, adicione este input desabilitado para conferência *@
-                <div class="mb-3">
-                    <label class="form-label text-muted">ID do Post Pai (Apenas leitura)</label>
-                    <input class="form-control bg-light" value="@Model.BlogPostId" readonly />
-                </div>
-
-                
-
-                <div class="mb-3">
-                    <label asp-for="Title" class="form-label fw-bold">Título</label>
-                    <input asp-for="Title" class="form-control" />
-                    <span asp-validation-for="Title" class="text-danger"></span>
-                </div>
-
-                
-
-                <div class="mb-3">
-                    <label asp-for="Content" class="form-label fw-bold">Conteúdo</label>
-                    <textarea asp-for="Content" class="form-control" rows="10"></textarea>
-                    <span asp-validation-for="Content" class="text-danger"></span>
-                </div>
-                @* Campo de Imagem igual ao Create *@
-                <div class="mb-3">
-                    <label asp-for="ImageFile" class="form-label fw-bold">Imagem do Post</label>
-                    <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
-                    <small class="text-muted">Se selecionar uma imagem, ela atualizará a imagem global do post.</small>
-                </div>
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <a asp-controller="Admin"asp-action="Dashboard" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary px-5">Salvar em @Model.SelectedCulture</button>
-                </div>
-            </form>
-        </div>
+        <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+        </a>
     </div>
+
+    <form asp-controller="BlogPosts" asp-action="AddTranslation" asp-route-postId="@Model.BlogPostId" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="BlogPostId" />
+        <input type="hidden" asp-for="SelectedCulture" />
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                        <div class="mb-4">
+                            <label asp-for="Title" class="form-label fw-bold">Título da Tradução</label>
+                            <input asp-for="Title" class="form-control form-control-lg" placeholder="Digite o título no idioma selecionado..." />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-0">
+                            <label asp-for="Content" class="form-label fw-bold">Conteúdo</label>
+                            <textarea asp-for="Content" id="Editor" class="form-control"></textarea>
+                            <span asp-validation-for="Content" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="sticky-sidebar">
+
+                    <div class="card mb-4 bg-light">
+                        <div class="card-body py-2">
+                            <small class="text-muted d-block">ID do Post Pai:</small>
+                            <code class="fw-bold">@Model.BlogPostId</code>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Imagem do Post</div>
+                        <div class="card-body">
+                            <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
+                                <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted" id="uploadIcon"></i>
+                                <div id="uploadText" class="small text-muted">Clique para definir imagem</div>
+                                <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
+                            </div>
+                            <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
+                            <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                            <p class="mt-2 text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-info-circle"></i> A imagem enviada aqui será a imagem principal deste post para este idioma.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <button type="submit" onclick="if(typeof tinymce !== 'undefined') tinymce.triggerSave();" class="btn btn-primary w-100 mb-2 py-2">
+                                <i class="fas fa-plus-circle me-1"></i> Adicionar Tradução
+                            </button>
+                            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-light w-100 btn-sm text-muted">Cancelar</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
-
 @section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin"></script>
 
-    <!-- Place the first <script> tag in your HTML's <head> -->
-    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
-
-    <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
     <script>
+        // Preview da Imagem
+        document.getElementById('ImageInput').onchange = evt => {
+            const [file] = evt.target.files;
+            if (file) {
+                const preview = document.getElementById('imagePreview');
+                const icon = document.getElementById('uploadIcon');
+                const text = document.getElementById('uploadText');
+
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+                icon.style.display = 'none';
+                text.innerText = "Imagem selecionada";
+            }
+        }
+
+        // TinyMCE
         tinymce.init({
-          selector: 'textarea',
-          plugins: [
-            // Core editing features
-            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-            // Your account includes a free trial of TinyMCE premium features
-            // Try the most popular premium features until Jan 11, 2026:
-            'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'ai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
-          ],
-          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-          tinycomments_mode: 'embedded',
-          tinycomments_author: 'Author name',
-          mergetags_list: [
-            { value: 'First.Name', title: 'First Name' },
-            { value: 'Email', title: 'Email' },
-          ],
-          ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
-          uploadcare_public_key: 'a58a779d6579575581a1',
+            selector: '#Editor',
+            height: 500,
+            plugins: 'anchor autolink charmap codesample link lists media table wordcount visualblocks emoticons',
+            toolbar: 'undo redo | blocks bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image codesample emoticons',
+            menubar: false
         });
     </script>
-
 }

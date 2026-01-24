@@ -1,4 +1,5 @@
-﻿using MasterStack.Data; // Ajuste para o seu namespace de dados
+﻿using Ganss.Xss;
+using MasterStack.Data; // Ajuste para o seu namespace de dados
 using MasterStack.Models;
 using MasterStack.ViewModels;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -159,8 +160,16 @@ namespace MasterStack.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                var sanitizer = new HtmlSanitizer();
+                // Opcional: Se você quiser permitir tags específicas (como vídeos do YouTube)
+                // sanitizer.AllowedAttributes.Add("frameborder");
+                // sanitizer.AllowedAttributes.Add("allowfullscreen");
+
+                // Limpa o conteúdo vindo do ViewModel
+                string cleanHtml = sanitizer.Sanitize(model.Content);
+
                 // 1. Gerar o Slug ÚNICO
-                string uniqueSlug = await GetUniqueSlugAsync(model.Title);
+                string uniqueSlug = await GetUniqueSlugAsync(model.Title, culture);
 
                 // 2. Criar o registro Pai
                 var post = new BlogPost { CreatedAt = DateTime.Now };
@@ -180,10 +189,11 @@ namespace MasterStack.Controllers
                     BlogPostId = post.Id,
                     Culture = currentCulture,
                     Title = model.Title,
-                    Content = model.Content,
+                    //Content = model.Content,
+                    Content = cleanHtml, // Salva o HTML seguro
                     Slug = uniqueSlug,
                     ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg" // Fallback se não subir imagem
-                };
+                }; 
 
                 _context.BlogPostTranslations.Add(translation);
                 await _context.SaveChangesAsync();
@@ -236,15 +246,17 @@ namespace MasterStack.Controllers
             return str;
         }
 
-        private async Task<string> GetUniqueSlugAsync(string title, int? currentId = null)
+        private async Task<string> GetUniqueSlugAsync(string title, string culture, int? currentId = null)
         {
-            string slug = GenerateSlug(title); // Sua função que remove acentos e símbolos
+            string slug = GenerateSlug(title);
             string uniqueSlug = slug;
             int count = 1;
 
-            // O loop continua enquanto houver alguém usando esse slug (exceto o próprio post que estamos editando)
+            // Adicionamos a verificação da Culture no AnyAsync
             while (await _context.BlogPostTranslations
-                .AnyAsync(t => t.Slug == uniqueSlug && (!currentId.HasValue || t.Id != currentId.Value)))
+                .AnyAsync(t => t.Slug == uniqueSlug
+                               && t.Culture == culture // SÓ conflita se for o mesmo idioma
+                               && (!currentId.HasValue || t.Id != currentId.Value)))
             {
                 uniqueSlug = $"{slug}-{count}";
                 count++;
@@ -274,69 +286,69 @@ namespace MasterStack.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title,Content,ImageUrl,Slug")] BlogPostTranslation translation, IFormFile? novaImagem)
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title,Content,ImageUrl,Slug")] BlogPostTranslation translation, IFormFile? novaImagem)
+{
+    if (id != translation.Id) return NotFound();
+
+    // 1. Slug Único (Mantendo sua preferência por unicidade global)
+    translation.Slug = await GetUniqueSlugAsync(translation.Title, translation.Culture, translation.Id);
+    ModelState.Remove("Slug");
+
+    if (ModelState.IsValid)
+    {
+        try
         {
-            if (id != translation.Id) return NotFound();
+            // 2. Sanitização (Segurança contra XSS)
+            var sanitizer = new HtmlSanitizer();
+            translation.Content = sanitizer.Sanitize(translation.Content);
 
-            // 1. Gerar o Slug de forma definitiva
-            //translation.Slug = GenerateSlug(translation.Title);
-            // Passamos o ID para ignorar o registro atual na verificação
-            translation.Slug = await GetUniqueSlugAsync(translation.Title, translation.Id);
-            ModelState.Remove("Slug");
-
-            if (ModelState.IsValid)
+            // 3. Gerenciamento de Imagem
+            if (novaImagem != null && novaImagem.Length > 0)
             {
-                try
+                // Busca o caminho antigo para deletar depois
+                var oldDbPath = await _context.BlogPostTranslations
+                    .Where(t => t.Id == id)
+                    .Select(t => t.ImageUrl)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
+
+                // Processa a nova imagem usando o padrão WebP que definimos
+                // Esse método já salva no disco e retorna o caminho para o banco
+                string? newPath = await ProcessAndSaveWebP(novaImagem);
+
+                if (!string.IsNullOrEmpty(newPath))
                 {
-                    if (novaImagem != null && novaImagem.Length > 0)
+                    // Deleta o arquivo físico antigo se ele existir
+                    if (!string.IsNullOrEmpty(oldDbPath))
                     {
-                        string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
-                        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                        // --- AQUI ESTÁ A CORREÇÃO CRÍTICA ---
-                        // Buscamos o nome real da imagem antiga que está no banco AGORA (Sem rastreamento)
-                        var imagemAntigaNoBanco = await _context.BlogPostTranslations
-                            .Where(t => t.Id == id)
-                            .Select(t => t.ImageUrl)
-                            .AsNoTracking()
-                            .FirstOrDefaultAsync();
-
-                        // Criar a nova
-                        string uniqueFileName = Guid.NewGuid().ToString() + "_" + novaImagem.FileName;
-                        string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        // Remove a "/" inicial para o Path.Combine funcionar corretamente
+                        var oldFileName = oldDbPath.TrimStart('/').Replace("uploads/blog/", "");
+                        string fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog", oldFileName);
+                        
+                        if (System.IO.File.Exists(fullOldPath))
                         {
-                            await novaImagem.CopyToAsync(fileStream);
+                            System.IO.File.Delete(fullOldPath);
                         }
-
-                        // Deletar a antiga SOMENTE se o nome for diferente e ela existir
-                        if (!string.IsNullOrEmpty(imagemAntigaNoBanco))
-                        {
-                            string oldPath = Path.Combine(uploadsFolder, imagemAntigaNoBanco);
-                            if (System.IO.File.Exists(oldPath))
-                            {
-                                System.IO.File.Delete(oldPath);
-                            }
-                        }
-
-                        translation.ImageUrl = uniqueFileName;
                     }
-
-                    _context.Update(translation);
-                    await _context.SaveChangesAsync();
-                    TempData["Success"] = "Tradução atualizada com sucesso!";
+                    
+                    translation.ImageUrl = newPath;
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TranslationExists(translation.Id)) return NotFound();
-                    else throw;
-                }
-                return RedirectToAction(nameof(Admin));
             }
-            return View(translation);
+
+            _context.Update(translation);
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Alterações salvas com sucesso!";
+            return RedirectToAction("Dashboard", "Admin", new { culture = translation.Culture });
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!TranslationExists(translation.Id)) return NotFound();
+            else throw;
+        }
+    }
+    return View(translation);
+}
 
         [HttpGet]
         public async Task<IActionResult> EditTranslation(int id)
@@ -506,14 +518,23 @@ namespace MasterStack.Controllers
             return View(viewModel);
         }
 
-        
+
         [HttpPost]
         [Route("{culture}/Admin/AddTranslation/{postId}")]
         public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)
         {
             if (!ModelState.IsValid) return View(model);
+            
+            var sanitizer = new HtmlSanitizer();
 
-            // Verificação de existência
+            // Opcional: Se você quiser permitir tags específicas (como vídeos do YouTube)
+            // sanitizer.AllowedAttributes.Add("frameborder");
+            // sanitizer.AllowedAttributes.Add("allowfullscreen");
+
+            // Limpa o conteúdo vindo do ViewModel
+            string cleanHtml = sanitizer.Sanitize(model.Content);
+
+            // 1. Verificação de existência (Correto)
             bool alreadyExists = await _context.BlogPostTranslations
                 .AnyAsync(t => t.BlogPostId == model.BlogPostId && t.Culture == model.SelectedCulture);
 
@@ -523,21 +544,22 @@ namespace MasterStack.Controllers
                 return View(model);
             }
 
-            // Processa a imagem usando o novo método
-            string? dbImagePath = null;
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
-            {
-                dbImagePath = await ProcessAndSaveWebP(model.ImageFile);
-            }
+            // 2. Processa a imagem usando o método centralizado (WebP garantido)
+            string? dbImagePath = await ProcessAndSaveWebP(model.ImageFile);
+
+            // 3. Gerar Slug ÚNICO e LIMPO (Usando o método que já criamos para o Create)
+            // Isso garante que "Olá Mundo" vire "ola-mundo" e não "olá-mundo"
+            string uniqueSlug = await GetUniqueSlugAsync(model.Title, model.SelectedCulture);
 
             var translation = new BlogPostTranslation
             {
                 BlogPostId = model.BlogPostId,
                 Culture = model.SelectedCulture,
                 Title = model.Title,
-                Content = model.Content,
-                Slug = model.Title?.ToLower().Trim().Replace(" ", "-") ?? "slug-" + DateTime.Now.Ticks,
-                ImageUrl = dbImagePath // Salva o caminho completo: /uploads/blog/arquivo.webp
+                //Content = model.Content,
+                Content = cleanHtml, // Salva o HTML seguro
+                Slug = uniqueSlug,
+                ImageUrl = dbImagePath ?? "/uploads/blog/default-post.jpg"
             };
 
             _context.BlogPostTranslations.Add(translation);
