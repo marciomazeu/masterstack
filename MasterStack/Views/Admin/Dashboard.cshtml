@@ -1,4 +1,4 @@
-﻿@model IEnumerable<MasterStack.Models.BlogPost>
+﻿@model MasterStack.ViewModels.DashboardViewModel
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
 @using System.Web
@@ -19,64 +19,130 @@
 
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@Localizer["Welcome"]</h1>
         <h1 class="h3"><i class="fas fa-layer-group me-2 text-primary"></i>@Localizer["AdminDashboard"]</h1>
         <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@culture" class="btn btn-success px-4">
             <i class="fas fa-plus me-1"></i> @Localizer["NewPost"]
         </a>
     </div>
-
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Dashboard" class="row g-2 mb-4">
+                <div class="col-md-5">
+                    <input type="text" name="searchTerm" class="form-control"
+                           placeholder="Buscar por título..." value="@ViewData["CurrentFilter"]" />
+                </div>
+                <div class="col-md-3">
+                    <select name="cultureFilter" class="form-select">
+                        <option value="">@Localizer["AllLanguages"]</option>
+                        <option value="pt-BR" selected="@(ViewData["CurrentCulture"]?.ToString() == "pt-BR")">Português</option>
+                        <option value="en-US" selected="@(ViewData["CurrentCulture"]?.ToString() == "en-US")">English</option>
+                        <option value="fr-CA" selected="@(ViewData["CurrentCulture"]?.ToString() == "fr-CA")">Français</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" type="submit">@Localizer["Filter"]</button>
+                    <a asp-action="Dashboard" class="btn btn-outline-secondary">@Localizer["Clear"]</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row my-4">
+        <div class="col-md-4">
+            <div class="card border-start border-primary border-4 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Português (pt-BR)</h6>
+                    <h2 class="fw-bold">@ViewBag.PostsPT</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-start border-success border-4 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">English (en-US)</h6>
+                    <h2 class="fw-bold">@ViewBag.PostsEN</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-start border-warning border-4 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Français (fr-FR)</h6>
+                    <h2 class="fw-bold">@ViewBag.PostsFR</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card shadow-sm border-0 overflow-hidden">
         <div class="table-responsive">
-            <table class="table align-middle mb-0">
+            <table class="table align-middle mb-0" id="postTable">
                 <thead class="table-dark">
                     <tr>
-                        <th style="width: 80px;">@Localizer["ID"]</th>
+                        <th style="width: 80px;" class="ps-3">@Localizer["ID"]</th>
                         <th style="width: 100px;">@Localizer["Preview"]</th>
                         <th>@Localizer["ContentInfo"]</th>
                         <th style="width: 150px;">@Localizer["Date"]</th>
-                        <th class="text-end" style="width: 250px;">@Localizer["Actions"]</th>
+                        <th class="text-end pe-3" style="width: 250px;">@Localizer["Actions"]</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in Model.Posts)
                     {
                         var translations = item.Translations.OrderBy(t => t.Culture).ToList();
                         var principal = translations.FirstOrDefault() ?? new MasterStack.Models.BlogPostTranslation { Title = "---" };
-                        
+
                         @for (int i = 0; i < translations.Count; i++)
                         {
                             var t = translations[i];
                             var isFirst = (i == 0);
 
-                            <tr class="@(isFirst ? "table-main-row" : "table-sub-row border-top-0")">
-                                <td class="post-id-badge">
-                                    @(isFirst ? $"#{item.Id}" : "")
+                            <tr class="@(isFirst ? "table-main-row bg-light" : "table-sub-row")"
+                                data-title="@t.Title.ToLower()"
+                                data-lang="@t.Culture.ToUpper()">
+
+                                <td class="ps-3">
+                                    @if (isFirst)
+                                    {
+                                        <span class="badge bg-dark">#@item.Id</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="ms-3 border-start ps-2 text-muted">└</div>
+                                    }
                                 </td>
                                 <td>
-                                    <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/uploads/default-post.jpg" : t.ImageUrl)" 
-                                         class="img-thumbnail-custom" alt="Thumb" />
+                                    <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/uploads/default-post.jpg" : t.ImageUrl)"
+                                         class="rounded shadow-sm"
+                                         style="width: 60px; height: 40px; object-fit: cover;" alt="Thumb" />
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        @* Cor dinâmica baseada no idioma *@
-                                        @{ var badgeColor = t.Culture.StartsWith("pt") ? "bg-primary" : t.Culture.StartsWith("en") ? "bg-info" : "bg-secondary"; }
-                                        <span class="lang-indicator @badgeColor"></span>
+                                        @{
+                                            var badgeColor = t.Culture.StartsWith("pt") ? "bg-primary" : t.Culture.StartsWith("en") ? "bg-info" : "bg-secondary";
+                                        }
+                                        <div class="me-3">
+                                            <span class="badge @badgeColor" style="font-size: 0.65rem; display: block; width: 45px;">@t.Culture.ToUpper()</span>
+                                        </div>
                                         <div>
-                                            <span class="badge @badgeColor mb-1" style="font-size: 0.65rem;">@t.Culture.ToUpper()</span>
-                                            <div class="fw-bold text-dark">@t.Title</div>
+                                            <div class="fw-bold @(isFirst ? "text-dark" : "text-muted")" style="font-size: @(isFirst ? "1rem" : "0.9rem")">
+                                                @t.Title
+                                            </div>
+                                            @if (isFirst)
+                                            {
+                                                <div class="text-muted" style="font-size: 0.75rem;">Slug: /@t.Slug</div>
+                                            }
                                         </div>
                                     </div>
                                 </td>
                                 <td class="text-muted small">
                                     @item.CreatedAt.ToString("g")
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end pe-3">
                                     <div class="btn-group btn-group-sm">
-                                        
-                                        @* Menu "Adicionar Tradução" apenas na linha principal para economizar espaço *@
+                                        @* Bloco de Ações (Igual ao seu, mantendo a consistência) *@
                                         @if (isFirst)
                                         {
-                                            <div class="btn-group">
+                                            <div class="btn-group btn-group-sm">
                                                 <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
@@ -86,44 +152,33 @@
                                                     {
                                                         if (!item.Translations.Any(trans => trans.Culture == lang))
                                                         {
-                                                            <li><a class="dropdown-item" href="/@culture/Admin/AddTranslation/@item.Id?targetCulture=@lang">@lang.ToUpper()</a></li>
+                                                            <li><a class="dropdown-item" href="/@ViewContext.RouteData.Values["culture"]/Admin/AddTranslation/@item.Id?targetCulture=@lang">@lang.ToUpper()</a></li>
                                                         }
                                                     }
                                                 </ul>
                                             </div>
                                         }
 
-                                        <a asp-action="EditTranslation" asp-route-id="@t.Id" asp-route-culture="@culture" 
-                                           class="btn btn-outline-warning" title="@Localizer["Edit"]">
+                                        <a asp-action="EditTranslation" asp-route-id="@t.Id" class="btn btn-outline-warning">
                                             <i class="fas fa-edit"></i>
                                         </a>
 
-                                        <a asp-controller="BlogPosts"
-                                           asp-action="Details"
-                                           asp-route-culture="@t.Culture"
-                                           asp-route-slug="@t.Slug"
-                                           asp-area=""
-                                           class="btn btn-sm btn-outline-secondary"
-                                           target="_blank"
-                                           title="@Localizer["View"]">
+                                        <a asp-controller="BlogPosts" asp-action="Details" asp-route-culture="@t.Culture" asp-route-slug="@t.Slug" asp-area="" target="_blank" class="btn btn-outline-secondary">
                                             <i class="fas fa-eye"></i>
                                         </a>
 
-                                        @* Botão apagar TRADUÇÃO *@
                                         @if (translations.Count > 1)
                                         {
-                                            <button type="button" class="btn btn-outline-danger" 
+                                            <button type="button" class="btn btn-outline-danger"
                                                     onclick="prepareDelete('@Url.Action("DeleteTranslation", "BlogPosts", new { id = t.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(t.Title))', false)">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                         }
 
-                                        @* Botão apagar POST COMPLETO *@
                                         @if (isFirst)
                                         {
-                                            <button type="button" class="btn btn-danger" 
-                                                    onclick="prepareDelete('@Url.Action("DeletePost", "BlogPosts", new { id = item.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(principal.Title))', true)"
-                                                    title="@Localizer["DeleteFullPost"]">
+                                            <button type="button" class="btn btn-danger"
+                                                    onclick="prepareDelete('@Url.Action("DeletePost", "BlogPosts", new { id = item.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(principal.Title))', true)">
                                                 <i class="fas fa-bomb"></i>
                                             </button>
                                         }
@@ -135,6 +190,72 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4 px-3">
+            <div class="text-muted small">
+                
+                @Localizer["Page"] @Model.PaginaAtual @Localizer["Of"] @Model.TotalPaginas
+            </div>
+
+            <nav aria-label="Navegação do dashboard">
+                <ul class="pagination pagination-sm mb-0">
+                    @* Botão Anterior *@
+                    <li class="page-item @(!Model.TemPaginaAnterior ? "disabled" : "")">
+                        <a class="page-link" asp-action="Dashboard"
+                           asp-route-page="@(Model.PaginaAtual - 1)"
+                           asp-route-searchTerm="@ViewData["CurrentFilter"]"
+                           asp-route-cultureFilter="@ViewData["CurrentCulture"]"
+                            >
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    @{
+                        int window = 2; // Quantos números mostrar antes e depois da página atual
+                        int startPage = Math.Max(1, Model.PaginaAtual - window);
+                        int endPage = Math.Min(Model.TotalPaginas, Model.PaginaAtual + window);
+                    }
+
+                    @* Sempre mostra a primeira página se não estiver no intervalo *@
+                    @if (startPage > 1)
+                    {
+                        <li class="page-item"><a class="page-link" asp-route-cultureFilter="@ViewData["CurrentCulture"]" asp-action="Dashboard" asp-route-page="1">1</a></li>
+                        @if (startPage > 2)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                    }
+
+                    @* Números ao redor da página atual *@
+                    @for (int i = startPage; i <= endPage; i++)
+                    {
+                        <li class="page-item @(i == Model.PaginaAtual ? "active" : "")">
+                            <a class="page-link" asp-route-searchTerm="@ViewData["CurrentFilter"]" asp-route-cultureFilter="@ViewData["CurrentCulture"]" asp-action="Dashboard" asp-route-page="@i">@i</a>
+                        </li>
+                    }
+
+                    @* Sempre mostra a última página se não estiver no intervalo *@
+                    @if (endPage < Model.TotalPaginas)
+                    {
+                        @if (endPage < Model.TotalPaginas - 1)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                        <li class="page-item"><a class="page-link" asp-route-searchTerm="@ViewData["CurrentFilter"]" asp-route-cultureFilter="@ViewData["CurrentCulture"]"> asp-action="Dashboard" asp-route-page="@Model.TotalPaginas">@Model.TotalPaginas</a></li>
+                    }
+
+                    @* Botão Próximo *@
+                    <li class="page-item @(!Model.TemProximaPagina ? "disabled" : "")">
+                        <a class="page-link" asp-action="Dashboard" asp-route-searchTerm="@ViewData["CurrentFilter"]"asp-route-cultureFilter="@ViewData["CurrentCulture"]"
+                           asp-route-cultureFilter="@ViewData["CurrentCulture"]"
+                         asp-route-page="@(Model.PaginaAtual + 1)">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
     </div>
 </div>
 
@@ -198,5 +319,25 @@
             var myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             myModal.show();
         }
+
+           
+        document.getElementById('dashboardSearch').addEventListener('keyup', filterTable);
+        document.getElementById('langFilter').addEventListener('change', filterTable);
+
+        function filterTable() {
+            let term = document.getElementById('dashboardSearch').value.toLowerCase();
+            let lang = document.getElementById('langFilter').value.toUpperCase();
+            let rows = document.querySelectorAll('#postTable tbody tr');
+
+            rows.forEach(row => {
+                let title = row.getAttribute('data-title');
+                let rowLang = row.getAttribute('data-lang');
+                let matchesSearch = title.includes(term);
+                let matchesLang = lang === "" || rowLang === lang;
+
+                row.style.display = (matchesSearch && matchesLang) ? "" : "none";
+            });
+        }
+    
     </script>
 }

@@ -1,0 +1,116 @@
+﻿@model IEnumerable<MasterStack.Models.BlogPostTranslation>
+@{
+    ViewData["Title"] = "Página Não Encontrada";
+    Layout = "_Layout"; // Voltando ao seu layout principal
+}
+
+<style>
+    .error-container {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+    }
+
+    .error-code {
+        font-size: 8rem;
+        font-weight: 800;
+        color: #6366f1;
+        opacity: 0.2;
+        line-height: 1;
+    }
+
+    .error-illustration {
+        max-width: 100%;
+        height: auto;
+        transform: scaleX(-1);
+    }
+
+    .card-error {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s;
+    }
+
+        .card-error:hover {
+            transform: translateY(-5px);
+        }
+
+    .btn-rounded {
+        border-radius: 50px;
+        padding: 10px 25px;
+    }
+</style>
+
+<div class="container error-container">
+    <div class="row w-100 align-items-center">
+        <div class="col-lg-6 text-center text-lg-start">
+            <div class="error-code mb-2">404</div>
+            <h1 class="display-4 fw-bold mb-3">Parece que você se perdeu.</h1>
+            <p class="lead text-muted mb-5">
+                Não conseguimos encontrar essa página. Que tal voltar para um lugar seguro ou dar uma olhada nos nossos posts recentes?
+            </p>
+
+            <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                <a href="/" class="btn btn-primary btn-rounded shadow-sm">
+                    <i class="fas fa-home me-2"></i> Voltar para Home
+                </a>
+                <a asp-controller="BlogPosts" asp-action="Index" class="btn btn-outline-secondary btn-rounded">
+                    <i class="fas fa-blog me-2"></i> Ver Blog
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-6 d-none d-lg-block">
+            <img src="~/404.svg" alt="Página não encontrada" class="error-illustration">
+        </div>
+    </div>
+</div>
+
+<hr class="my-5 opacity-0">
+
+<div class="container mb-5">
+    <h3 class="text-center mb-4 fw-bold">Talvez você se interesse por estes posts:</h3>
+    
+    <div class="row g-4">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var post in Model)
+            {
+                <div class="col-md-4">
+                    <div class="card card-error shadow-sm h-100 border-0">
+                        <img src="@(string.IsNullOrEmpty(post.ImageUrl) ? "/img/default-post.webp" : post.ImageUrl)"
+                             class="card-img-top rounded-top"
+                             style="height: 180px; object-fit: cover;"
+                             alt="@post.Title">
+                        <div class="card-body">
+                            <span class="badge bg-primary mb-2">@post.Culture.ToUpper()</span>
+                            <h5 class="card-title fw-bold text-dark">@post.Title</h5>
+                            <p class="card-text text-muted small">
+                                @{
+                                    var resumo = post.Content ?? "";
+                                    // Remove tags HTML se houver (opcional, mas recomendado)
+                                    resumo = System.Text.RegularExpressions.Regex.Replace(resumo, "<.*?>", string.Empty);
+                                }
+                                @(resumo.Length > 100 ? resumo.Substring(0, 100) + "..." : resumo)
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pb-3">
+                            <a asp-controller="BlogPosts" asp-action="Details"
+                               asp-route-culture="@post.Culture"
+                               asp-route-slug="@post.Slug"
+                               class="btn btn-sm btn-link p-0 text-decoration-none fw-bold">
+                                Ler Post Completo <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-4">
+                <p class="text-muted italic">Nenhum post recente encontrado para este idioma.</p>
+            </div>
+        }
+    </div>
+</div>

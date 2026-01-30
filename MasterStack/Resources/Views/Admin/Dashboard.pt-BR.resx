@@ -117,19 +117,73 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Actions" xml:space="preserve">
+    <value>Ações</value>
+  </data>
+  <data name="AddTranslation" xml:space="preserve">
+    <value>Adicionar Tradução</value>
+  </data>
   <data name="AdminDashboard" xml:space="preserve">
     <value>Painel Administrativo</value>
   </data>
-  <data name="ConfirmDeleteLanguage" xml:space="preserve">
-    <value>Tem certeza que deseja remover este idioma deste post?</value>
+  <data name="AllLanguages" xml:space="preserve">
+    <value>Todos os Idiomas</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>Apagar</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
   </data>
-  <data name="Edit" xml:space="preserve">
-    <value>Editar</value>
+  <data name="Clear" xml:space="preserve">
+    <value>Limpar</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Confirmar Exclusão</value>
+  </data>
+  <data name="ConfirmDeleteBtn" xml:space="preserve">
+    <value>Sim, Excluir</value>
+  </data>
+  <data name="ConfirmFullDeleteMessage" xml:space="preserve">
+    <value>Você está prestes a excluir o post completo:</value>
+  </data>
+  <data name="ConfirmTranslationDeleteMessage" xml:space="preserve">
+    <value>Você está prestes a excluir apenas esta tradução:</value>
+  </data>
+  <data name="ContentInfo" xml:space="preserve">
+    <value>Informações do Conteúdo</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Data de Criação</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filtrar</value>
+  </data>
+  <data name="ID" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="IrreversibleAction" xml:space="preserve">
+    <value>Esta ação é irreversível.</value>
+  </data>
+  <data name="ManageContent" xml:space="preserve">
+    <value>Gerenciar Conteúdo</value>
   </data>
   <data name="NewPost" xml:space="preserve">
     <value>Novo Post</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Página</value>
+  </data>
+  <data name="Preview" xml:space="preserve">
+    <value>Prévia</value>
+  </data>
+  <data name="ThisActionRemovesAllLanguages" xml:space="preserve">
+    <value>Esta ação removerá o post e TODAS as suas traduções permanentemente.</value>
+  </data>
+  <data name="TotalPosts" xml:space="preserve">
+    <value>Total de Posts</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Atenção</value>
+  </data>
+  <data name="Welcome" xml:space="preserve">
+    <value>Bem-vindo</value>
   </data>
 </root>

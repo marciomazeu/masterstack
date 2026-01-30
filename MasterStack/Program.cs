@@ -126,10 +126,14 @@ localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultur
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseExceptionHandler("/Home/Error"); // Erros de servidor (500)
     app.UseHsts();
 }
+
+// Captura erros de status code como o 404
+// Captura o status code e redireciona mantendo a cultura ou usando padrão
+app.UseStatusCodePagesWithReExecute("/pt-BR/Home/Error/{0}");
+
 app.UseHttpsRedirection();
 //app.UseResponseCompression();
 app.UseStaticFiles();
