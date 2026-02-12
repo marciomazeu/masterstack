@@ -33,6 +33,12 @@
         ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
     }
 }
+@section MetaTags {
+    <title>@t.Title | NomeDoBlog</title>
+    <meta name="description" content="@t.MetaDescription" />
+    <meta name="keywords" content="@t.MetaKeywords" />
+    <link rel="canonical" href="https://seusite.com/@t.Culture/blog/@t.Slug" />
+}
 
 <div class="container mt-4">
     @if (isFallback)

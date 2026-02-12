@@ -16,8 +16,8 @@
     var currentId = routeData["id"]?.ToString();
 
     // Busca os idiomas ativos do banco de dados
-    var dbLanguages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-    
+    //var dbLanguages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+    var dbLanguages = await _context.Languages.ToListAsync();
     var currentLang = _context.Languages.FirstOrDefault(l => l.Culture == currentCulture);
 
 }
@@ -27,6 +27,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @RenderSection("MetaTags", required: false)
     <title>@ViewData["Title"] - MasterStack</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -39,6 +40,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     @RenderSection("Head", required: false)
+
 </head>
 <body class="d-flex flex-column min-vh-100">
     

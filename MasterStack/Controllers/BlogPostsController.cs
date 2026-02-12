@@ -191,6 +191,9 @@ namespace MasterStack.Controllers
                     Title = model.Title,
                     //Content = model.Content,
                     Content = cleanHtml, // Salva o HTML seguro
+                    //Slug = model.Slug?.Trim().ToLower(), // Mapeando o novo campo
+            MetaDescription = model.MetaDescription, // Mapeando o novo campo
+            MetaKeywords = model.MetaKeywords, // Mapeando o novo campo
                     Slug = uniqueSlug,
                     ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg" // Fallback se não subir imagem
                 }; 
@@ -350,88 +353,91 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title
     return View(translation);
 }
 
-        [HttpGet]
-        public async Task<IActionResult> EditTranslation(int id)
+        // 1. Rota para abrir o formulário
+[HttpGet("{culture}/BlogPosts/EditTranslation/{id}")]
+public async Task<IActionResult> EditTranslation(int id)
+{
+    var translation = await _context.BlogPostTranslations.FirstOrDefaultAsync(t => t.Id == id);
+    if (translation == null) return NotFound();
+
+    var model = new EditTranslationViewModel {
+        TranslationId = translation.Id,
+        Culture = translation.Culture,
+        Title = translation.Title,
+        Content = translation.Content,
+        Slug = translation.Slug, 
+        MetaDescription = translation.MetaDescription,
+        MetaKeywords = translation.MetaKeywords, 
+        CurrentImageUrl = translation.ImageUrl
+    };
+    return View(model);
+}
+
+        [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
+{
+    if (!ModelState.IsValid) return View(model);
+
+    // 1. Busca a tradução
+    var translation = await _context.BlogPostTranslations
+        .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
+
+    if (translation == null) return NotFound();
+
+    // 2. Validação Extra: O Slug é único para esta cultura?
+    // Verifica se existe OUTRO post (id diferente) com o mesmo slug na mesma cultura
+    var slugExists = await _context.BlogPostTranslations
+        .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
+
+    if (slugExists)
+    {
+        ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
+        return View(model);
+    }
+
+    // 3. Atualiza os campos (Agora com segurança após o check de null)
+    translation.Title = model.Title;
+    translation.Content = model.Content;
+    translation.Slug = model.Slug?.Trim().ToLower(); // Slugs devem ser sempre minúsculos
+    translation.MetaDescription = model.MetaDescription;
+    translation.MetaKeywords = model.MetaKeywords;
+
+    // 4. Lógica de Imagem (Seu código está ótimo aqui)
+    if (model.NewImage != null && model.NewImage.Length > 0)
+    {
+        string oldImageUrl = translation.ImageUrl;
+        string? newWebPPath = await ProcessAndSaveWebP(model.NewImage);
+
+        if (newWebPPath != null)
         {
-            var translation = await _context.BlogPostTranslations
-                .FirstOrDefaultAsync(t => t.Id == id);
-
-            if (translation == null) return NotFound();
-
-            var model = new EditTranslationViewModel
+            translation.ImageUrl = newWebPPath;
+            if (!string.IsNullOrEmpty(oldImageUrl))
             {
-                TranslationId = translation.Id,
-                Culture = translation.Culture,
-                Title = translation.Title,
-                Content = translation.Content,
-                CurrentImageUrl = translation.ImageUrl // Agora pegamos da tradução!
-            };
-
+                var relativePath = oldImageUrl.TrimStart('/');
+                var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
+                if (System.IO.File.Exists(fullOldPath)) System.IO.File.Delete(fullOldPath);
+            }
+        }
+        else
+        {
+            ModelState.AddModelError("NewImage", "Erro ao processar a imagem.");
             return View(model);
         }
+    }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditTranslation(EditTranslationViewModel model)
-        {
-            if (!ModelState.IsValid) return View(model);
-
-            // 1. Busca a tradução atual do banco
-            var translation = await _context.BlogPostTranslations
-                .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
-
-            if (translation == null) return NotFound();
-
-            // 2. Atualiza os campos de texto
-            translation.Title = model.Title;
-            translation.Content = model.Content;
-
-            // 3. Lógica de Imagem usando o seu método existente
-            if (model.NewImage != null && model.NewImage.Length > 0)
-            {
-                // Guardamos o caminho antigo para deletar depois
-                string oldImageUrl = translation.ImageUrl;
-
-                // Chamamos o seu método centralizado que já converte para WebP
-                string? newWebPPath = await ProcessAndSaveWebP(model.NewImage);
-
-                if (newWebPPath != null)
-                {
-                    // Atualiza o objeto com o novo caminho (/uploads/blog/guid.webp)
-                    translation.ImageUrl = newWebPPath;
-
-                    // 4. Limpeza: Apaga a imagem antiga do disco
-                    if (!string.IsNullOrEmpty(oldImageUrl))
-                    {
-                        // Remove a barra inicial para o Path.Combine funcionar corretamente
-                        var relativePath = oldImageUrl.TrimStart('/');
-                        var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
-
-                        if (System.IO.File.Exists(fullOldPath))
-                        {
-                            System.IO.File.Delete(fullOldPath);
-                        }
-                    }
-                }
-                else
-                {
-                    ModelState.AddModelError("NewImage", "Erro ao processar a imagem. Tente outro arquivo.");
-                    return View(model);
-                }
-            }
-
-            // 5. Salva no banco e redireciona
-            try
-            {
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                ModelState.AddModelError("", "Erro de concorrência. O registro foi alterado por outro usuário.");
-                return View(model);
-            }
-        }
+    // 5. Persistência
+    try
+    {
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        ModelState.AddModelError("", "Erro de concorrência.");
+        return View(model);
+    }
+}
 
         // GET: BlogPosts/Delete/5
         [HttpGet]
@@ -716,6 +722,24 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title
                 return null;
             }
         }
+
+        [HttpPost]
+[Route("{culture}/BlogPosts/UploadEditorImage")]
+public async Task<IActionResult> UploadEditorImage(IFormFile image)
+{
+    if (image == null || image.Length == 0) return BadRequest("Imagem inválida.");
+
+    // Reaproveita seu método que já converte para WebP e salva na pasta /uploads/blog/
+    string? path = await ProcessAndSaveWebP(image);
+
+    if (path != null)
+    {
+        // O Quill espera o link da imagem para substituir o Base64
+        return Ok(new { url = path });
+    }
+
+    return BadRequest("Falha ao processar imagem.");
+}
     }
 
     

@@ -9,10 +9,6 @@
 }
 
 <style>
-    .tox-tinymce-aux {
-        z-index: 999999 !important;
-    }
-
     .image-preview-wrapper {
         border: 2px dashed #dee2e6;
         border-radius: 8px;
@@ -21,16 +17,18 @@
         background: #f8f9fa;
         cursor: pointer;
         transition: 0.3s;
+        position: relative;
+        overflow: hidden;
     }
 
-        .image-preview-wrapper:hover {
-            background: #e9ecef;
-        }
+    .image-preview-wrapper:hover {
+        background: #e9ecef;
+    }
 
     #imagePreview {
-        max-height: 250px;
+        max-height: 200px;
         display: none;
-        margin: 10px auto;
+        margin: 0 auto;
         border-radius: 4px;
     }
 
@@ -42,6 +40,15 @@
     .sticky-sidebar {
         position: sticky;
         top: 20px;
+    }
+
+    /* Estilo para simular o Google */
+    .google-preview-box {
+        background-color: #fff;
+        border: 1px solid #dfe1e5;
+        border-radius: 8px;
+        padding: 15px;
+        max-width: 600px;
     }
 </style>
 
@@ -64,21 +71,60 @@
 
                         <div class="mb-4">
                             <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
-                            <input asp-for="Title" class="form-control form-control-lg" placeholder="@Localizer["TitlePlaceholder"]" />
+                            <input asp-for="Title" id="Title" class="form-control form-control-lg" placeholder="@Localizer["TitlePlaceholder"]" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
-                        @* <div class="mb-0">
-                            <label asp-for="Content" class="form-label fw-bold">@Localizer["ContentLabel"]</label>
-                            <textarea asp-for="Content" id="Editor" class="form-control"></textarea>
-                            <span asp-validation-for="Content" class="text-danger small"></span>
-                        </div> *@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Conteúdo do Post</label>
-                            <div id="quill-editor" style="height: 400px; background: white;">
+                            <div id="quill-editor" style="height: 450px; background: white; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                                 @Html.Raw(Model?.Content)
                             </div>
                             <input type="hidden" name="Content" id="quill-content">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-white fw-bold py-3">Otimização para Buscas (SEO)</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Slug" class="form-label fw-bold small text-uppercase">URL Amigável (Slug)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted small">/blog/</span>
+                                <input asp-for="Slug" id="Slug" class="form-control" placeholder="exemplo-de-url-amigavel" />
+                            </div>
+                            <span asp-validation-for="Slug" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="MetaDescription" class="form-label fw-bold small text-uppercase">Meta Description</label>
+                            <textarea asp-for="MetaDescription" id="MetaDescription" class="form-control" rows="3" maxlength="160" data-auto="false"></textarea>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small id="descCounter" class="badge bg-light text-muted border">0 / 160 caracteres</small>
+                                
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="forceAutoDescription()">
+                                    <i class="fas fa-magic me-1"></i> Sugerir baseada no texto
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="google-preview-box">
+                            <h6 class="text-muted small mb-2"><i class="fab fa-google"></i> Prévia do Google</h6>
+                            <div style="font-family: arial, sans-serif;">
+                                <div style="color: #202124; font-size: 14px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    https://seusite.com/@currentCulture/blog/<span id="preview-slug">...</span>
+                                </div>
+                                <div id="preview-title" style="color: #1a0dab; font-size: 20px; line-height: 1.3; cursor: pointer; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    Título do Post
+                                </div>
+                                <div id="preview-desc" style="color: #4d5156; font-size: 14px; line-height: 1.58; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                    Comece a escrever para ver o resumo aqui...
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -94,7 +140,7 @@
                                 <select asp-for="SelectedCulture" class="form-select">
                                     <option value="pt-BR">🇧🇷 Português</option>
                                     <option value="en-US">🇺🇸 Inglês</option>
-                                    <option value="fr-CA">ca Francais</option>
+                                    <option value="fr-CA">🇫🇷 Francais</option>
                                 </select>
                             </div>
                         </div>
@@ -104,22 +150,21 @@
                         <div class="card-header bg-white fw-bold">Imagem de Capa</div>
                         <div class="card-body">
                             <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
-                                <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted" id="uploadIcon"></i>
-                                <div id="uploadText" class="small text-muted">Clique para selecionar imagem</div>
+                                <div id="uploadPlaceholder">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
+                                    <div class="small text-muted">Clique para selecionar imagem</div>
+                                </div>
                                 <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
                             </div>
                             <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
                             <span asp-validation-for="ImageFile" class="text-danger small"></span>
-                            <p class="mt-2 text-muted small"><i class="fas fa-info-circle"></i> Máximo 5MB (WebP Recomendado)</p>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-body">
-                            <button type="submit" onclick="if(typeof tinymce !== 'undefined') tinymce.triggerSave();" class="btn btn-success w-100 mb-2 py-2">
-                                <i class="fas fa-save me-1"></i> @Localizer["SaveBtn"]
-                            </button>
-                            <button type="reset" class="btn btn-light w-100 btn-sm text-muted">Limpar Campos</button>
+                            <button type="submit" class="btn btn-success w-100 mb-2 py-2 fw-bold">Publicar Post</button>
+                            <a asp-action="Index" class="btn btn-light w-100 btn-sm text-muted border">Cancelar</a>
                         </div>
                     </div>
                 </div>
@@ -128,58 +173,139 @@
     </form>
 </div>
 
-@* @section Scripts {
-    <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin"></script>
-    <script>
-        // Preview da Imagem
-        document.getElementById('ImageInput').onchange = evt => {
-            const [file] = evt.target.files;
-            if (file) {
-                const preview = document.getElementById('imagePreview');
-                const icon = document.getElementById('uploadIcon');
-                const text = document.getElementById('uploadText');
-
-                preview.src = URL.createObjectURL(file);
-                preview.style.display = 'block';
-                icon.style.display = 'none';
-                text.style.display = 'none';
-            }
-        }
-
-        // TinyMCE Config
-        tinymce.init({
-            selector: '#Editor',
-            height: 500,
-            plugins: 'anchor autolink charmap codesample link lists media table wordcount visualblocks emoticons',
-            toolbar: 'undo redo | blocks bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image codesample emoticons',
-            menubar: false,
-            skin: 'oxide',
-            content_css: 'default'
-        });
-    </script>
-} *@
-
 @section Scripts {
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
     <script>
+        // 1. Inicialização do Quill
         var quill = new Quill('#quill-editor', {
             theme: 'snow',
             modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'link'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['image', 'code-block'], // Botão de imagem aqui
-                    ['clean']
-                ]
+                toolbar: {
+                    container: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        ['link', 'image', 'code-block'],
+                        ['clean']
+                    ],
+                    handlers: { image: imageHandler }
+                }
             }
         });
 
-        // Antes de enviar o formulário, copiamos o HTML do Quill para o input hidden
-        var form = document.querySelector('form');
-        form.onsubmit = function() {
-            var content = document.querySelector('#quill-content');
-            content.value = quill.root.innerHTML;
+        // 2. Upload de Imagem no Editor
+        async function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+            input.onchange = async () => {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('image', file);
+                const response = await fetch(`/@currentCulture/BlogPosts/UploadEditorImage`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const range = quill.getSelection();
+                    quill.insertEmbed(range.index, 'image', result.url);
+                }
+            };
+        }
+
+        // 3. Funções Auxiliares de Texto
+        function slugify(text) {
+            return text.toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '').replace(/-+$/, '');
+        }
+
+        function extractPlainText(html) {
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = html;
+            return (tempDiv.textContent || tempDiv.innerText || "").replace(/\s+/g, ' ').trim();
+        }
+
+        // 4. Lógica de SEO em Tempo Real
+        const titleInput = document.getElementById('Title');
+        const slugInput = document.getElementById('Slug');
+        const descField = document.getElementById('MetaDescription');
+
+        titleInput.addEventListener('input', function() {
+            if (slugInput.value === "" || slugInput.dataset.auto === "true") {
+                slugInput.value = slugify(this.value);
+                slugInput.dataset.auto = "true";
+            }
+            updateGooglePreview();
+        });
+
+        slugInput.addEventListener('input', () => { 
+            slugInput.dataset.auto = "false"; 
+            updateGooglePreview(); 
+        });
+
+        quill.on('text-change', function() {
+            if (descField.value === "" || descField.dataset.auto === "true") {
+                forceAutoDescription();
+            }
+            updateGooglePreview();
+        });
+
+        descField.addEventListener('input', () => { 
+            descField.dataset.auto = "false"; 
+            updateGooglePreview();
+            updateCounter();
+        });
+
+        function forceAutoDescription() {
+            // 1. Pega o HTML do Quill
+            const html = quill.root.innerHTML;
+            // 2. Limpa o HTML para texto puro
+            const plainText = extractPlainText(html);
+            // 3. Alimenta o campo de Meta Description
+            const descField = document.getElementById('MetaDescription');
+            descField.value = plainText.substring(0, 160);
+            
+            // 4. Atualiza o contador e o preview do Google
+            updateCounter();
+            updateGooglePreview();
+        }
+
+        function updateCounter() {
+            const count = descField.value.length;
+            document.getElementById('descCounter').innerText = `${count} / 160 caracteres`;
+            document.getElementById('descCounter').className = count >= 150 ? "text-danger small" : "text-muted small";
+        }
+
+        function updateGooglePreview() {
+            document.getElementById('preview-title').innerText = titleInput.value || "Título do Post";
+            document.getElementById('preview-slug').innerText = slugInput.value || "slug-do-post";
+            document.getElementById('preview-desc').innerText = descField.value || "A descrição aparecerá aqui...";
+        }
+
+        // 5. Preview da Imagem de Capa
+        document.getElementById('ImageInput').onchange = evt => {
+            const [file] = document.getElementById('ImageInput').files;
+            if (file) {
+                document.getElementById('imagePreview').src = URL.createObjectURL(file);
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('uploadPlaceholder').style.display = 'none';
+            }
         };
+
+        // 6. Envio do Formulário
+        document.getElementById('createForm').onsubmit = function() {
+            document.getElementById('quill-content').value = quill.root.innerHTML;
+            return true;
+        };
+
+        window.onload = updateGooglePreview;
     </script>
 }

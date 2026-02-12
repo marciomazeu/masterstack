@@ -24,6 +24,9 @@
         <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@culture" class="btn btn-success px-4">
             <i class="fas fa-plus me-1"></i> @Localizer["NewPost"]
         </a>
+        <button onclick="confirmCleanup()" class="btn btn-sm btn-outline-danger">
+    <i class="fas fa-broom"></i> Limpar Imagens Órfãs
+</button>
     </div>
     <div class="card shadow-sm mb-4">
         <div class="card-body">
@@ -159,9 +162,13 @@
                                             </div>
                                         }
 
-                                        <a asp-action="EditTranslation" asp-route-id="@t.Id" class="btn btn-outline-warning">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
+                                       <a asp-action="EditTranslation" 
+                                       asp-controller="BlogPosts"
+   asp-route-culture="@culture" 
+   asp-route-id="@t.Id" 
+   class="btn btn-outline-warning">
+    <i class="fas fa-edit"></i>
+</a>
 
                                         <a asp-controller="BlogPosts" asp-action="Details" asp-route-culture="@t.Culture" asp-route-slug="@t.Slug" asp-area="" target="_blank" class="btn btn-outline-secondary">
                                             <i class="fas fa-eye"></i>
@@ -297,7 +304,9 @@
 </div>
 
 @section Scripts {
+     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+       
         function prepareDelete(url, title, isFullPost) {
             // 1. Injeta o título e a URL
             document.getElementById('postTitleToDelete').innerText = title;
@@ -339,5 +348,55 @@
             });
         }
     
+   async function confirmCleanup() {
+    // 1. Fase de Escaneamento
+    Swal.fire({
+        title: 'Verificando arquivos...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const scanResponse = await fetch('/admin/scan-orphaned-images');
+        const scanData = await scanResponse.json();
+
+        if (scanData.count === 0) {
+            Swal.fire({
+                title: 'Tudo limpo!',
+                text: 'Não foram encontradas imagens não utilizadas.',
+                icon: 'success'
+            });
+            return;
+        }
+
+        // 2. Pergunta de Confirmação com a Quantidade
+        const result = await Swal.fire({
+            title: 'Limpeza de Disco',
+            html: `Encontramos <b>${scanData.count}</b> imagens órfãs.<br>Deseja apagá-las permanentemente?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sim, apagar tudo!',
+            cancelButtonText: 'Agora não'
+        });
+
+        if (result.isConfirmed) {
+            // 3. Execução da Limpeza (chama o seu método POST anterior)
+            Swal.fire({ title: 'Apagando...', didOpen: () => { Swal.showLoading(); } });
+
+            const response = await fetch('/admin/cleanup-images', { 
+                method: 'POST',
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+            });
+            
+            const data = await response.json();
+            Swal.fire('Concluído!', data.message, 'success');
+        }
+
+    } catch (error) {
+        Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
+    }
+}
+
     </script>
 }

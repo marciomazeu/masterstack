@@ -17,9 +17,10 @@ namespace MasterStack.Migrations
                 name: "BlogPosts",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -30,10 +31,11 @@ namespace MasterStack.Migrations
                 name: "Languages",
                 columns: table => new
                 {
-                    Culture = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FlagClass = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Culture = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", maxLength: 15, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    FlagClass = table.Column<string>(type: "TEXT", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -44,14 +46,14 @@ namespace MasterStack.Migrations
                 name: "BlogPostTranslations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    BlogPostId = table.Column<int>(type: "int", nullable: false),
-                    Culture = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
-                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    BlogPostId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Culture = table.Column<string>(type: "TEXT", maxLength: 15, nullable: false),
+                    Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Content = table.Column<string>(type: "TEXT", nullable: false),
+                    Slug = table.Column<string>(type: "TEXT", maxLength: 250, nullable: false),
+                    ImageUrl = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -72,18 +74,19 @@ namespace MasterStack.Migrations
 
             migrationBuilder.InsertData(
                 table: "Languages",
-                columns: new[] { "Culture", "FlagClass", "IsActive", "Name" },
+                columns: new[] { "Culture", "FlagClass", "Id", "IsActive", "Name" },
                 values: new object[,]
                 {
-                    { "en-US", "fi-us", false, "English" },
-                    { "es-ES", "fi-es", false, "Español" },
-                    { "pt-BR", "fi-br", false, "Português" }
+                    { "en-US", "fi-us", 1, false, "English" },
+                    { "fr-CA", "fi-ca", 1, false, "Français" },
+                    { "pt-BR", "fi-br", 1, false, "Português" }
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_BlogPostTranslations_BlogPostId",
+                name: "IX_BlogPostTranslations_BlogPostId_Culture",
                 table: "BlogPostTranslations",
-                column: "BlogPostId");
+                columns: new[] { "BlogPostId", "Culture" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_BlogPostTranslations_Culture",

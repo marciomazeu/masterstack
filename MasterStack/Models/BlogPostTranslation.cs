@@ -32,7 +32,7 @@ namespace MasterStack.Models
         [Required]
         [StringLength(250)]
         [Display(Name = "SEO Slug")]
-        public string? Slug { get; set; }
+        public string Slug { get; set; }
 
         // 2. ADICIONE ESTE CAMPO PARA GUARDAR O NOME NO BANCO
         public string? ImageUrl { get; set; }
@@ -42,5 +42,10 @@ namespace MasterStack.Models
         public IFormFile? ImageFile { get; set; }
 
         public virtual Language? Language { get; set; }
+
+        [StringLength(160)]
+    public string? MetaDescription { get; set; } // Resumo para o Google
+
+    public string? MetaKeywords { get; set; }
     }
 }

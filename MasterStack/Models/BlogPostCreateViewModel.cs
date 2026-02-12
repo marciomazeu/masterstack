@@ -8,6 +8,16 @@ namespace MasterStack.Models // O namespace deve ser este
     {
         public string Title { get; set; }
         public string Content { get; set; }
+        // --- ADICIONE ESTES CAMPOS PARA O SEO ---
+    [Required(ErrorMessage = "O Slug é obrigatório")]
+    [StringLength(250)]
+    public string? Slug { get; set; }
+
+    [StringLength(160)]
+    public string? MetaDescription { get; set; }
+
+    public string? MetaKeywords { get; set; }
+    // ---------------------------------------
         public IFormFile? ImageFile { get; set; }
         [Required]
         public string SelectedCulture { get; set; }

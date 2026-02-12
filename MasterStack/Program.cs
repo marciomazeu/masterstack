@@ -27,7 +27,7 @@ builder.Services.AddAuthentication("MyCookieAuth")
         options.Cookie.Name = "MasterStackAdmin";
         options.Events.OnRedirectToLogin = context =>
         {
-            // Tenta pegar a cultura da rota ou usa pt-BR como padrão
+            // Tenta pegar a cultura da rota ou usa pt-BR como padrï¿½o
             var culture = context.HttpContext.Request.RouteValues["culture"] ?? "pt-BR";
             var loginUrl = $"/{culture}/Account/Login?ReturnUrl={context.Request.Path}";
             context.Response.Redirect(loginUrl);
@@ -39,7 +39,6 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     var supportedCultures = new[] {
         new CultureInfo("en-US"),
-        new CultureInfo("en-CA"),
         new CultureInfo("pt-BR"),
         new CultureInfo("fr-CA")
     };
@@ -48,7 +47,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
 
-    // LIMPE os provedores padrão e coloque a ROTA em primeiro lugar
+    // LIMPE os provedores padrï¿½o e coloque a ROTA em primeiro lugar
     options.RequestCultureProviders.Clear();
     options.RequestCultureProviders.Insert(0, new RouteDataRequestCultureProvider());
 });
@@ -59,10 +58,11 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 //conexao com o banco de dados
+// Substitua o UseSqlServer por este:
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 1. Adiciona o serviço de compressão
+// 1. Adiciona o serviï¿½o de compressï¿½o
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -83,9 +83,9 @@ builder.WebHost.ConfigureKestrel(options =>
 var app = builder.Build();
 
 // 2. Configura os idiomas (PT-BR, EN-CA, FR-CA)
-var supportedCultures = new[] { "pt-BR", "pt", "en-US", "en", "fr-FR", "fr-CA", "fr" };
+var supportedCultures = new[] { "pt-BR", "pt", "en-US", "en", "fr-CA", "fr" };
 var localizationOptions = new RequestLocalizationOptions()
-    .SetDefaultCulture(supportedCultures[0])
+    .SetDefaultCulture("pt-BR")
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures);
 
@@ -97,12 +97,12 @@ using (var scope = app.Services.CreateScope())
         // 1. Defina a lista de idiomas desejados
         var seedLanguages = new List<Language>
         {
-            new Language { Culture = "pt-BR", Name = "Português", FlagClass = "fi-br", IsActive = true },
+            new Language { Culture = "pt-BR", Name = "Portugues", FlagClass = "fi-br", IsActive = true },
             new Language { Culture = "en-US", Name = "English", FlagClass = "fi-us", IsActive = true },
-            new Language { Culture = "fr-CA", Name = "Français", FlagClass = "fi-ca", IsActive = true }
+            new Language { Culture = "fr-CA", Name = "FranÃ§ais", FlagClass = "fi-ca", IsActive = true }
         };
 
-        // 2. Só insere se o idioma ainda não existir no banco
+        // 2. Sï¿½ insere se o idioma ainda nï¿½o existir no banco
         foreach (var lang in seedLanguages)
         {
             if (!context.Languages.Any(l => l.Culture == lang.Culture))
@@ -112,7 +112,7 @@ using (var scope = app.Services.CreateScope())
         }
 
         context.SaveChanges();
-        Console.WriteLine("Sucesso: Sincronização de idiomas concluída (sem apagar dados).");
+        Console.WriteLine("Sucesso: Sincronizaï¿½ï¿½o de idiomas concluï¿½da (sem apagar dados).");
     }
     catch (Exception ex)
     {
@@ -120,7 +120,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Isso força o sistema a olhar para a URL primeiro
+// Isso forï¿½a o sistema a olhar para a URL primeiro
 localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultureProvider());
 
 // Configure the HTTP request pipeline.
@@ -131,26 +131,26 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Captura erros de status code como o 404
-// Captura o status code e redireciona mantendo a cultura ou usando padrão
+// Captura o status code e redireciona mantendo a cultura ou usando padrï¿½o
 app.UseStatusCodePagesWithReExecute("/pt-BR/Home/Error/{0}");
 
 app.UseHttpsRedirection();
 //app.UseResponseCompression();
 app.UseStaticFiles();
 
-// 1. PRIMEIRO: Localiza para onde a requisição vai
+// 1. PRIMEIRO: Localiza para onde a requisiï¿½ï¿½o vai
 app.UseRouting();
 
 // 2. SEGUNDO: Define o idioma baseado na rota localizada
 app.UseRequestLocalization(localizationOptions);
 
-// 3. TERCEIRO: Identifica quem é o usuário (Cookie)
+// 3. TERCEIRO: Identifica quem ï¿½ o usuï¿½rio (Cookie)
 app.UseAuthentication();
 
-// 4. QUARTO: Verifica se o usuário tem permissão ([Authorize])
+// 4. QUARTO: Verifica se o usuï¿½rio tem permissï¿½o ([Authorize])
 app.UseAuthorization();
 
-// 5. POR ÚLTIMO: Executa o Controller encontrado
+// 5. POR ï¿½LTIMO: Executa o Controller encontrado
 app.MapControllerRoute(
     name: "sitemap",
     pattern: "sitemap.xml",
@@ -163,5 +163,19 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+    using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        MasterStack.Data.SeedData.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Um erro ocorreu ao popular o banco de dados.");
+    }
+}
 
 app.Run();
