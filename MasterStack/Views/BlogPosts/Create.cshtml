@@ -161,6 +161,20 @@
                         </div>
                     </div>
 
+<div class="card mb-4">
+    <div class="card-header bg-white fw-bold">Status</div>
+    <div class="card-body">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
+            <label class="form-check-label fw-bold" for="publishSwitch">
+                <span id="statusLabel" class="text-danger">Rascunho</span>
+            </label>
+        </div>
+        <small class="text-muted d-block mt-2">
+            Se desmarcado, o post não aparecerá na listagem pública.
+        </small>
+    </div>
+</div>
                     <div class="card">
                         <div class="card-body">
                             <button type="submit" class="btn btn-success w-100 mb-2 py-2 fw-bold">Publicar Post</button>
@@ -307,5 +321,17 @@
         };
 
         window.onload = updateGooglePreview;
+
+        // Script simples para mudar a cor e o texto do status dinamicamente
+    const sw = document.getElementById('publishSwitch');
+    const label = document.getElementById('statusLabel');
+    
+    const updateLabel = () => {
+        label.innerText = sw.checked ? "Publicado" : "Rascunho";
+        label.className = sw.checked ? "text-success fw-bold" : "text-danger fw-bold";
+    };
+
+    sw.addEventListener('change', updateLabel);
+    window.addEventListener('load', updateLabel);
     </script>
 }

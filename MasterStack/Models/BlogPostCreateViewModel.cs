@@ -22,6 +22,8 @@ namespace MasterStack.Models // O namespace deve ser este
         [Required]
         public string SelectedCulture { get; set; }
 
+        public bool IsPublished { get; set; }
+
         public List<SelectListItem> AvailableCultures { get; set; } = new List<SelectListItem>
     {
         new SelectListItem { Value = "pt-BR", Text = "Português (Brasil)" },

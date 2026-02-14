@@ -42,7 +42,7 @@ namespace MasterStack.Controllers
             // 1. Iniciamos a Query básica (apenas posts que tenham o idioma atual)
             var query = _context.BlogPosts
                 .Include(p => p.Translations)
-                .Where(p => p.Translations.Any(t => t.Culture == currentCulture))
+                .Where(p => p.Translations.Any(t => t.Culture == currentCulture && t.IsPublished))
                 .AsQueryable(); // Importante para permitir adicionar filtros depois
 
             // 2. AQUI ESTAVA O PROBLEMA: Aplicar o filtro de busca ANTES de contar e paginar
@@ -402,6 +402,7 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     translation.Slug = model.Slug?.Trim().ToLower(); // Slugs devem ser sempre minúsculos
     translation.MetaDescription = model.MetaDescription;
     translation.MetaKeywords = model.MetaKeywords;
+    translation.IsPublished = model.IsPublished;
 
     // 4. Lógica de Imagem (Seu código está ótimo aqui)
     if (model.NewImage != null && model.NewImage.Length > 0)

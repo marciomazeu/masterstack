@@ -47,5 +47,8 @@ namespace MasterStack.Models
     public string? MetaDescription { get; set; } // Resumo para o Google
 
     public string? MetaKeywords { get; set; }
+
+    [Display(Name = "Publicado")]
+public bool IsPublished { get; set; } = false; // Por padrão, nasce como rascunho
     }
 }

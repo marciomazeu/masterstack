@@ -27,51 +27,64 @@ namespace MasterStack.Controllers
         }
 
         [Route("Dashboard")]
-        public async Task<IActionResult> Dashboard(string searchTerm, string cultureFilter, int page = 1)
-        {
-            int pageSize = 10;
-            var query = _context.BlogPosts.Include(p => p.Translations).AsQueryable();
+        public async Task<IActionResult> Dashboard(string searchTerm, string cultureFilter, string status, int page = 1)
+{
+    int pageSize = 10;
+    
+    // 1. Iniciamos a query incluindo as traduções
+    var query = _context.BlogPosts.Include(p => p.Translations).AsQueryable();
 
-            // 1. Filtro por Termo de Busca (Título)
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                searchTerm = searchTerm.ToLower();
-                query = query.Where(p => p.Translations.Any(t => t.Title.ToLower().Contains(searchTerm)));
-            }
+    // 2. Filtro por Termo de Busca (Título em qualquer tradução)
+    if (!string.IsNullOrEmpty(searchTerm))
+    {
+        searchTerm = searchTerm.ToLower();
+        query = query.Where(p => p.Translations.Any(t => t.Title.ToLower().Contains(searchTerm)));
+    }
 
-            // 2. Filtro por Cultura (Idioma específico)
-            if (!string.IsNullOrEmpty(cultureFilter))
-            {
-                query = query.Where(p => p.Translations.Any(t => t.Culture == cultureFilter));
-            }
+    // 3. Filtro por Cultura
+    if (!string.IsNullOrEmpty(cultureFilter))
+    {
+        query = query.Where(p => p.Translations.Any(t => t.Culture == cultureFilter));
+    }
 
-            // 3. Contagem e Paginação
-            var totalPosts = await query.CountAsync();
-            var posts = await query
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+    // 4. Filtro por Status (Publicado/Rascunho)
+    // Sendo realista: se o post tem várias línguas, ele é rascunho se QUALQUER tradução for rascunho
+    // Ou se a tradução específica filtrada for rascunho.
+    if (!string.IsNullOrEmpty(status))
+    {
+        if (status == "published")
+            query = query.Where(p => p.Translations.Any(t => t.IsPublished));
+        else if (status == "draft")
+            query = query.Where(p => p.Translations.Any(t => !t.IsPublished));
+    }
 
-            // 4. Persistência de Filtros para a View
-            ViewData["CurrentFilter"] = searchTerm;
-            ViewData["CurrentCulture"] = cultureFilter;
-            ViewData["Title"] = _localizer["Welcome"];
+    // 5. Execução da Paginação e Busca
+    var totalPosts = await query.CountAsync();
+    var posts = await query
+        .OrderByDescending(p => p.CreatedAt)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
 
-            var model = new DashboardViewModel
-            {
-                Posts = posts,
-                PaginaAtual = page,
-                TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize)
-            };
+    // 6. Dados para as Estatísticas e Filtros na View
+    ViewData["CurrentFilter"] = searchTerm;
+    ViewData["CurrentCulture"] = cultureFilter;
+    ViewData["CurrentStatus"] = status ?? "all";
+    
+    // Contagens rápidas para os cards de estatística
+    ViewBag.PostsPT = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "pt-BR");
+    ViewBag.PostsEN = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "en-US");
+    ViewBag.PostsFR = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "fr-CA");
 
-            // Conta posts por cultura
-            ViewBag.PostsPT = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "pt-BR");
-            ViewBag.PostsEN = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "en-US");
-            ViewBag.PostsFR = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "fr-CA");
+    var model = new DashboardViewModel
+    {
+        Posts = posts,
+        PaginaAtual = page,
+        TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize)
+    };
 
-            return View(model);
-        }
+    return View(model);
+}
 
         [HttpGet("/admin/scan-orphaned-images")]
 public async Task<IActionResult> ScanOrphanedImages()

@@ -70,13 +70,36 @@
         <div class="col-md-4">
             <div class="card border-start border-warning border-4 shadow-sm">
                 <div class="card-body">
-                    <h6 class="text-muted">Français (fr-FR)</h6>
+                    <h6 class="text-muted">Français (fr-CA)</h6>
                     <h2 class="fw-bold">@ViewBag.PostsFR</h2>
                 </div>
             </div>
         </div>
     </div>
     <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="mb-3">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div class="btn-group btn-group-sm" role="group">
+        @{
+            var currentStatus = ViewData["CurrentStatus"]?.ToString() ?? "all";
+            var searchTerm = ViewData["CurrentFilter"];
+            var cultureFilter = ViewData["CurrentCulture"];
+        }
+        <a asp-action="Dashboard" asp-route-status="all" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
+           class="btn @(currentStatus == "all" ? "btn-secondary" : "btn-outline-secondary")">@Localizer["All"]</a>
+        
+        <a asp-action="Dashboard" asp-route-status="published" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
+           class="btn @(currentStatus == "published" ? "btn-success" : "btn-outline-success")">@Localizer["Published"]</a>
+        
+        <a asp-action="Dashboard" asp-route-status="draft" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
+           class="btn @(currentStatus == "draft" ? "btn-warning" : "btn-outline-warning")">@Localizer["Drafts"]</a>
+    </div>
+    
+    <div class="text-muted small">
+        <i class="fas fa-info-circle"></i> Exibindo @Model.Posts.Count resultados nesta página.
+    </div>
+</div>
+        </div>
         <div class="table-responsive">
             <table class="table align-middle mb-0" id="postTable">
                 <thead class="table-dark">
@@ -85,6 +108,7 @@
                         <th style="width: 100px;">@Localizer["Preview"]</th>
                         <th>@Localizer["ContentInfo"]</th>
                         <th style="width: 150px;">@Localizer["Date"]</th>
+                        <th style="width: 120px;">@Localizer["Status"]</th>
                         <th class="text-end pe-3" style="width: 250px;">@Localizer["Actions"]</th>
                     </tr>
                 </thead>
@@ -140,6 +164,16 @@
                                 <td class="text-muted small">
                                     @item.CreatedAt.ToString("g")
                                 </td>
+                                <td>
+    @if (t.IsPublished)
+    {
+        <span class="badge bg-success"><i class="fas fa-check me-1"></i> @Localizer["Published"]</span>
+    }
+    else
+    {
+        <span class="badge bg-warning text-dark"><i class="fas fa-pause-circle me-1"></i> @Localizer["Draft"]</span>
+    }
+</td>
                                 <td class="text-end pe-3">
                                     <div class="btn-group btn-group-sm">
                                         @* Bloco de Ações (Igual ao seu, mantendo a consistência) *@
@@ -206,60 +240,35 @@
 
             <nav aria-label="Navegação do dashboard">
                 <ul class="pagination pagination-sm mb-0">
-                    @* Botão Anterior *@
-                    <li class="page-item @(!Model.TemPaginaAnterior ? "disabled" : "")">
-                        <a class="page-link" asp-action="Dashboard"
-                           asp-route-page="@(Model.PaginaAtual - 1)"
-                           asp-route-searchTerm="@ViewData["CurrentFilter"]"
-                           asp-route-cultureFilter="@ViewData["CurrentCulture"]"
-                            >
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    </li>
-
-                    @{
+    @* Anterior *@
+    <li class="page-item @(!Model.TemPaginaAnterior ? "disabled" : "")">
+        <a class="page-link" asp-action="Dashboard" asp-route-page="@(Model.PaginaAtual - 1)" 
+           asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+    </li>
+ @{
                         int window = 2; // Quantos números mostrar antes e depois da página atual
                         int startPage = Math.Max(1, Model.PaginaAtual - window);
                         int endPage = Math.Min(Model.TotalPaginas, Model.PaginaAtual + window);
                     }
+    @* Números (Simplificado para o seu código) *@
+    @for (int i = startPage; i <= endPage; i++)
+    {
+        <li class="page-item @(i == Model.PaginaAtual ? "active" : "")">
+            <a class="page-link" asp-action="Dashboard" asp-route-page="@i" 
+               asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">@i</a>
+        </li>
+    }
 
-                    @* Sempre mostra a primeira página se não estiver no intervalo *@
-                    @if (startPage > 1)
-                    {
-                        <li class="page-item"><a class="page-link" asp-route-cultureFilter="@ViewData["CurrentCulture"]" asp-action="Dashboard" asp-route-page="1">1</a></li>
-                        @if (startPage > 2)
-                        {
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
-                        }
-                    }
-
-                    @* Números ao redor da página atual *@
-                    @for (int i = startPage; i <= endPage; i++)
-                    {
-                        <li class="page-item @(i == Model.PaginaAtual ? "active" : "")">
-                            <a class="page-link" asp-route-searchTerm="@ViewData["CurrentFilter"]" asp-route-cultureFilter="@ViewData["CurrentCulture"]" asp-action="Dashboard" asp-route-page="@i">@i</a>
-                        </li>
-                    }
-
-                    @* Sempre mostra a última página se não estiver no intervalo *@
-                    @if (endPage < Model.TotalPaginas)
-                    {
-                        @if (endPage < Model.TotalPaginas - 1)
-                        {
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
-                        }
-                        <li class="page-item"><a class="page-link" asp-route-searchTerm="@ViewData["CurrentFilter"]" asp-route-cultureFilter="@ViewData["CurrentCulture"]"> asp-action="Dashboard" asp-route-page="@Model.TotalPaginas">@Model.TotalPaginas</a></li>
-                    }
-
-                    @* Botão Próximo *@
-                    <li class="page-item @(!Model.TemProximaPagina ? "disabled" : "")">
-                        <a class="page-link" asp-action="Dashboard" asp-route-searchTerm="@ViewData["CurrentFilter"]"asp-route-cultureFilter="@ViewData["CurrentCulture"]"
-                           asp-route-cultureFilter="@ViewData["CurrentCulture"]"
-                         asp-route-page="@(Model.PaginaAtual + 1)">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                </ul>
+    @* Próximo *@
+    <li class="page-item @(!Model.TemProximaPagina ? "disabled" : "")">
+        <a class="page-link" asp-action="Dashboard" asp-route-page="@(Model.PaginaAtual + 1)" 
+           asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+    </li>
+</ul>
             </nav>
         </div>
 
@@ -327,25 +336,6 @@
             // 3. Abre o modal manualmente via Bootstrap 5
             var myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
             myModal.show();
-        }
-
-           
-        document.getElementById('dashboardSearch').addEventListener('keyup', filterTable);
-        document.getElementById('langFilter').addEventListener('change', filterTable);
-
-        function filterTable() {
-            let term = document.getElementById('dashboardSearch').value.toLowerCase();
-            let lang = document.getElementById('langFilter').value.toUpperCase();
-            let rows = document.querySelectorAll('#postTable tbody tr');
-
-            rows.forEach(row => {
-                let title = row.getAttribute('data-title');
-                let rowLang = row.getAttribute('data-lang');
-                let matchesSearch = title.includes(term);
-                let matchesLang = lang === "" || rowLang === lang;
-
-                row.style.display = (matchesSearch && matchesLang) ? "" : "none";
-            });
         }
     
    async function confirmCleanup() {

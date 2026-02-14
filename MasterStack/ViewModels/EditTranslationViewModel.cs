@@ -24,5 +24,6 @@ namespace MasterStack.ViewModels
 
         public string? CurrentImageUrl { get; set; }
         public IFormFile? NewImage { get; set; } // Imagem específica deste idioma
+        public bool IsPublished { get; set; } // Novo campo para status de publicação
     }
 }
