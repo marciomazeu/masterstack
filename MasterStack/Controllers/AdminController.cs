@@ -1,38 +1,49 @@
 ﻿using MasterStack.Data; // Ajuste para o seu namespace
+using MasterStack.Models;
 using MasterStack.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System.Globalization;
+using System.Security.Claims;
 using static System.Net.Mime.MediaTypeNames;
+
 
 namespace MasterStack.Controllers
 {
 
-    [Authorize]
-    [Route("{culture}/Admin")]
-    public class AdminController : Controller
+  [Authorize]
+public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IStringLocalizer<AdminController> _localizer;
        private readonly IWebHostEnvironment _webHostEnvironment;
+       private readonly UserManager<IdentityUser> _userManager; // Adicione o UserManager
 
-        public AdminController(IStringLocalizer<AdminController> localizer, ApplicationDbContext context,IWebHostEnvironment webHostEnvironment)
+        public AdminController(IStringLocalizer<AdminController> localizer, ApplicationDbContext context,IWebHostEnvironment webHostEnvironment, UserManager<IdentityUser> userManager)
         {
             _context = context;
             _localizer = localizer;
             _webHostEnvironment = webHostEnvironment;
+            _userManager = userManager;
         }
 
-        [Route("Dashboard")]
+        [HttpGet]
+        [Route("/pt-BR/Admin/Dashboard")] // Força o reconhecimento imediato
+        [Route("{culture}/Admin/Dashboard")]
         public async Task<IActionResult> Dashboard(string searchTerm, string cultureFilter, string status, int page = 1)
 {
     int pageSize = 10;
     
     // 1. Iniciamos a query incluindo as traduções
-    var query = _context.BlogPosts.Include(p => p.Translations).AsQueryable();
+    // 1. ATUALIZADO: Incluímos as traduções E o autor (AuthorProfile)
+    var query = _context.BlogPosts
+        .Include(p => p.Translations)
+        .Include(p => p.Author) // Isso traz o DisplayName e a Foto do autor
+        .AsQueryable();
 
     // 2. Filtro por Termo de Busca (Título em qualquer tradução)
     if (!string.IsNullOrEmpty(searchTerm))
@@ -86,6 +97,90 @@ namespace MasterStack.Controllers
     return View(model);
 }
 
+[HttpGet]
+[Route("/pt-BR/Admin/Profile")] // Força o reconhecimento imediato
+[Route("{culture}/Admin/Profile")]
+public async Task<IActionResult> Profile()
+{
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return Redirect("/Identity/Account/Login");
+
+    var profile = await _context.AuthorProfiles
+        .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+    // Se o perfil não existir, enviamos uma ViewModel vazia para a View
+    // A View decidirá se mostra o formulário de criação ou edição
+    var viewModel = new ProfileViewModel();
+
+    if (profile != null)
+    {
+        viewModel.DisplayName = profile.DisplayName;
+        viewModel.Bio = profile.Bio;
+        viewModel.TwitterUrl = profile.TwitterUrl;
+        viewModel.LinkedInUrl = profile.LinkedInUrl;
+        viewModel.GitHubUrl = profile.GitHubUrl;
+        viewModel.CurrentImageUrl = profile.ProfileImageUrl;
+    }
+
+    return View(viewModel);
+}
+
+// REMOVI A DUPLICIDADE AQUI: Apenas um UpdateProfile (POST)
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
+{
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return Challenge();
+
+    // 1. Busca o perfil ou cria um novo vinculado ao ID do usuário logado
+    var profile = await _context.AuthorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+    bool isNew = false;
+
+    if (profile == null)
+    {
+        profile = new AuthorProfile { UserId = user.Id };
+        isNew = true;
+    }
+
+    // 2. Lógica de Upload da Imagem (NewImage vem da ProfileViewModel)
+    if (model.NewImage != null && model.NewImage.Length > 0)
+    {
+        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.NewImage.FileName);
+        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/profiles");
+        
+        if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
+        var filePath = Path.Combine(uploadPath, fileName);
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await model.NewImage.CopyToAsync(stream);
+        }
+        profile.ProfileImageUrl = "/uploads/profiles/" + fileName;
+    }
+
+    // 3. Atualiza os dados
+    profile.DisplayName = model.DisplayName;
+    profile.Bio = model.Bio;
+    profile.LinkedInUrl = model.LinkedInUrl;
+    profile.TwitterUrl = model.TwitterUrl;
+    profile.GitHubUrl = model.GitHubUrl;
+
+    if (isNew) _context.AuthorProfiles.Add(profile);
+    else _context.Update(profile);
+
+    await _context.SaveChangesAsync();
+
+    TempData["Success"] = "Perfil salvo com sucesso!";
+    return RedirectToAction(nameof(Profile));
+}
+
+// O método CreateProfile agora apenas redireciona para a View de Profile
+[HttpGet]
+public IActionResult CreateProfile()
+{
+    return View("Profile", new ProfileViewModel());
+}
         [HttpGet("/admin/scan-orphaned-images")]
 public async Task<IActionResult> ScanOrphanedImages()
 {

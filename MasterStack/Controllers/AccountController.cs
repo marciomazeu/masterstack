@@ -1,12 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 
 namespace MasterStack.Controllers
 {
     [Route("{culture}/Account")]
     public class AccountController : Controller
     {
+        private readonly SignInManager<IdentityUser> _signInManager;
+
+public AccountController(SignInManager<IdentityUser> signInManager)
+{
+    _signInManager = signInManager;
+}
+
         [HttpGet("Login")]
         public IActionResult Login(string returnUrl = null)
         {
@@ -50,14 +58,15 @@ namespace MasterStack.Controllers
             return View();
         }
 
-        [HttpGet("Logout")]
+   // Mude para HttpPost por segurança, mas se o seu link for um <a> simples, use HttpGet
+        [HttpGet] 
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync("MyCookieAuth");
+           await _signInManager.SignOutAsync();
 
-            // Pega a cultura atual para redirecionar para a Home no idioma certo
-            var culture = RouteData.Values["culture"] ?? "pt-BR";
-            return RedirectToAction("Index", "Home", new { culture = culture });
+    // Tente redirecionar para a Home passando explicitamente a cultura
+    // Isso evita que o roteador se perca
+    return RedirectToAction("Index", "Home", new { culture = "pt-BR" });
         }
     }
 }

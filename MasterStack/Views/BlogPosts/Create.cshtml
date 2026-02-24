@@ -109,6 +109,11 @@
                                 </button>
                             </div>
                         </div>
+                            <div class="mb-3">
+                            <label asp-for="MetaKeywords" class="form-label small fw-bold">Palavras-chave (Separadas por vírgula)</label>
+                            <input asp-for="MetaKeywords" class="form-control form-control-sm" placeholder="ex: dotnet, tutorial, aspnet" />
+                            <span asp-validation-for="MetaKeywords" class="text-danger small"></span>
+                        </div>
 
                         <hr />
 

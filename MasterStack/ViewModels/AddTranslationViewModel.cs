@@ -12,5 +12,7 @@ namespace MasterStack.ViewModels
         [MaxFileSize(5 * 1024 * 1024)] // 5MB
         [AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".webp" })]
         public IFormFile? ImageFile { get; set; } // O arquivo da imagem
+        public bool IsPublished { get; set; } = false;
+        public string? MetaKeywords { get; set; }
     }
 }

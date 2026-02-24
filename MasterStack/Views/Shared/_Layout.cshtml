@@ -23,7 +23,8 @@
 }
 
 <!DOCTYPE html>
-<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName">
+
+    <html lang="@ViewContext.RouteData.Values["culture"]">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -144,9 +145,14 @@
                     </li>
                     <li><a asp-controller="Account" 
    asp-action="Logout" 
-   asp-route-culture="@ViewContext.RouteData.Values["culture"]" 
-   class="btn btn-outline-danger btn-sm">
-   @Localizer["Sair"]
+   asp-route-culture="@(ViewContext.RouteData.Values["culture"] ?? "pt-BR")" 
+   class="nav-link">
+   Sair
+</a></li>
+<li><a class="nav-link" asp-controller="Admin" 
+   asp-action="Profile" 
+   asp-route-culture="@(ViewContext.RouteData.Values["culture"] ?? "pt-BR")">
+   Meu Perfil
 </a></li>
                 </ul>
             </div>

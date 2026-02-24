@@ -40,34 +40,72 @@
     <link rel="canonical" href="https://seusite.com/@t.Culture/blog/@t.Slug" />
 }
 
-<div class="container mt-4">
-    @if (isFallback)
-    {
-        <div class="alert alert-info py-2 shadow-sm">
-            <i class="fas fa-info-circle me-2"></i>
-            @Localizer["FallbackWarning", currentCulture]
-        </div>
-    }
-
-    <div class="mb-4">
-        <a asp-action="Index" asp-controller="BlogPosts" asp-route-culture="@currentCulture" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> @Localizer["BackToList"]
-        </a>
-    </div>
-
-    @if (t != null)
-    {
-        <h1 class="mb-3 fw-bold">@t.Title</h1>
+    <div class="container mt-4">
+        @if (isFallback)
+        {
+            <div class="alert alert-info py-2 shadow-sm">
+                <i class="fas fa-info-circle me-2"></i>
+                @Localizer["FallbackWarning", currentCulture]
+            </div>
+        }
 
         <div class="mb-4">
-            <img src="@ViewBag.FinalImagePath" class="img-fluid rounded shadow w-100" style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
+            <a asp-action="Index" asp-controller="BlogPosts" asp-route-culture="@currentCulture" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> @Localizer["BackToList"]
+            </a>
         </div>
 
-        <div class="post-content fs-5 leading-relaxed">
-            @Html.Raw(t.Content)
+        @if (t != null)
+        {
+            <h1 class="mb-3 fw-bold">@t.Title</h1>
+                    @* Opcional: Mostrar que foi atualizado se houver data de alteração *@
+            <div class="text-muted mb-4 small">
+                <i class="far fa-calendar-alt me-1"></i>
+                @Model.CreatedAt.ToString("D", new System.Globalization.CultureInfo(ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR"))
+            </div>
+
+            <div class="mb-4">
+                <img src="@ViewBag.FinalImagePath" class="img-fluid rounded shadow w-100" style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
+            </div>
+
+            <div class="post-content fs-5 leading-relaxed">
+                @Html.Raw(t.Content)
+            </div>
+        }
+        @* Bloco do Autor *@
+        <div class="d-flex align-items-center py-4 border-top border-bottom my-5">
+            <div class="author-info d-flex align-items-center my-4 p-3 bg-light rounded">
+            @if (Model.Author != null)
+            {
+                <img src="@(string.IsNullOrEmpty(Model.Author.ProfileImageUrl) ? "/img/default-avatar.png" : Model.Author.ProfileImageUrl)" 
+                    class="rounded-circle me-3" 
+                    style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ddd;" 
+                    alt="@Model.Author.DisplayName">
+                
+                <div>
+                    <p class="mb-0 small text-muted">Escrito por</p>
+                    <h6 class="mb-0 fw-bold">@Model.Author.DisplayName</h6>
+                    @if (!string.IsNullOrEmpty(Model.Author.Bio))
+                    {
+                        <small class="text-muted">@Model.Author.Bio</small>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-muted small">
+                    <i class="fas fa-user-edit me-1"></i> Equipe MasterStack
+                </div>
+            }
+           
+
+    
+            
+
         </div>
-    }
-</div>
+           
+    </div>
+   
 
 @section Head {
     @* Meta Tags dinâmicas para Redes Sociais *@

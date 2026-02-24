@@ -1,6 +1,7 @@
 using MasterStack;
 using MasterStack.Data;
 using MasterStack.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.Razor;
@@ -8,6 +9,9 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Globalization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,20 +24,6 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 builder.Services.AddControllersWithViews()
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();
-
-builder.Services.AddAuthentication("MyCookieAuth")
-    .AddCookie("MyCookieAuth", options =>
-    {
-        options.Cookie.Name = "MasterStackAdmin";
-        options.Events.OnRedirectToLogin = context =>
-        {
-            // Tenta pegar a cultura da rota ou usa pt-BR como padr�o
-            var culture = context.HttpContext.Request.RouteValues["culture"] ?? "pt-BR";
-            var loginUrl = $"/{culture}/Account/Login?ReturnUrl={context.Request.Path}";
-            context.Response.Redirect(loginUrl);
-            return Task.CompletedTask;
-        };
-    });
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -75,10 +65,29 @@ builder.Services.AddResponseCompression(options =>
             "application/json"
         });
 });
+builder.Services.AddDefaultIdentity<IdentityUser>(options => {
+    options.SignIn.RequireConfirmedAccount = false;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Configura o Cookie do Identity para entender sua rota de cultura
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    // A barra inicial "/" é CRUCIAL aqui. 
+    // Ela diz ao .NET: "Comece da raiz, não anexe à cultura atual"
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
 
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 52428800; // 50MB em bytes
+});
+// Configura o limite para o IIS (servidores Windows)
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = 50 * 1024 * 1024;
 });
 var app = builder.Build();
 
@@ -135,47 +144,22 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/pt-BR/Home/Error/{0}");
 
 app.UseHttpsRedirection();
-//app.UseResponseCompression();
 app.UseStaticFiles();
 
-// 1. PRIMEIRO: Localiza para onde a requisi��o vai
 app.UseRouting();
-
-// 2. SEGUNDO: Define o idioma baseado na rota localizada
 app.UseRequestLocalization(localizationOptions);
 
-// 3. TERCEIRO: Identifica quem � o usu�rio (Cookie)
 app.UseAuthentication();
-
-// 4. QUARTO: Verifica se o usu�rio tem permiss�o ([Authorize])
 app.UseAuthorization();
-
-// 5. POR �LTIMO: Executa o Controller encontrado
-app.MapControllerRoute(
-    name: "sitemap",
-    pattern: "sitemap.xml",
-    defaults: new { controller = "BlogPosts", action = "Sitemap" });
 
 app.MapControllerRoute(
     name: "localized",
-    pattern: "{culture:regex(^[a-z]{{2}}(-[A-Z]{{2}})?$)}/{controller=Home}/{action=Index}/{id?}");
+    pattern: "{culture}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-    using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        MasterStack.Data.SeedData.Initialize(services);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Um erro ocorreu ao popular o banco de dados.");
-    }
-}
+app.MapRazorPages(); // OBRIGATÓRIO para o Identity funcionar
 
 app.Run();

@@ -7,21 +7,25 @@
 		<RootNamespace>MasterStack</RootNamespace>
 	</PropertyGroup>
 
-	<ItemGroup>
-	  <PackageReference Include="HtmlSanitizer" Version="9.0.889" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.22" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.22">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.22" />
-	  <PackageReference Include="SkiaSharp" Version="3.119.1" />
-	  <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="3.119.1" />
-	</ItemGroup>
+<ItemGroup>
+  <PackageReference Include="HtmlSanitizer" Version="8.1.870" />
+  
+  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.13" />
+  <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.13" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.13">
+    <PrivateAssets>all</PrivateAssets>
+    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  </PackageReference>
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.13" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.13">
+    <PrivateAssets>all</PrivateAssets>
+    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  </PackageReference>
+  
+  <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+  <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.9" />
+</ItemGroup>
 
 	<ItemGroup>
 	  <Compile Update="Resources\SharedResource.Designer.cs">

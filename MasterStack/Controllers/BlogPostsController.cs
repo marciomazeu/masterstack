@@ -3,6 +3,7 @@ using MasterStack.Data; // Ajuste para o seu namespace de dados
 using MasterStack.Models;
 using MasterStack.ViewModels;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -19,12 +20,16 @@ namespace MasterStack.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IStringLocalizer<BlogPostsController> _localizer; // Adicione esta linha
+        private readonly UserManager<IdentityUser> _userManager;
+        
 
-        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStringLocalizer<BlogPostsController> localizer)
+        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStringLocalizer<BlogPostsController> localizer, UserManager<IdentityUser> userManager)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _localizer = localizer; // Atribua ao campo privado
+            _userManager = userManager;
+            
         }
 
         // GET: /pt-BR/BlogPosts
@@ -86,10 +91,12 @@ namespace MasterStack.Controllers
         [Route("{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)
         {
-            var currentTranslation = await _context.BlogPostTranslations
-                .Include(t => t.BlogPost)
+           var currentTranslation = await _context.BlogPostTranslations
+            .Include(t => t.BlogPost)
+                .ThenInclude(p => p.Author) // <--- O Autor está aqui no Post Pai
+            .Include(t => t.BlogPost)
                 .ThenInclude(p => p.Translations)
-                .FirstOrDefaultAsync(t => t.Slug == slug);
+            .FirstOrDefaultAsync(t => t.Slug == slug);
 
             if (currentTranslation == null) return NotFound();
 
@@ -154,67 +161,75 @@ namespace MasterStack.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(52428800)] // 50MB
         public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture)
+{
+    if (!ModelState.IsValid) return View(model);
+
+    var user = await _userManager.GetUserAsync(User);
+    var profile = await _context.AuthorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+    if (profile == null) 
+    {
+        TempData["Error"] = "Você precisa criar um perfil de autor antes de postar.";
+        return RedirectToAction("Profile", "Admin"); // Certifique-se que o controller está certo
+    }
+
+    // REMOVI a linha "blogPost.AuthorProfileId = profile.Id;" que estava dando erro aqui
+
+    using var transaction = await _context.Database.BeginTransactionAsync();
+    try
+    {
+        var sanitizer = new HtmlSanitizer();
+        string cleanHtml = sanitizer.Sanitize(model.Content);
+
+        // 1. Gerar o Slug ÚNICO
+        string uniqueSlug = await GetUniqueSlugAsync(model.Title, culture);
+
+        // 2. Criar o registro Pai (O VÍNCULO DO AUTOR VAI AQUI)
+        var post = new BlogPost 
+        { 
+            CreatedAt = DateTime.Now,
+            AuthorProfileId = profile.Id // <--- O ID entra aqui no objeto que REALMENTE existe
+        };
+        
+        _context.BlogPosts.Add(post);
+        await _context.SaveChangesAsync();
+
+        // 3. Processar o Upload
+        string? imagePath = await ProcessAndSaveWebP(model.ImageFile);
+
+        // 4. Definir Cultura
+        var currentCulture = culture ?? model.SelectedCulture ?? "pt-BR";
+
+        // 5. Criar a Tradução vinculada
+        var translation = new BlogPostTranslation
         {
-            if (!ModelState.IsValid) return View(model);
+            BlogPostId = post.Id,
+            Culture = currentCulture,
+            Title = model.Title,
+            Content = cleanHtml,
+            MetaDescription = model.MetaDescription,
+            MetaKeywords = model.MetaKeywords,
+            Slug = uniqueSlug,
+            ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg"
+            // Nota: Se o seu model Translation também tiver AuthorProfileId, mantenha, 
+            // mas o principal é estar no BlogPost (Pai).
+        }; 
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var sanitizer = new HtmlSanitizer();
-                // Opcional: Se você quiser permitir tags específicas (como vídeos do YouTube)
-                // sanitizer.AllowedAttributes.Add("frameborder");
-                // sanitizer.AllowedAttributes.Add("allowfullscreen");
+        _context.BlogPostTranslations.Add(translation);
+        await _context.SaveChangesAsync();
 
-                // Limpa o conteúdo vindo do ViewModel
-                string cleanHtml = sanitizer.Sanitize(model.Content);
+        await transaction.CommitAsync();
 
-                // 1. Gerar o Slug ÚNICO
-                string uniqueSlug = await GetUniqueSlugAsync(model.Title, culture);
-
-                // 2. Criar o registro Pai
-                var post = new BlogPost { CreatedAt = DateTime.Now };
-                _context.BlogPosts.Add(post);
-                await _context.SaveChangesAsync();
-
-                // 3. Processar o Upload (Usando seu método centralizado)
-                // Se falhar ou for vazio, retorna null
-                string? imagePath = await ProcessAndSaveWebP(model.ImageFile);
-
-                // 4. Definir Cultura (Prioriza a rota, senão a model, senão padrão)
-                var currentCulture = culture ?? model.SelectedCulture ?? "pt-BR";
-
-                // 5. Criar a Tradução vinculada
-                var translation = new BlogPostTranslation
-                {
-                    BlogPostId = post.Id,
-                    Culture = currentCulture,
-                    Title = model.Title,
-                    //Content = model.Content,
-                    Content = cleanHtml, // Salva o HTML seguro
-                    //Slug = model.Slug?.Trim().ToLower(), // Mapeando o novo campo
-            MetaDescription = model.MetaDescription, // Mapeando o novo campo
-            MetaKeywords = model.MetaKeywords, // Mapeando o novo campo
-                    Slug = uniqueSlug,
-                    ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg" // Fallback se não subir imagem
-                }; 
-
-                _context.BlogPostTranslations.Add(translation);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                TempData["Success"] = "Post criado com sucesso!";
-                return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                // Logar o erro aqui ajudaria muito no futuro
-                ModelState.AddModelError("", "Ocorreu um erro interno ao salvar o post. Verifique os dados e a imagem.");
-                return View(model);
-            }
-        }
-
+        TempData["Success"] = "Post criado com sucesso!";
+        return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
+        return View(model);
+    }
+}
         private string GenerateSlug(string phrase)
         {
             // Exemplo de lógica de verificação (Simplificada)
@@ -354,7 +369,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title
 }
 
         // 1. Rota para abrir o formulário
-[HttpGet("{culture}/BlogPosts/EditTranslation/{id}")]
+[HttpGet]
+[Route("{culture}/[controller]/[action]/{id}")]
 public async Task<IActionResult> EditTranslation(int id)
 {
     var translation = await _context.BlogPostTranslations.FirstOrDefaultAsync(t => t.Id == id);
@@ -566,7 +582,9 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
                 //Content = model.Content,
                 Content = cleanHtml, // Salva o HTML seguro
                 Slug = uniqueSlug,
-                ImageUrl = dbImagePath ?? "/uploads/blog/default-post.jpg"
+                ImageUrl = dbImagePath ?? "/uploads/blog/default-post.jpg",
+                IsPublished = model.IsPublished,
+                MetaKeywords = model.MetaKeywords
             };
 
             _context.BlogPostTranslations.Add(translation);

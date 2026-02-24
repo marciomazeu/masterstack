@@ -5,111 +5,110 @@
 @{
     ViewData["Title"] = Localizer["AdminDashboard"];
     var culture = ViewContext.RouteData.Values["culture"];
+    
+    // BLINDAGEM: Garante que a cultura seja uma string segura para os TagHelpers
+    var cultureString = culture?.ToString() ?? "pt-BR";
+    
+    // Captura dos filtros para persistência na paginação
+    var currentStatus = ViewData["CurrentStatus"]?.ToString() ?? "all";
+    var searchTerm = ViewData["CurrentFilter"]?.ToString();
+    var cultureFilter = ViewData["CurrentCulture"]?.ToString();
 }
 
 <style>
     .table-main-row { background-color: #fcfcfc; border-top: 2px solid #dee2e6 !important; }
     .table-sub-row { background-color: #ffffff; }
-    .post-id-badge { font-family: monospace; font-size: 0.75rem; color: #6c757d; }
     .img-thumbnail-custom { width: 60px; height: 40px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .lang-indicator { width: 3px; height: 25px; display: inline-block; margin-right: 10px; border-radius: 2px; }
-    .btn-group-xs > .btn { padding: 0.15rem 0.4rem; font-size: 0.75rem; }
+    .badge-lang { font-size: 0.65rem; display: block; width: 45px; text-align: center; }
     .dropdown-menu { font-size: 0.85rem; }
+    .sticky-header { position: sticky; top: 0; z-index: 1000; }
 </style>
 
 <div class="container py-5">
+    @* Cabeçalho Principal *@
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>@Localizer["Welcome"]</h1>
-        <h1 class="h3"><i class="fas fa-layer-group me-2 text-primary"></i>@Localizer["AdminDashboard"]</h1>
-        <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@culture" class="btn btn-success px-4">
-            <i class="fas fa-plus me-1"></i> @Localizer["NewPost"]
-        </a>
-        <button onclick="confirmCleanup()" class="btn btn-sm btn-outline-danger">
-    <i class="fas fa-broom"></i> Limpar Imagens Órfãs
-</button>
+        <div>
+            <h1 class="h3 mb-0"><i class="fas fa-layer-group me-2 text-primary"></i>@Localizer["AdminDashboard"]</h1>
+            <small class="text-muted">@Localizer["Welcome"], @User.Identity?.Name</small>
+        </div>
+        <div class="btn-group">
+            <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@cultureString" class="btn btn-success px-4">
+                <i class="fas fa-plus me-1"></i> @Localizer["NewPost"]
+            </a>
+            <button onclick="confirmCleanup()" class="btn btn-outline-danger">
+                <i class="fas fa-broom me-1"></i> Limpar Imagens
+            </button>
+        </div>
     </div>
+
+    @* Seção de Estatísticas Rápidas *@
+    <div class="row mb-4">
+        @foreach (var stat in new[] { 
+            new { Label = "Português", Val = ViewBag.PostsPT, Color = "primary", Lang = "pt-BR" },
+            new { Label = "English", Val = ViewBag.PostsEN, Color = "success", Lang = "en-US" },
+            new { Label = "Français", Val = ViewBag.PostsFR, Color = "warning", Lang = "fr-CA" }
+        })
+        {
+            <div class="col-md-4">
+                <div class="card border-start border-@stat.Color border-4 shadow-sm">
+                    <div class="card-body py-3">
+                        <h6 class="text-muted mb-1">@stat.Label (@stat.Lang)</h6>
+                        <h2 class="fw-bold mb-0">@stat.Val</h2>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Filtros *@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form method="get" asp-action="Dashboard" class="row g-2 mb-4">
+            <form method="get" asp-action="Dashboard" asp-route-culture="@cultureString" class="row g-2">
                 <div class="col-md-5">
                     <input type="text" name="searchTerm" class="form-control"
-                           placeholder="Buscar por título..." value="@ViewData["CurrentFilter"]" />
+                           placeholder="Buscar por título..." value="@searchTerm" />
                 </div>
                 <div class="col-md-3">
                     <select name="cultureFilter" class="form-select">
                         <option value="">@Localizer["AllLanguages"]</option>
-                        <option value="pt-BR" selected="@(ViewData["CurrentCulture"]?.ToString() == "pt-BR")">Português</option>
-                        <option value="en-US" selected="@(ViewData["CurrentCulture"]?.ToString() == "en-US")">English</option>
-                        <option value="fr-CA" selected="@(ViewData["CurrentCulture"]?.ToString() == "fr-CA")">Français</option>
+                        <option value="pt-BR" selected="@(cultureFilter == "pt-BR")">Português</option>
+                        <option value="en-US" selected="@(cultureFilter == "en-US")">English</option>
+                        <option value="fr-CA" selected="@(cultureFilter == "fr-CA")">Français</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <button class="btn btn-primary" type="submit">@Localizer["Filter"]</button>
-                    <a asp-action="Dashboard" class="btn btn-outline-secondary">@Localizer["Clear"]</a>
+                <div class="col-md-4 d-flex gap-2">
+                    <button class="btn btn-primary w-100" type="submit">@Localizer["Filter"]</button>
+                    <a asp-action="Dashboard" asp-route-culture="@cultureString" class="btn btn-outline-secondary">@Localizer["Clear"]</a>
                 </div>
             </form>
         </div>
     </div>
-    <div class="row my-4">
-        <div class="col-md-4">
-            <div class="card border-start border-primary border-4 shadow-sm">
-                <div class="card-body">
-                    <h6 class="text-muted">Português (pt-BR)</h6>
-                    <h2 class="fw-bold">@ViewBag.PostsPT</h2>
+
+    @* Tabela de Conteúdo *@
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group btn-group-sm">
+                    <a asp-action="Dashboard" asp-route-culture="@cultureString" asp-route-status="all" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
+                       class="btn @(currentStatus == "all" ? "btn-secondary" : "btn-outline-secondary")">@Localizer["All"]</a>
+                    <a asp-action="Dashboard" asp-route-culture="@cultureString" asp-route-status="published" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
+                       class="btn @(currentStatus == "published" ? "btn-success" : "btn-outline-success")">@Localizer["Published"]</a>
+                    <a asp-action="Dashboard" asp-route-culture="@cultureString" asp-route-status="draft" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
+                       class="btn @(currentStatus == "draft" ? "btn-warning" : "btn-outline-warning")">@Localizer["Drafts"]</a>
                 </div>
+                <span class="text-muted small">@Localizer["Showing"] @Model.Posts.Count @Localizer["Results"]</span>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <h6 class="text-muted">English (en-US)</h6>
-                    <h2 class="fw-bold">@ViewBag.PostsEN</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <h6 class="text-muted">Français (fr-CA)</h6>
-                    <h2 class="fw-bold">@ViewBag.PostsFR</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="card shadow-sm border-0 overflow-hidden">
-        <div class="mb-3">
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-    <div class="btn-group btn-group-sm" role="group">
-        @{
-            var currentStatus = ViewData["CurrentStatus"]?.ToString() ?? "all";
-            var searchTerm = ViewData["CurrentFilter"];
-            var cultureFilter = ViewData["CurrentCulture"];
-        }
-        <a asp-action="Dashboard" asp-route-status="all" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
-           class="btn @(currentStatus == "all" ? "btn-secondary" : "btn-outline-secondary")">@Localizer["All"]</a>
-        
-        <a asp-action="Dashboard" asp-route-status="published" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
-           class="btn @(currentStatus == "published" ? "btn-success" : "btn-outline-success")">@Localizer["Published"]</a>
-        
-        <a asp-action="Dashboard" asp-route-status="draft" asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter"
-           class="btn @(currentStatus == "draft" ? "btn-warning" : "btn-outline-warning")">@Localizer["Drafts"]</a>
-    </div>
-    
-    <div class="text-muted small">
-        <i class="fas fa-info-circle"></i> Exibindo @Model.Posts.Count resultados nesta página.
-    </div>
-</div>
-        </div>
+
         <div class="table-responsive">
-            <table class="table align-middle mb-0" id="postTable">
+            <table class="table align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th style="width: 80px;" class="ps-3">@Localizer["ID"]</th>
-                        <th style="width: 100px;">@Localizer["Preview"]</th>
+                        <th class="ps-3" style="width: 100px;">@Localizer["ID"]</th>
+                        <th style="width: 150px;">@Localizer["Author"]</th>
                         <th>@Localizer["ContentInfo"]</th>
-                        <th style="width: 150px;">@Localizer["Date"]</th>
                         <th style="width: 120px;">@Localizer["Status"]</th>
-                        <th class="text-end pe-3" style="width: 250px;">@Localizer["Actions"]</th>
+                        <th class="text-end pe-3" style="width: 200px;">@Localizer["Actions"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -122,61 +121,43 @@
                         {
                             var t = translations[i];
                             var isFirst = (i == 0);
+                            var badgeColor = t.Culture.StartsWith("pt") ? "bg-primary" : t.Culture.StartsWith("en") ? "bg-info" : "bg-secondary";
 
-                            <tr class="@(isFirst ? "table-main-row bg-light" : "table-sub-row")"
-                                data-title="@t.Title.ToLower()"
-                                data-lang="@t.Culture.ToUpper()">
-
+                            <tr class="@(isFirst ? "table-main-row" : "table-sub-row")">
                                 <td class="ps-3">
-                                    @if (isFirst)
-                                    {
-                                        <span class="badge bg-dark">#@item.Id</span>
-                                    }
-                                    else
-                                    {
-                                        <div class="ms-3 border-start ps-2 text-muted">└</div>
-                                    }
+                                    @if (isFirst) { <span class="badge bg-dark">#@item.Id</span> }
+                                    else { <div class="ms-3 border-start ps-2 text-muted small">└</div> }
                                 </td>
                                 <td>
-                                    <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/uploads/default-post.jpg" : t.ImageUrl)"
-                                         class="rounded shadow-sm"
-                                         style="width: 60px; height: 40px; object-fit: cover;" alt="Thumb" />
+                                    @if (isFirst && item.Author != null) {
+                                        <div class="d-flex align-items-center small">
+                                            <img src="@item.Author.ProfileImageUrl" width="24" height="24" class="rounded-circle me-2" style="object-fit: cover;">
+                                            <span class="text-truncate" style="max-width: 100px;">@item.Author.DisplayName</span>
+                                        </div>
+                                    }
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        @{
-                                            var badgeColor = t.Culture.StartsWith("pt") ? "bg-primary" : t.Culture.StartsWith("en") ? "bg-info" : "bg-secondary";
-                                        }
-                                        <div class="me-3">
-                                            <span class="badge @badgeColor" style="font-size: 0.65rem; display: block; width: 45px;">@t.Culture.ToUpper()</span>
-                                        </div>
+                                        <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/uploads/default-post.jpg" : t.ImageUrl)" 
+                                             class="rounded me-3 img-thumbnail-custom shadow-sm" alt="Thumb">
                                         <div>
-                                            <div class="fw-bold @(isFirst ? "text-dark" : "text-muted")" style="font-size: @(isFirst ? "1rem" : "0.9rem")">
-                                                @t.Title
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge @badgeColor badge-lang">@t.Culture.ToUpper()</span>
+                                                <span class="fw-bold @(isFirst ? "" : "text-muted small")">@t.Title</span>
                                             </div>
-                                            @if (isFirst)
-                                            {
-                                                <div class="text-muted" style="font-size: 0.75rem;">Slug: /@t.Slug</div>
-                                            }
+                                            <div class="text-muted" style="font-size: 0.7rem;">Slug: /@t.Slug</div> 
+                                            
                                         </div>
                                     </div>
                                 </td>
-                                <td class="text-muted small">
-                                    @item.CreatedAt.ToString("g")
-                                </td>
                                 <td>
-    @if (t.IsPublished)
-    {
-        <span class="badge bg-success"><i class="fas fa-check me-1"></i> @Localizer["Published"]</span>
-    }
-    else
-    {
-        <span class="badge bg-warning text-dark"><i class="fas fa-pause-circle me-1"></i> @Localizer["Draft"]</span>
-    }
-</td>
+                                    <span class="badge @(t.IsPublished ? "bg-success" : "bg-warning text-dark")">
+                                        <i class="fas @(t.IsPublished ? "fa-check" : "fa-pause-circle") me-1"></i>
+                                        @(t.IsPublished ? Localizer["Published"] : Localizer["Draft"])
+                                    </span>
+                                </td>
                                 <td class="text-end pe-3">
                                     <div class="btn-group btn-group-sm">
-                                        @* Bloco de Ações (Igual ao seu, mantendo a consistência) *@
                                         @if (isFirst)
                                         {
                                             <div class="btn-group btn-group-sm">
@@ -189,36 +170,36 @@
                                                     {
                                                         if (!item.Translations.Any(trans => trans.Culture == lang))
                                                         {
-                                                            <li><a class="dropdown-item" href="/@ViewContext.RouteData.Values["culture"]/Admin/AddTranslation/@item.Id?targetCulture=@lang">@lang.ToUpper()</a></li>
+                                                            <li>
+                                                                <a class="dropdown-item" asp-action="AddTranslation" asp-controller="BlogPosts" 
+                                                                   asp-route-culture="@cultureString" asp-route-postId="@item.Id" asp-route-targetCulture="@lang">
+                                                                    @lang.ToUpper()
+                                                                </a>
+                                                            </li>
                                                         }
                                                     }
                                                 </ul>
                                             </div>
                                         }
 
-                                       <a asp-action="EditTranslation" 
-                                       asp-controller="BlogPosts"
-   asp-route-culture="@culture" 
-   asp-route-id="@t.Id" 
-   class="btn btn-outline-warning">
-    <i class="fas fa-edit"></i>
-</a>
+                                        <a asp-action="EditTranslation" asp-controller="BlogPosts" asp-route-culture="@cultureString" asp-route-id="@t.Id" 
+                                           class="btn btn-outline-warning" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
 
-                                        <a asp-controller="BlogPosts" asp-action="Details" asp-route-culture="@t.Culture" asp-route-slug="@t.Slug" asp-area="" target="_blank" class="btn btn-outline-secondary">
+                                        <a asp-controller="BlogPosts" asp-action="Details" asp-route-culture="@t.Culture" asp-route-slug="@t.Slug" 
+                                           target="_blank" class="btn btn-outline-secondary" title="Ver no site">
                                             <i class="fas fa-eye"></i>
                                         </a>
 
-                                        @if (translations.Count > 1)
-                                        {
-                                            <button type="button" class="btn btn-outline-danger"
-                                                    onclick="prepareDelete('@Url.Action("DeleteTranslation", "BlogPosts", new { id = t.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(t.Title))', false)">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        }
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="prepareDelete('@Url.Action("DeleteTranslation", "BlogPosts", new { id = t.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(t.Title))', false)">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
 
                                         @if (isFirst)
                                         {
-                                            <button type="button" class="btn btn-danger"
+                                            <button type="button" class="btn btn-danger" 
                                                     onclick="prepareDelete('@Url.Action("DeletePost", "BlogPosts", new { id = item.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(principal.Title))', true)">
                                                 <i class="fas fa-bomb"></i>
                                             </button>
@@ -232,80 +213,58 @@
             </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4 px-3">
-            <div class="text-muted small">
-                
-                @Localizer["Page"] @Model.PaginaAtual @Localizer["Of"] @Model.TotalPaginas
+        @* Paginação Blindada *@
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">@Localizer["Page"] @Model.PaginaAtual @Localizer["Of"] @Model.TotalPaginas</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(!Model.TemPaginaAnterior ? "disabled" : "")">
+                            <a class="page-link" asp-action="Dashboard" asp-route-culture="@cultureString" asp-route-page="@(Model.PaginaAtual - 1)" 
+                               asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = Math.Max(1, Model.PaginaAtual - 2); i <= Math.Min(Model.TotalPaginas, Model.PaginaAtual + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.PaginaAtual ? "active" : "")">
+                                <a class="page-link" asp-action="Dashboard" asp-route-culture="@cultureString" asp-route-page="@i" 
+                                   asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.TemProximaPagina ? "disabled" : "")">
+                            <a class="page-link" asp-action="Dashboard" asp-route-culture="@cultureString" asp-route-page="@(Model.PaginaAtual + 1)" 
+                               asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
-
-            <nav aria-label="Navegação do dashboard">
-                <ul class="pagination pagination-sm mb-0">
-    @* Anterior *@
-    <li class="page-item @(!Model.TemPaginaAnterior ? "disabled" : "")">
-        <a class="page-link" asp-action="Dashboard" asp-route-page="@(Model.PaginaAtual - 1)" 
-           asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">
-            <i class="fas fa-chevron-left"></i>
-        </a>
-    </li>
- @{
-                        int window = 2; // Quantos números mostrar antes e depois da página atual
-                        int startPage = Math.Max(1, Model.PaginaAtual - window);
-                        int endPage = Math.Min(Model.TotalPaginas, Model.PaginaAtual + window);
-                    }
-    @* Números (Simplificado para o seu código) *@
-    @for (int i = startPage; i <= endPage; i++)
-    {
-        <li class="page-item @(i == Model.PaginaAtual ? "active" : "")">
-            <a class="page-link" asp-action="Dashboard" asp-route-page="@i" 
-               asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">@i</a>
-        </li>
-    }
-
-    @* Próximo *@
-    <li class="page-item @(!Model.TemProximaPagina ? "disabled" : "")">
-        <a class="page-link" asp-action="Dashboard" asp-route-page="@(Model.PaginaAtual + 1)" 
-           asp-route-searchTerm="@searchTerm" asp-route-cultureFilter="@cultureFilter" asp-route-status="@currentStatus">
-            <i class="fas fa-chevron-right"></i>
-        </a>
-    </li>
-</ul>
-            </nav>
         </div>
-
     </div>
 </div>
 
+@* Modal de Exclusão *@
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i>@Localizer["ConfirmDelete"]
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>@Localizer["ConfirmDelete"]</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4 text-center">
-                <p id="deleteActionText" class="mb-1 text-muted"></p>
-                <h5 id="postTitleToDelete" class="fw-bold text-dark mb-3"></h5>
-
-                <div id="fullDeleteWarning" class="alert alert-warning border-0 d-none">
-                    <i class="fas fa-bomb me-2"></i>
-                    <strong>@Localizer["Warning"]:</strong> @Localizer["ThisActionRemovesAllLanguages"]
+                <p id="deleteActionText" class="text-muted mb-1"></p>
+                <h5 id="postTitleToDelete" class="fw-bold mb-3"></h5>
+                <div id="fullDeleteWarning" class="alert alert-warning border-0 d-none small">
+                    <i class="fas fa-bomb me-2"></i>@Localizer["ThisActionRemovesAllLanguages"]
                 </div>
-
-                <p class="text-danger small mb-0">
-                    <i class="fas fa-info-circle me-1"></i> @Localizer["IrreversibleAction"]
-                </p>
             </div>
             <div class="modal-footer bg-light border-0">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
-
-                @* O FORMULÁRIO DE EXCLUSÃO REAL *@
                 <form id="deleteForm" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger btn-sm px-4">
-                        @Localizer["ConfirmDeleteBtn"]
-                    </button>
+                    <button type="submit" class="btn btn-danger btn-sm px-4">@Localizer["ConfirmDeleteBtn"]</button>
                 </form>
             </div>
         </div>
@@ -313,15 +272,12 @@
 </div>
 
 @section Scripts {
-     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-       
+        // Lógica de exclusão unificada
         function prepareDelete(url, title, isFullPost) {
-            // 1. Injeta o título e a URL
             document.getElementById('postTitleToDelete').innerText = title;
             document.getElementById('deleteForm').action = url;
-
-            // 2. Controla a visibilidade dos alertas
             const warning = document.getElementById('fullDeleteWarning');
             const actionText = document.getElementById('deleteActionText');
 
@@ -332,61 +288,42 @@
                 warning.classList.add('d-none');
                 actionText.innerText = "@Localizer["ConfirmTranslationDeleteMessage"]";
             }
-
-            // 3. Abre o modal manualmente via Bootstrap 5
-            var myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            myModal.show();
-        }
-    
-   async function confirmCleanup() {
-    // 1. Fase de Escaneamento
-    Swal.fire({
-        title: 'Verificando arquivos...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
-
-    try {
-        const scanResponse = await fetch('/admin/scan-orphaned-images');
-        const scanData = await scanResponse.json();
-
-        if (scanData.count === 0) {
-            Swal.fire({
-                title: 'Tudo limpo!',
-                text: 'Não foram encontradas imagens não utilizadas.',
-                icon: 'success'
-            });
-            return;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
         }
 
-        // 2. Pergunta de Confirmação com a Quantidade
-        const result = await Swal.fire({
-            title: 'Limpeza de Disco',
-            html: `Encontramos <b>${scanData.count}</b> imagens órfãs.<br>Deseja apagá-las permanentemente?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Sim, apagar tudo!',
-            cancelButtonText: 'Agora não'
-        });
+        // Limpeza de imagens órfãs blindada com cultura dinâmica
+        async function confirmCleanup() {
+            const currentLang = document.documentElement.lang || 'pt-BR';
+            Swal.fire({ title: 'Escaneando...', didOpen: () => { Swal.showLoading(); } });
 
-        if (result.isConfirmed) {
-            // 3. Execução da Limpeza (chama o seu método POST anterior)
-            Swal.fire({ title: 'Apagando...', didOpen: () => { Swal.showLoading(); } });
+            try {
+                const scanResponse = await fetch(`/Admin/scan-orphaned-images`);
+                const scanData = await scanResponse.json();
 
-            const response = await fetch('/admin/cleanup-images', { 
-                method: 'POST',
-                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
-            });
-            
-            const data = await response.json();
-            Swal.fire('Concluído!', data.message, 'success');
+                if (scanData.count === 0) {
+                    Swal.fire('Tudo limpo!', 'Nenhuma imagem órfã encontrada.', 'success');
+                    return;
+                }
+
+                const result = await Swal.fire({
+                    title: 'Limpeza de Disco',
+                    html: `Encontramos <b>${scanData.count}</b> imagens órfãs. Apagar?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sim, apagar!'
+                });
+
+                if (result.isConfirmed) {
+                    const response = await fetch(`/Admin/cleanup-images`, { 
+                        method: 'POST', 
+                        headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                    });
+                    const data = await response.json();
+                    Swal.fire('Sucesso', data.message, 'success');
+                }
+            } catch (e) {
+                Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
+            }
         }
-
-    } catch (error) {
-        Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
-    }
-}
-
     </script>
 }

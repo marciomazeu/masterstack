@@ -1,11 +1,13 @@
 ﻿using MasterStack.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // ADICIONE ISSO
+using Microsoft.AspNetCore.Identity; // ADICIONE ISSO
 
 namespace MasterStack.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+       public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
@@ -14,6 +16,8 @@ namespace MasterStack.Data
         public DbSet<BlogPost> BlogPosts { get; set; }
         public DbSet<BlogPostTranslation> BlogPostTranslations { get; set; }
         public DbSet<Language> Languages { get; set; }
+
+        public DbSet<AuthorProfile> AuthorProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

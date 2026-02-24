@@ -1,0 +1,88 @@
+@model MasterStack.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Meu Perfil";
+    // Se o model for null (caso de erro de rota), criamos um objeto vazio
+    var displayModel = Model ?? new MasterStack.ViewModels.ProfileViewModel();
+}
+
+@if (Model == null)
+{
+    <div class="container mt-5">
+        <div class="alert alert-warning shadow-sm">
+            <h2>Perfil não encontrado</h2>
+            <p>Você ainda não preencheu suas informações de autor.</p>
+            <a href="@Url.Action("CreateProfile", "Admin")" class="btn btn-primary">Criar Perfil Agora</a>
+        </div>
+    </div>
+}
+else
+{
+    @* TUDO o que usa o Model deve estar dentro deste bloco ELSE *@
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card shadow-sm text-center p-4">
+                    <div class="mb-3">
+                        @* Uso seguro do Model aqui dentro *@
+                        <img id="profilePreview" src="@(Model.CurrentImageUrl ?? "/img/default-avatar.png")" 
+                             class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                        Alterar Foto
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white fw-bold">Informações Públicas: @Model.DisplayName</div>
+                    <div class="card-body">
+                        <form asp-action="UpdateProfile" method="post" enctype="multipart/form-data">
+                            <input type="file" id="fileInput" name="NewImage" class="d-none" onchange="previewImage(this)">
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nome de Exibição</label>
+                                <input asp-for="DisplayName" class="form-control" placeholder="Como você quer ser chamado?">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Bio (Aparece no final dos posts)</label>
+                                <textarea asp-for="Bio" class="form-control" rows="4"></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="small fw-bold">LinkedIn</label>
+                                    <input asp-for="LinkedInUrl" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="small fw-bold">Twitter/X</label>
+                                    <input asp-for="TwitterUrl" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="small fw-bold">GitHub</label>
+                                    <input asp-for="GitHubUrl" class="form-control form-control-sm">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary px-4">Salvar Perfil</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profilePreview').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
