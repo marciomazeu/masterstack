@@ -11,10 +11,10 @@ namespace MasterStack.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        // 1. Variável privada para armazenar o contexto
+        // 1. Variï¿½vel privada para armazenar o contexto
         private readonly ApplicationDbContext _context;
 
-        // 2. O construtor recebe o contexto via Injeção de Dependência
+        // 2. O construtor recebe o contexto via Injeï¿½ï¿½o de Dependï¿½ncia
         
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
@@ -49,54 +49,50 @@ namespace MasterStack.Controllers
             return RedirectToAction("Index");
         }
 
+        [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View();
         }
 
-        // Certifique-se de que NÃO existe atributo [Authorize] nesta Action
+        // Certifique-se de que Nï¿½O existe atributo [Authorize] nesta Action
         // Remova qualquer atributo [Authorize] do topo da classe se houver, 
-        // ou coloque [AllowAnonymous] nesta Action específica.
-        [AllowAnonymous]
-        [Route("Home/Error/{statusCode?}")]
-        [Route("{culture}/Home/Error/{statusCode?}")]
-        public async Task<IActionResult> Error(int? statusCode)
-        {
-            // 1. Buscamos os 3 posts mais recentes para sugerir ao usuário
-            // Filtramos pela cultura atual da rota ou padrão pt-BR
-            var culture = RouteData.Values["culture"]?.ToString()
-                  ?? Request.Query["culture"].ToString()
-                  ?? "pt-BR";
+        // ou coloque [AllowAnonymous] nesta Action especï¿½fica.
+        // Remova o atributo [Route] antigo e use este que aceita a chamada sem cultura na URL
+[Route("Home/NotFound/{statusCode}")]
+public async Task<IActionResult> NotFoundPage(int statusCode)
+{
+    // O middleware de localizaÃ§Ã£o jÃ¡ definiu a cultura do sistema aqui
+    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 
-            //var sugestoes = await _context.BlogPostTranslations
-            //    .Include(t => t.BlogPost)
-            //    .Where(t => t.Culture == culture)
-            //    .OrderByDescending(t => t.BlogPost.CreatedAt)
-            //    .Take(3)
-            //    .ToListAsync();
-            // Teste radical: pega os 3 primeiros registros da tabela, sem filtro nenhum
-            var sugestoes = await _context.BlogPostTranslations.Take(3).ToListAsync();
+    // Busca os posts sugeridos no idioma que o usuÃ¡rio estÃ¡ navegando
+    var suggestedPosts = await _context.BlogPostTranslations
+        .Where(t => t.Culture == currentCulture)
+        .OrderByDescending(t => t.BlogPost.CreatedAt)
+        .Take(3)
+        .ToListAsync();
 
-            // Adicione este Log para ver no console do Visual Studio (Janela de Saída)
-            Console.WriteLine($"DEBUG: Total de posts encontrados no banco: {sugestoes.Count}");
-            // 2. Se não achou nada, busca os 3 posts mais recentes de QUALQUER idioma
-            if (!sugestoes.Any())
-            {
-                sugestoes = await _context.BlogPostTranslations
-                    .Include(t => t.BlogPost)
-                    .OrderByDescending(t => t.BlogPost.CreatedAt)
-                    .Take(3)
-                    .ToListAsync();
-            }
+    return View("NotFound", suggestedPosts);
+}
 
-            // Se chegar aqui, sabemos que a rota funciona
-            if (statusCode == 404)
-            {
-                return View("NotFound", sugestoes);
-            }
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier }); // Certifique-se que Error.cshtml existe em /Views/Shared
+        [Route("{culture}/p/{slug}")] // Usamos "/p/" para encurtar a URL (ex: /pt-BR/p/sobre-nos)
+        public async Task<IActionResult> Page(string culture, string slug)
+{
+    // 1. Busca a pÃ¡gina pelo Slug
+    var page = await _context.StaticPages
+        .Include(p => p.Translations)
+        .FirstOrDefaultAsync(p => p.Slug == slug);
 
-        }
+    if (page == null) return NotFound(); // Aqui ele daria 404 se o slug estivesse errado
+
+    // 2. Busca a traduÃ§Ã£o ou a primeira disponÃ­vel
+    var translation = page.Translations.FirstOrDefault(t => t.Culture == culture) 
+                      ?? page.Translations.FirstOrDefault();
+
+    if (translation == null) return RedirectToAction("Index", "Home", new { culture = culture });
+
+    return View(translation);
+}
     }
 }

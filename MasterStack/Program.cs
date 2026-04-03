@@ -9,14 +9,13 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Globalization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configura a pasta de recursos
-builder.Services.AddLocalization();
+//builder.Services.AddLocalization();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
@@ -65,19 +64,23 @@ builder.Services.AddResponseCompression(options =>
             "application/json"
         });
 });
-builder.Services.AddDefaultIdentity<IdentityUser>(options => {
-    options.SignIn.RequireConfirmedAccount = false;
-})
-.AddEntityFrameworkStores<ApplicationDbContext>();
+// builder.Services.AddDefaultIdentity<IdentityUser>(options => {
+//     options.SignIn.RequireConfirmedAccount = false;
+// })
+// .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// No Program.cs
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
+    .AddRoles<IdentityRole>() // Se for usar as Roles Admin/Author
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Configura o Cookie do Identity para entender sua rota de cultura
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    // A barra inicial "/" é CRUCIAL aqui. 
-    // Ela diz ao .NET: "Comece da raiz, não anexe à cultura atual"
-    options.LoginPath = "/Identity/Account/Login";
-    options.LogoutPath = "/Identity/Account/Logout";
-    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    // Remova o "/Identity" do caminho, pois o seu Controller é "Account"
+    options.LoginPath = "/pt-BR/Account/Login";
+    options.LogoutPath = "/pt-BR/Account/Logout";
+    options.AccessDeniedPath = "/pt-BR/Account/AccessDenied";
 });
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -90,6 +93,21 @@ builder.Services.Configure<IISServerOptions>(options =>
     options.MaxRequestBodySize = 50 * 1024 * 1024;
 });
 var app = builder.Build();
+// 1. Em produção, usamos o Handler. Em desenvolvimento, a página técnica.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+else
+{
+    // COMENTE esta linha abaixo para forçar a página AZUL no seu Mac
+    // app.UseDeveloperExceptionPage(); 
+    
+    // E DESCOMENTE esta para o teste:
+    app.UseExceptionHandler("/Home/Error"); 
+    
+}
 
 // 2. Configura os idiomas (PT-BR, EN-CA, FR-CA)
 var supportedCultures = new[] { "pt-BR", "pt", "en-US", "en", "fr-CA", "fr" };
@@ -133,21 +151,25 @@ using (var scope = app.Services.CreateScope())
 localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultureProvider());
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error"); // Erros de servidor (500)
-    app.UseHsts();
-}
+// if (!app.Environment.IsDevelopment())
+// {
+//     app.UseExceptionHandler("/Home/Error"); // Erros de servidor (500)
+//     app.UseHsts();
+// }
 
 // Captura erros de status code como o 404
 // Captura o status code e redireciona mantendo a cultura ou usando padr�o
-app.UseStatusCodePagesWithReExecute("/pt-BR/Home/Error/{0}");
+app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
+
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseRouting();
 app.UseRequestLocalization(localizationOptions);
+
+app.UseRouting();
+
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -161,5 +183,49 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages(); // OBRIGATÓRIO para o Identity funcionar
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    // 1. Criar as Roles se não existirem
+    string[] roles = { "Admin", "Author", "User" };
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+
+    // Função auxiliar para criar utilizadores de teste
+    async Task CreateTestUser(string email, string name, string role, string password)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            var newUser = new ApplicationUser 
+            { 
+                UserName = email, 
+                Email = email, 
+                DisplayName = name,
+                EmailConfirmed = true // Evita problemas de validação de email no teste
+            };
+            
+            var result = await userManager.CreateAsync(newUser, password);
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(newUser, role);
+            }
+        }
+    }
+
+    // 2. Criar os três perfis de teste
+    // ATENÇÃO: Usa senhas que cumpram os requisitos do Identity (Letra grande, número e símbolo)
+    await CreateTestUser("admin@masterstack.com", "Admin Geral", "Admin", "Master@123");
+    await CreateTestUser("autor@masterstack.com", "Autor de Conteúdo", "Author", "Master@123");
+    await CreateTestUser("leitor@masterstack.com", "Leitor Comum", "User", "Master@123");
+}
 
 app.Run();

@@ -1,0 +1,50 @@
+
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+    @model RegisterViewModel
+
+@{
+    ViewData["Title"] = Localizer["RegisterTitle"];
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4 fw-bold">@Localizer["CreateAccount"]</h2>
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger">@ViewBag.Error</div>
+                    }
+
+                    <form asp-action="Register" asp-route-culture="@culture" method="post">
+                        <div class="mb-3">
+                            <label class="form-label">@Localizer["DisplayName"]</label>
+                            <input type="text" name="displayName" class="form-control" placeholder="@Localizer["DisplayNamePlaceholder"]" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">@Localizer["Email"]</label>
+                            <input type="email" name="email" class="form-control" placeholder="@Localizer["EmailPlaceholder"]" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">@Localizer["Password"]</label>
+                            <input type="password" name="password" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">@Localizer["ConfirmPassword"]</label>
+                            <input type="password" name="confirmPassword" class="form-control" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">@Localizer["RegisterButton"]</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

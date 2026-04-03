@@ -1,0 +1,110 @@
+@model MasterStack.Models.StaticPage
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<div class="container py-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Nova Página Estática</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" id="staticPageForm">
+                <div class="mb-4">
+                    <label asp-for="Slug" class="form-label fw-bold">URL da Página (Slug)</label>
+                    <input asp-for="Slug" class="form-control" placeholder="ex: sobre-nos" />
+                    <small class="text-muted">Isso definirá o link: masterstack.com/pt-BR/<b>sobre-nos</b></small>
+                </div>
+
+                <ul class="nav nav-tabs" id="langTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pt" type="button">Português</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#en" type="button">English</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#fr" type="button">Français</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content border-start border-end border-bottom p-4">
+                    @* Renderizamos 3 blocos, um para cada cultura *@
+                    @{ string[] cultures = { "pt-BR", "en-US", "fr-CA" }; }
+                    @for (int i = 0; i < cultures.Length; i++)
+                    {
+                        var paneId = cultures[i].Split('-')[0];
+                        <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="@paneId">
+                            <input type="hidden" name="translations[@i].Culture" value="@cultures[i]" />
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Título (@cultures[i])</label>
+                                <input name="translations[@i].Title" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Conteúdo</label>
+                                <div id="editor-@i" style="height: 300px;"></div>
+                                <input type="hidden" name="translations[@i].Content" id="content-@i" />
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary px-4">Salvar Página</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        var editors = [];
+        // Vamos inicializar 3 editores (PT, EN, FR)
+        for (var i = 0; i < 3; i++) {
+            var element = document.getElementById('editor-' + i);
+            if (element) {
+                var quill = new Quill('#editor-' + i, {
+                    theme: 'snow',
+                    placeholder: 'Escreva o conteúdo aqui...'
+                });
+                editors.push(quill);
+                console.log("Editor " + i + " inicializado com sucesso!");
+            } else {
+                console.error("Não achei a div editor-" + i);
+            }
+        }
+
+        // Vincular ao envio do formulário
+        var form = document.getElementById('staticPageForm');
+        form.onsubmit = function() {
+            for (var j = 0; j < editors.length; j++) {
+                document.getElementById('content-' + j).value = editors[j].root.innerHTML;
+            }
+        };
+    });
+        // Antes de enviar, copia o HTML do Quill para os inputs ocultos
+        document.getElementById('staticPageForm').onsubmit = function() {
+    // Percorre todos os editores (um para cada aba: PT, EN, FR)
+    for (var i = 0; i < editors.length; i++) {
+        // Pega o input oculto correspondente
+        var contentInput = document.getElementById('content-' + i);
+        
+        // Pega o HTML de dentro do editor Quill
+        var html = editors[i].root.innerHTML;
+
+        // Se o editor estiver vazio (apenas uma quebra de linha), limpamos para evitar erro
+        if (html === '<p><br></p>') html = "";
+
+        // Aloca o valor no input que será enviado ao C#
+        contentInput.value = html;
+        
+        console.log("Conteúdo capturado do editor " + i + ": ", html); // Para você ver no console do navegador
+    }
+};
+    </script>
+}

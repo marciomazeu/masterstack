@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Acesso Negado";
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+}
+
+<div class="container mt-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="display-1 text-danger"><i class="fas fa-user-shield"></i></div>
+            <h1 class="text-dark">Ops! Você não tem permissão.</h1>
+            <p class="lead text-muted">
+                Sua conta não possui o nível de acesso necessário para visualizar esta página.
+            </p>
+            <hr />
+            <div class="d-grid gap-2 d-md-block">
+                <a asp-controller="Home" asp-action="Index" asp-route-culture="@culture" 
+                   class="btn btn-outline-secondary">Voltar para a Home</a>
+                
+                <form asp-controller="Account" asp-action="Logout" asp-route-culture="@culture" 
+                      method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger text-white">
+                        Sair e entrar com outra conta
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

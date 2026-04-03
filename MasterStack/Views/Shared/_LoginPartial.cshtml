@@ -1,26 +1,45 @@
+@using MasterStack.Models;
 @using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@using Microsoft.Extensions.Localization
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IStringLocalizer<SharedResource> Localizer
 
+@{
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+}
 <ul class="navbar-nav">
-@if (SignInManager.IsSignedIn(User))
-{
-    <li class="nav-item">
-        <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Olá @User.Identity?.Name!</a>
-    </li>
-    <li class="nav-item">
-        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button  type="submit" class="nav-link btn btn-link text-dark">Sair</button>
-        </form>
-    </li>
-}
-else
-{
-    <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Registrar</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Entrar</a>
-    </li>
-}
+   
+    @if (SignInManager.IsSignedIn(User))
+    {
+        @if (User.IsInRole("Admin"))
+        {
+            <li class="nav-item">
+                <a class="nav-link text-dark fw-bold" asp-area="" asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@culture">
+                    <i class="fas fa-tachometer-alt me-1"></i> @Localizer["Menu_Dashboard"]
+                </a>
+            </li>
+        }
+
+        <li class="nav-item">
+            <span class="nav-link text-dark">
+                @Localizer["Hello"], @((await UserManager.GetUserAsync(User))?.DisplayName ?? User.Identity.Name)!
+            </span>
+        </li>
+
+        <li class="nav-item">
+            <form class="form-inline" asp-controller="Account" asp-action="Logout" asp-route-culture="@culture" method="post">
+                <button type="submit" class="nav-link btn btn-link text-dark">@Localizer["Menu_Logout"]</button>
+            </form>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-controller="Account" asp-action="Login" asp-route-culture="@culture">@Localizer["Btn_Login"]</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-controller="Account" asp-action="Register" asp-route-culture="@culture">@Localizer["Btn_Register"]</a>
+        </li>
+    }
 </ul>

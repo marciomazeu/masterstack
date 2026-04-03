@@ -20,10 +20,10 @@ namespace MasterStack.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IStringLocalizer<BlogPostsController> _localizer; // Adicione esta linha
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         
 
-        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStringLocalizer<BlogPostsController> localizer, UserManager<IdentityUser> userManager)
+        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStringLocalizer<BlogPostsController> localizer, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
@@ -36,6 +36,7 @@ namespace MasterStack.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(string culture, int page = 1, string searchTerm = "", bool notfound = false)
         {
+        
             if (notfound)
             {
                 TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
@@ -45,10 +46,12 @@ namespace MasterStack.Controllers
             var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 
             // 1. Iniciamos a Query básica (apenas posts que tenham o idioma atual)
-            var query = _context.BlogPosts
-                .Include(p => p.Translations)
-                .Where(p => p.Translations.Any(t => t.Culture == currentCulture && t.IsPublished))
-                .AsQueryable(); // Importante para permitir adicionar filtros depois
+           var query = _context.BlogPosts
+            .AsNoTracking()
+            .Include(p => p.Author) // <--- ADICIONE ESTA LINHA AQUI
+            .Include(p => p.Translations)
+            .Where(p => p.Translations.Any(t => t.Culture == currentCulture && t.IsPublished))
+            .AsQueryable(); // Importante para permitir adicionar filtros depois
 
             // 2. AQUI ESTAVA O PROBLEMA: Aplicar o filtro de busca ANTES de contar e paginar
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -158,49 +161,39 @@ namespace MasterStack.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        [RequestSizeLimit(52428800)] // 50MB
-        public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture)
+[ValidateAntiForgeryToken]
+[RequestSizeLimit(52428800)] // 50MB
+public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture)
 {
     if (!ModelState.IsValid) return View(model);
 
     var user = await _userManager.GetUserAsync(User);
-    var profile = await _context.AuthorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+    if (user == null) return RedirectToAction("Login", "Account");
 
-    if (profile == null) 
-    {
-        TempData["Error"] = "Você precisa criar um perfil de autor antes de postar.";
-        return RedirectToAction("Profile", "Admin"); // Certifique-se que o controller está certo
-    }
-
-    // REMOVI a linha "blogPost.AuthorProfileId = profile.Id;" que estava dando erro aqui
+    // Processa a imagem ANTES da transação para ter o caminho
+    string? imagePath = await ProcessAndSaveWebP(model.ImageFile);
 
     using var transaction = await _context.Database.BeginTransactionAsync();
     try
     {
+        // Higienização robusta
         var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedAttributes.Add("class"); // Mantém formatação do Quill
         string cleanHtml = sanitizer.Sanitize(model.Content);
 
-        // 1. Gerar o Slug ÚNICO
-        string uniqueSlug = await GetUniqueSlugAsync(model.Title, culture);
+        string uniqueSlug = await GetUniqueSlugAsync(model.Title, culture ?? "pt-BR");
 
-        // 2. Criar o registro Pai (O VÍNCULO DO AUTOR VAI AQUI)
         var post = new BlogPost 
         { 
             CreatedAt = DateTime.Now,
-            AuthorProfileId = profile.Id // <--- O ID entra aqui no objeto que REALMENTE existe
+            AuthorId = user.Id 
         };
         
         _context.BlogPosts.Add(post);
         await _context.SaveChangesAsync();
 
-        // 3. Processar o Upload
-        string? imagePath = await ProcessAndSaveWebP(model.ImageFile);
-
-        // 4. Definir Cultura
         var currentCulture = culture ?? model.SelectedCulture ?? "pt-BR";
 
-        // 5. Criar a Tradução vinculada
         var translation = new BlogPostTranslation
         {
             BlogPostId = post.Id,
@@ -211,8 +204,6 @@ namespace MasterStack.Controllers
             MetaKeywords = model.MetaKeywords,
             Slug = uniqueSlug,
             ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg"
-            // Nota: Se o seu model Translation também tiver AuthorProfileId, mantenha, 
-            // mas o principal é estar no BlogPost (Pai).
         }; 
 
         _context.BlogPostTranslations.Add(translation);
@@ -223,46 +214,60 @@ namespace MasterStack.Controllers
         TempData["Success"] = "Post criado com sucesso!";
         return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
     }
-    catch (Exception ex)
+    catch (Exception)
     {
         await transaction.RollbackAsync();
-        ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
+        
+        // Limpeza de segurança: Se deu erro no banco, deleta a imagem física
+        if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
+        {
+            var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
+            if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
+        }
+
+        ModelState.AddModelError("", "Erro técnico ao salvar. O arquivo foi removido e os dados protegidos.");
         return View(model);
     }
 }
         private string GenerateSlug(string phrase)
+{
+    // 1. Remove acentos (Transforma 'ã' em 'a', 'é' em 'e')
+    string str = RemoveAccents(phrase).ToLower();
+
+    // 2. Remove caracteres inválidos (mantém apenas letras, números e espaços)
+    str = System.Text.RegularExpressions.Regex.Replace(str, @"[^a-z0-9\s-]", "");
+
+    // 3. Converte múltiplos espaços em um só
+    str = System.Text.RegularExpressions.Regex.Replace(str, @"\s+", " ").Trim();
+
+    // 4. Limita o tamanho (URLs muito longas são ruins para SEO)
+    str = str.Substring(0, str.Length <= 45 ? str.Length : 45).Trim();
+
+    // 5. Troca espaços por hifens
+    str = System.Text.RegularExpressions.Regex.Replace(str, @"\s", "-");
+
+    return str;
+}
+
+// Método auxiliar para tratar os acentos (essencial para PT-BR e FR)
+private string RemoveAccents(string text)
+{
+    var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
+    var stringBuilder = new System.Text.StringBuilder();
+
+    foreach (var c in normalizedString)
+    {
+        var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+        if (unicodeCategory != System.Globalization.CharUnicodeInfo.GetUnicodeCategory('a')) // NonSpacingMark
         {
-            // Exemplo de lógica de verificação (Simplificada)
-            int count = 1;
-            string originalSlug = phrase;
-            while (_context.BlogPostTranslations.Any(t => t.Slug == phrase))
+            if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
             {
-                phrase = $"{originalSlug}-{count}";
-                count++;
+                stringBuilder.Append(c);
             }
-            if (string.IsNullOrEmpty(phrase)) return "";
-
-            // 1. Converte para minúsculo
-            string str = phrase.ToLower();
-
-            // 2. Remove acentos (Normalização)
-            str = System.Text.Encoding.ASCII.GetString(System.Text.Encoding.GetEncoding("Cyrillic").GetBytes(str));
-
-            // 3. Remove caracteres inválidos (Regex)
-            // Substitui qualquer coisa que não seja letra, número ou espaço por nada
-            str = System.Text.RegularExpressions.Regex.Replace(str, @"[^a-z0-9\s-]", "");
-
-            // 4. Converte múltiplos espaços em um único espaço
-            str = System.Text.RegularExpressions.Regex.Replace(str, @"\s+", " ").Trim();
-
-            // 5. Corta o tamanho máximo (opcional, ex: 60 caracteres)
-            str = str.Substring(0, str.Length <= 60 ? str.Length : 60).Trim();
-
-            // 6. Troca espaços por hífens
-            str = System.Text.RegularExpressions.Regex.Replace(str, @"\s", "-");
-
-            return str;
         }
+    }
+    return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+}
 
         private async Task<string> GetUniqueSlugAsync(string title, string culture, int? currentId = null)
         {
@@ -705,42 +710,63 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
         }
 
         private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
+{
+    if (imageFile == null || imageFile.Length == 0) return null;
+
+    try
+    {
+        string fileName = Guid.NewGuid().ToString() + ".webp";
+        string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
+
+        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+        string physicalPath = Path.Combine(uploadsFolder, fileName);
+
+        using (var inputStream = imageFile.OpenReadStream())
+        using (var managedStream = new SKManagedStream(inputStream))
+        using (var bitmap = SKBitmap.Decode(managedStream))
         {
-            try
+            if (bitmap == null) return null;
+
+            // 1. Decidir se redimensiona ou usa o original
+            SKBitmap finalBitmap = bitmap;
+            bool wasResized = false;
+
+            if (bitmap.Width > 1200)
             {
-                // 1. Define o nome e caminhos
-                string fileName = Guid.NewGuid().ToString() + ".webp";
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
+                int newWidth = 1200;
+                int newHeight = (int)(bitmap.Height * (1200.0 / bitmap.Width));
+                finalBitmap = bitmap.Resize(new SKImageInfo(newWidth, newHeight), SKFilterQuality.High);
+                wasResized = true;
+            }
 
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                string physicalPath = Path.Combine(uploadsFolder, fileName);
-
-                // 2. Conversão Real de Bytes para WebP
-                using (var inputStream = imageFile.OpenReadStream())
-                using (var managedStream = new SKManagedStream(inputStream))
-                using (var bitmap = SKBitmap.Decode(managedStream))
+            try 
+            {
+                // 2. Encode e Salvamento (Fora do IF, para pegar todas as imagens)
+                using (var image = SKImage.FromBitmap(finalBitmap))
+                using (var data = image.Encode(SKEncodedImageFormat.Webp, 80))
                 {
-                    if (bitmap == null) return null; // Arquivo corrompido ou formato inválido
-
-                    // Opcional: Redimensionar se for muito grande (ex: max 1200px largura)
-                    // Isso economiza MUITO espaço e banda
-                    using (var image = SKImage.FromBitmap(bitmap))
-                    using (var data = image.Encode(SKEncodedImageFormat.Webp, 80)) // Qualidade 80 (Equilíbrio perfeito)
-                    using (var outputStream = System.IO.File.OpenWrite(physicalPath))
+                    using (var outputStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
                         data.SaveTo(outputStream);
+                        await outputStream.FlushAsync(); 
                     }
                 }
-
-                // Retorna o caminho virtual para o banco
-                return "/uploads/blog/" + fileName;
             }
-            catch
+            finally
             {
-                return null;
+                // Limpa a memória do bitmap redimensionado se ele foi criado
+                if (wasResized) finalBitmap.Dispose();
             }
         }
+
+        return "/uploads/blog/" + fileName;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("ERRO NO UPLOAD: " + ex.Message);
+        return null;
+    }
+}
 
         [HttpPost]
 [Route("{culture}/BlogPosts/UploadEditorImage")]

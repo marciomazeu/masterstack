@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,79 +26,79 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
         <xsd:choice maxOccurs="unbounded">
           <xsd:element name="metadata">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
               </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
+              <xsd:attribute name="name" use="required" type="xsd:string"/>
+              <xsd:attribute name="type" type="xsd:string"/>
+              <xsd:attribute name="mimetype" type="xsd:string"/>
+              <xsd:attribute ref="xml:space"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="assembly">
             <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
+              <xsd:attribute name="alias" type="xsd:string"/>
+              <xsd:attribute name="name" type="xsd:string"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="data">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute ref="xml:space"/>
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
             <xsd:complexType>
               <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
@@ -119,86 +119,542 @@
   </resheader>
   <data name="MenuFeatures" xml:space="preserve">
     <value>Fonctionnalités</value>
+    <comment/>
   </data>
   <data name="MenuTutorials" xml:space="preserve">
     <value>Tutoriels</value>
+    <comment/>
   </data>
   <data name="MenuAbout" xml:space="preserve">
     <value>À propos</value>
+    <comment/>
   </data>
   <data name="Language" xml:space="preserve">
     <value>Langue</value>
+    <comment/>
   </data>
   <data name="HeroTitle" xml:space="preserve">
     <value>Boostez votre Développement</value>
+    <comment/>
   </data>
   <data name="HeroSubtitle" xml:space="preserve">
     <value>La pile technologique ultime</value>
+    <comment/>
   </data>
   <data name="GetStarted" xml:space="preserve">
     <value>Commencer</value>
+    <comment/>
   </data>
   <data name="WhyTitle" xml:space="preserve">
     <value>Pourquoi choisir MasterStack?</value>
+    <comment/>
   </data>
   <data name="Feature1Title" xml:space="preserve">
     <value>High-performance apps with .NET MAUI and native iOS/Android integration.</value>
+    <comment/>
   </data>
   <data name="MobileDesc" xml:space="preserve">
     <value>Apps haute performance avec .NET MAUI et intégration native iOS/Android.</value>
+    <comment/>
   </data>
   <data name="AboutSection" xml:space="preserve">
     <value>À propos du Projet</value>
+    <comment/>
   </data>
   <data name="AboutText" xml:space="preserve">
     <value>Construit avec les meilleures pratiques</value>
+    <comment/>
   </data>
   <data name="WhyText" xml:space="preserve">
     <value>Nous combinons la puissance du développement web moderne avec l'agilité mobile et la précision du matériel. Notre mission est de fournir des tutoriels de haute qualité pour ceux qui cherchent à créer des solutions réelles, complètes et évolutives.</value>
+    <comment/>
   </data>
   <data name="WhyMasterstackAlt" xml:space="preserve">
     <value>Développeur travaillant sur des projets technologiques intégrés.</value>
+    <comment/>
   </data>
   <data name="WebTitle" xml:space="preserve">
     <value>Développement Web</value>
+    <comment/>
   </data>
   <data name="WebDesc" xml:space="preserve">
     <value>Architectures évolutives utilisant .NET 9, Clean Architecture et Cloud Computing.</value>
+    <comment/>
   </data>
   <data name="MobileTitle" xml:space="preserve">
     <value>Mobile Edge</value>
+    <comment/>
   </data>
   <data name="HardwareTitle" xml:space="preserve">
     <value>Matériel &amp; IoT</value>
+    <comment/>
   </data>
   <data name="HardwareDesc" xml:space="preserve">
     <value>Intégrez C# aux microcontrôleurs et à l'électronique pour un monde connecté.</value>
+    <comment/>
   </data>
   <data name="LearnMore" xml:space="preserve">
     <value>En Savoir Plus</value>
+    <comment/>
   </data>
   <data name="FooterCopyright" xml:space="preserve">
     <value>Tous droits réservés.</value>
+    <comment/>
   </data>
   <data name="FooterContact" xml:space="preserve">
     <value>Contact</value>
+    <comment/>
   </data>
   <data name="FooterPrivacy" xml:space="preserve">
     <value>Confidentialité</value>
+    <comment/>
   </data>
   <data name="MenuBlog" xml:space="preserve">
     <value>Blogue</value>
+    <comment/>
   </data>
   <data name="AdminBlog" xml:space="preserve">
     <value>Gérer le Blog</value>
+    <comment/>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Chercher...</value>
+    <comment/>
   </data>
   <data name="SearchResultsFor" xml:space="preserve">
     <value>Résultats pour</value>
+    <comment/>
   </data>
   <data name="ClearSearch" xml:space="preserve">
-    <value>Effacer la recherche</value>
+    <value>Effacer</value>
+    <comment/>
+  </data>
+  <data name="Menu_Home" xml:space="preserve">
+    <value>Accueil</value>
+    <comment/>
+  </data>
+  <data name="Btn_Login" xml:space="preserve">
+    <value>Connexion</value>
+    <comment/>
+  </data>
+  <data name="Btn_Register" xml:space="preserve">
+    <value>S'inscrire</value>
+    <comment/>
+  </data>
+  <data name="Btn_Save" xml:space="preserve">
+    <value>Enregistrer</value>
+    <comment/>
+  </data>
+  <data name="Btn_Delete" xml:space="preserve">
+    <value>Supprimer</value>
+    <comment/>
+  </data>
+  <data name="Admin_Dashboard" xml:space="preserve">
+    <value>Tableau de bord</value>
+    <comment/>
+  </data>
+  <data name="Admin_ManageUsers" xml:space="preserve">
+    <value>Gérer les utilisateurs</value>
+    <comment/>
+  </data>
+  <data name="Admin_NewPost" xml:space="preserve">
+    <value>Nouvel article</value>
+    <comment/>
+  </data>
+  <data name="Admin_TotalPosts" xml:space="preserve">
+    <value>Total des articles</value>
+    <comment/>
+  </data>
+  <data name="Admin_RecentActivity" xml:space="preserve">
+    <value>Activité récente</value>
+    <comment/>
+  </data>
+  <data name="AdminDashboard" xml:space="preserve">
+    <value>Tableau de bord</value>
+    <comment/>
+  </data>
+  <data name="Welcome" xml:space="preserve">
+    <value>Bienvenue</value>
+    <comment/>
+  </data>
+  <data name="NewPost" xml:space="preserve">
+    <value>Nouvel article</value>
+    <comment/>
+  </data>
+  <data name="CleanupImages" xml:space="preserve">
+    <value>Nettoyer les images</value>
+    <comment/>
+  </data>
+  <data name="AllLanguages" xml:space="preserve">
+    <value>Toutes les langues</value>
+    <comment/>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filtrer</value>
+    <comment/>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Effacer</value>
+    <comment/>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tous</value>
+    <comment/>
+  </data>
+  <data name="Published" xml:space="preserve">
+    <value>Publiés</value>
+    <comment/>
+  </data>
+  <data name="Drafts" xml:space="preserve">
+    <value>Brouillons</value>
+    <comment/>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Brouillon</value>
+    <comment/>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>Affichage de</value>
+    <comment/>
+  </data>
+  <data name="Results" xml:space="preserve">
+    <value>résultats</value>
+    <comment/>
+  </data>
+  <data name="ContentInfo" xml:space="preserve">
+    <value>Infos du contenu</value>
+    <comment/>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="AddTranslation" xml:space="preserve">
+    <value>Ajouter une traduction</value>
+    <comment/>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Page</value>
+    <comment/>
+  </data>
+  <data name="Of" xml:space="preserve">
+    <value>de</value>
+    <comment/>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Confirmer la suppression</value>
+    <comment/>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+    <comment/>
+  </data>
+  <data name="ConfirmDeleteBtn" xml:space="preserve">
+    <value>Oui, supprimer</value>
+    <comment/>
+  </data>
+  <data name="ThisActionRemovesAllLanguages" xml:space="preserve">
+    <value>Attention : cela supprimera l'article em TOUTES les langues !</value>
+    <comment/>
+  </data>
+  <data name="ConfirmFullDeleteMessage" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir supprimer l'article complet ?</value>
+    <comment/>
+  </data>
+  <data name="ConfirmTranslationDeleteMessage" xml:space="preserve">
+    <value>Supprimer uniquement cette traduction ?</value>
+    <comment/>
+  </data>
+  <data name="Author" xml:space="preserve">
+    <value>Auteur</value>
+    <comment/>
+  </data>
+  <data name="LoginTitle" xml:space="preserve">
+    <value>Connexion</value>
+    <comment/>
+  </data>
+  <data name="LoginSubtitle" xml:space="preserve">
+    <value>Accédez à votre compte</value>
+    <comment/>
+  </data>
+  <data name="EmailOrUsername" xml:space="preserve">
+    <value>Courriel ou Utilisateur</value>
+    <comment/>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Mot de passe</value>
+    <comment/>
+  </data>
+  <data name="NoAccountYet" xml:space="preserve">
+    <value>Vous n'avez pas encore de compte ?</value>
+    <comment/>
+  </data>
+  <data name="RegisterHere" xml:space="preserve">
+    <value>Inscrivez-vous ici</value>
+    <comment/>
+  </data>
+  <data name="BackToSite" xml:space="preserve">
+    <value>Retour au site</value>
+    <comment/>
+  </data>
+  <data name="InvalidLoginAttempt" xml:space="preserve">
+    <value>Nom d'utilisateur ou mot de passe invalide.</value>
+    <comment/>
+  </data>
+  <data name="UserLockedOut" xml:space="preserve">
+    <value>Ce compte a été verrouillé.</value>
+    <comment/>
+  </data>
+  <data name="LoginRequired" xml:space="preserve">
+    <value>Vous devez être connecté para acessar.</value>
+    <comment/>
+  </data>
+  <data name="PasswordsDoNotMatch" xml:space="preserve">
+    <value>Les mots de passe ne correspondent pas.</value>
+    <comment/>
+  </data>
+  <data name="RegistrationError" xml:space="preserve">
+    <value>Erreur lors de la création du compte.</value>
+    <comment/>
+  </data>
+  <data name="DuplicateUserName" xml:space="preserve">
+    <value>Ce courriel est déjà utilisé.</value>
+    <comment/>
+  </data>
+  <data name="DuplicateEmail" xml:space="preserve">
+    <value>Ce courriel est déjà utilisé.</value>
+    <comment/>
+  </data>
+  <data name="PasswordTooShort" xml:space="preserve">
+    <value>Mot de passe trop court.</value>
+    <comment/>
+  </data>
+  <data name="PasswordRequiresNonAlphanumeric" xml:space="preserve">
+    <value>Le mot de passe requiert um symbole (!@#).</value>
+    <comment/>
+  </data>
+  <data name="PasswordRequiresDigit" xml:space="preserve">
+    <value>Le mot de passe requiert un chiffre.</value>
+    <comment/>
+  </data>
+  <data name="PasswordRequiresUpper" xml:space="preserve">
+    <value>Password requires an upper case letter.</value>
+    <comment/>
+  </data>
+  <data name="DefaultError" xml:space="preserve">
+    <value>Une erreur est survenue. Veuillez réessayer.</value>
+    <comment/>
+  </data>
+  <data name="Err_PasswordLength" xml:space="preserve">
+    <value>Le mot de passe doit comporter entre 6 et 100 caractères.</value>
+    <comment/>
+  </data>
+  <data name="RegisterTitle" xml:space="preserve">
+    <value>Créer um compte</value>
+    <comment/>
+  </data>
+  <data name="CreateAccount" xml:space="preserve">
+    <value>Créer um nouveau compte</value>
+    <comment/>
+  </data>
+  <data name="DisplayName" xml:space="preserve">
+    <value>Nom d'affichage</value>
+    <comment/>
+  </data>
+  <data name="DisplayNamePlaceholder" xml:space="preserve">
+    <value>Comment voulez-vous être chamado ?</value>
+    <comment/>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Courriel</value>
+    <comment/>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirmer le mot de passe</value>
+    <comment/>
+  </data>
+  <data name="RegisterButton" xml:space="preserve">
+    <value>S'inscrire</value>
+    <comment/>
+  </data>
+  <data name="EmailPlaceholder" xml:space="preserve">
+    <value>exemple@courriel.com</value>
+    <comment/>
+  </data>
+  <data name="Menu_Administration" xml:space="preserve">
+    <value>Administration</value>
+    <comment/>
+  </data>
+  <data name="Menu_Dashboard" xml:space="preserve">
+    <value>Tableau de bord</value>
+    <comment/>
+  </data>
+  <data name="Menu_ManageUsers" xml:space="preserve">
+    <value>Gérer les utilisateurs</value>
+    <comment/>
+  </data>
+  <data name="Menu_Profile" xml:space="preserve">
+    <value>Mon Profil</value>
+    <comment/>
+  </data>
+  <data name="Menu_Logout" xml:space="preserve">
+    <value>Déconnexion</value>
+    <comment/>
+  </data>
+  <data name="Hello" xml:space="preserve">
+    <value>Bonjour</value>
+    <comment/>
+  </data>
+  <data name="Err_Required" xml:space="preserve">
+    <value>Ce champ est obligatoire.</value>
+    <comment/>
+  </data>
+  <data name="Err_Email" xml:space="preserve">
+    <value>Courriel invalide.</value>
+    <comment/>
+  </data>
+  <data name="Err_PasswordMatch" xml:space="preserve">
+    <value>Les mots de passe ne correspondent pas.</value>
+    <comment/>
+  </data>
+  <data name="ImagesCleanedSuccess" xml:space="preserve">
+    <value>{0} images inutilisées ont été supprimées avec succès.</value>
+    <comment/>
+  </data>
+  <data name="ProfileImage" xml:space="preserve">
+    <value>Photo de profil</value>
+    <comment/>
+  </data>
+  <data name="ConfirmCleanupTitle" xml:space="preserve">
+    <value>Nettoyage de disque</value>
+    <comment/>
+  </data>
+  <data name="NoOrphanedImages" xml:space="preserve">
+    <value>Aucune image orpheline trouvée.</value>
+    <comment/>
+  </data>
+  <data name="Scanning" xml:space="preserve">
+    <value>Analyse des fichiers...</value>
+    <comment/>
+  </data>
+  <data name="FoundOrphanedImages" xml:space="preserve">
+    <value>{0} images inutilisées trouvées. Voulez-vous les supprimer ?</value>
+    <comment/>
+  </data>
+  <data name="Btn_ConfirmCleanup" xml:space="preserve">
+    <value>Oui, nettoyer le disque</value>
+    <comment/>
+  </data>
+  <data name="ServerError" xml:space="preserve">
+    <value>Erreur de communication avec le serveur.</value>
+    <comment/>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>Succès</value>
+    <comment/>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Erreur</value>
+    <comment/>
+  </data>
+  <data name="Err_InvalidUrl" xml:space="preserve">
+    <value>Format d'URL invalide.</value>
+    <comment/>
+  </data>
+  <data name="Err_MaxLength" xml:space="preserve">
+    <value>Texte trop long ({1} max).</value>
+    <comment/>
+  </data>
+  <data name="NotFound_Title" xml:space="preserve">
+    <value>Page Non Trouvée</value>
+    <comment/>
+  </data>
+  <data name="NotFound_Heading" xml:space="preserve">
+    <value>Il semble que vous soyez perdu.</value>
+    <comment/>
+  </data>
+  <data name="NotFound_Description" xml:space="preserve">
+    <value>Nous ne trouvons pas cette page. Pourquoi ne pas retourner à l'accueil ?</value>
+    <comment/>
+  </data>
+  <data name="SuggestedPosts_Title" xml:space="preserve">
+    <value>Vous pourriez être intéressé par ces articles :</value>
+    <comment/>
+  </data>
+  <data name="BackToHome" xml:space="preserve">
+    <value>Retour à l'accueil</value>
+    <comment/>
+  </data>
+  <data name="ViewBlog" xml:space="preserve">
+    <value>Voir le Blogue</value>
+    <comment/>
+  </data>
+  <data name="ReadMore" xml:space="preserve">
+    <value>Lire la suite</value>
+    <comment/>
+  </data>
+  <data name="NoPostsFound" xml:space="preserve">
+    <value>Aucun article récent trouvé.</value>
+    <comment/>
+  </data>
+  <data name="Bio" xml:space="preserve">
+    <value>Biographie</value>
+    <comment/>
+  </data>
+  <data name="LinkedInUrl" xml:space="preserve">
+    <value>LinkedIn</value>
+    <comment/>
+  </data>
+  <data name="TwitterUrl" xml:space="preserve">
+    <value>Twitter/X</value>
+    <comment/>
+  </data>
+  <data name="GitHubUrl" xml:space="preserve">
+    <value>GitHub</value>
+    <comment/>
+  </data>
+  <data name="SaveProfile" xml:space="preserve">
+    <value>Enregistrer le profil</value>
+    <comment/>
+  </data>
+  <data name="ChangePhoto" xml:space="preserve">
+    <value>Modifier la photo</value>
+    <comment/>
+  </data>
+  <data name="ProfileUpdatedSuccess" xml:space="preserve">
+    <value>Profil mis à jour com succès!</value>
+    <comment/>
+  </data>
+  <data name="SuccessTitle" xml:space="preserve">
+    <value>Succès !</value>
+    <comment/>
+  </data>
+  <data name="ErrorFormMessage" xml:space="preserve">
+    <value>Veuillez vérifier les erreurs.</value>
+    <comment/>
+  </data>
+  <data name="PublicInformation" xml:space="preserve">
+    <value>Informations Publiques</value>
+    <comment/>
+  </data>
+  <data name="LatestPosts" xml:space="preserve">
+    <value>Dernières Publications</value>
+    <comment/>
+  </data>
+  <data name="NoResultsTitle" xml:space="preserve">
+    <value>Aucun article trouvé</value>
+    <comment/>
+  </data>
+  <data name="NoResultsMessage" xml:space="preserve">
+    <value>Nous n'avons trouvé aucune publicação pour ce termo ou cette langue pour le moment.</value>
+    <comment/>
+  </data>
+  <data name="BackToBlog" xml:space="preserve">
+    <value>Retour au Blog</value>
+    <comment/>
+  </data>
+  <data name="Blog" xml:space="preserve">
+    <value>Blog</value>
+    <comment/>
   </data>
 </root>

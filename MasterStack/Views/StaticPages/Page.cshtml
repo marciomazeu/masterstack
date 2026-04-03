@@ -1,0 +1,59 @@
+@model MasterStack.Models.StaticPageTranslation
+
+
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["Description"] = "Saiba mais sobre o MasterStack e nossa missão.";
+}
+
+@if (User.IsInRole("Admin"))
+{
+    <div class="container mt-2">
+        <a asp-controller="StaticPages" 
+        asp-action="Edit" 
+        asp-route-culture="@Context.GetRouteValue("culture")" 
+        asp-route-id="@Model.Id" 
+        class="btn btn-sm btn-warning">
+        <i class="fas fa-edit"></i> Editar
+</a>
+    </div>
+}
+<article class="container py-5" style="max-width: 800px;">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Home</a></li>
+            <li class="breadcrumb-item active">@Model.Title</li>
+        </ol>
+    </nav>
+
+    <h1 class="display-4 fw-bold mb-4 text-dark">@Model.Title</h1>
+    
+    <div class="content-area text-break" style="overflow-wrap: break-word; word-wrap: break-word; word-break: normal;">
+        @Html.Raw(Model.Content) @* Importante: Renderiza o HTML do Quill *@
+    </div>
+</article>
+
+<style>
+    /* Força todas as tags dentro do conteúdo a respeitarem a largura */
+    .content-area * {
+        max-width: 100% !important;
+        overflow-wrap: break-word !important;
+        word-wrap: break-word !important;
+    }
+
+    /* Ajuste para imagens que vêm do editor com tamanho fixo */
+    .content-area img {
+        height: auto !important;
+        max-width: 100% !important;
+        display: block;
+        margin: 1rem 0;
+    }
+
+    /* Ajuste para tabelas (comum vazarem no Francês) */
+    .content-area table {
+        display: block;
+        width: 100% !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+</style>

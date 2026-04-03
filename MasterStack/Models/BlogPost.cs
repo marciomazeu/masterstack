@@ -17,8 +17,10 @@ namespace MasterStack.Models
         // Tudo isso agora vive na lista abaixo (BlogPostTranslations).
         public virtual ICollection<BlogPostTranslation> Translations { get; set; } = new List<BlogPostTranslation>();
     
-    // Vínculo com o Autor
-    public int AuthorProfileId { get; set; } // FK
-    public virtual AuthorProfile Author { get; set; } // Propriedade de Navegação
+    [Required]
+public string AuthorId { get; set; } = string.Empty; // Mudou de int para string
+
+[ForeignKey("AuthorId")]
+public virtual ApplicationUser Author { get; set; } = null!;
     }
 }

@@ -311,5 +311,23 @@ namespace MasterStack {
                 return ResourceManager.GetString("WhyTitle", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Busca uma string localizada semelhante a Nome de Exibição.
+        /// </summary>
+        public static string DisplayName {
+            get {
+                return ResourceManager.GetString("DisplayName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca uma string localizada semelhante a Biografia.
+        /// </summary>
+        public static string Bio {
+            get {
+                return ResourceManager.GetString("Bio", resourceCulture);
+            }
+        }
     }
 }

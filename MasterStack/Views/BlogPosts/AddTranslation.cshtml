@@ -144,7 +144,7 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
     <script>
-        // 1. Inicialização do Quill (Igual ao Create)
+        // 1. Inicialização do Quill
         var quill = new Quill('#quill-editor', {
             theme: 'snow',
             modules: {
@@ -158,11 +158,14 @@
             }
         });
 
-        // 2. SEO e Preview em Tempo Real
+        // 2. Seleção de Elementos (Apenas UMA vez)
         const titleInput = document.getElementById('Title');
         const slugInput = document.getElementById('Slug');
         const descField = document.getElementById('MetaDescription');
+        const sw = document.getElementById('publishSwitch');
+        const label = document.getElementById('statusLabel');
 
+        // 3. Funções Auxiliares
         function slugify(text) {
             return text.toString().toLowerCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -170,52 +173,26 @@
                 .replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
         }
 
-        titleInput.addEventListener('input', function() {
-            if (slugInput.dataset.auto === "true") {
-                slugInput.value = slugify(this.value);
-            }
-            updateGooglePreview();
-        });
-
-        quill.on('text-change', function() {
-            if (descField.dataset.auto === "true") {
-                const text = quill.getText().substring(0, 160).trim();
-                descField.value = text;
-            }
-            updateGooglePreview();
-        });
-
-        function updateGooglePreview() {
-            document.getElementById('preview-title').innerText = titleInput.value || "Título";
-            document.getElementById('preview-slug').innerText = slugInput.value || "slug";
-            document.getElementById('preview-desc').innerText = descField.value || "Descrição...";
-            document.getElementById('descCounter').innerText = `${descField.value.length} / 160 caracteres`;
+        function extractPlainText(html) {
+            var temp = document.createElement("div");
+            temp.innerHTML = html;
+            return temp.textContent || temp.innerText || "";
         }
 
-        // 3. Preview de Imagem
-        document.getElementById('ImageInput').onchange = evt => {
-            const [file] = evt.target.files;
-            if (file) {
-                document.getElementById('imagePreview').src = URL.createObjectURL(file);
-                document.getElementById('imagePreview').style.display = 'block';
-                document.getElementById('uploadPlaceholder').style.display = 'none';
-            }
-        };
+        function updateGooglePreview() {
+            document.getElementById('preview-title').innerText = titleInput.value || "Título do Post";
+            document.getElementById('preview-slug').innerText = slugInput.value || "slug-do-post";
+            document.getElementById('preview-desc').innerText = descField.value || "A descrição aparecerá aqui...";
+            
+            const count = descField.value.length;
+            document.getElementById('descCounter').innerText = `${count} / 160 caracteres`;
+            document.getElementById('descCounter').className = count >= 150 ? "text-danger small" : "text-muted small";
+        }
 
-        // 4. Sincronização Final no Submit
-        document.getElementById('addTranslationForm').onsubmit = function() {
-            document.getElementById('quill-content').value = quill.root.innerHTML;
-            return true;
-        };
-        // 5. Lógica de SEO em Tempo Real
-        const titleInput = document.getElementById('Title');
-        const slugInput = document.getElementById('Slug');
-        const descField = document.getElementById('MetaDescription');
-
+        // 4. Eventos
         titleInput.addEventListener('input', function() {
-            if (slugInput.value === "" || slugInput.dataset.auto === "true") {
+            if (slugInput.dataset.auto !== "false") {
                 slugInput.value = slugify(this.value);
-                slugInput.dataset.auto = "true";
             }
             updateGooglePreview();
         });
@@ -226,8 +203,9 @@
         });
 
         quill.on('text-change', function() {
-            if (descField.value === "" || descField.dataset.auto === "true") {
-                forceAutoDescription();
+            if (descField.dataset.auto !== "false") {
+                const plainText = extractPlainText(quill.root.innerHTML);
+                descField.value = plainText.substring(0, 160).trim();
             }
             updateGooglePreview();
         });
@@ -235,51 +213,28 @@
         descField.addEventListener('input', () => { 
             descField.dataset.auto = "false"; 
             updateGooglePreview();
-            updateCounter();
         });
 
-        function forceAutoDescription() {
-            // 1. Pega o HTML do Quill
-            const html = quill.root.innerHTML;
-            // 2. Limpa o HTML para texto puro
-            const plainText = extractPlainText(html);
-            // 3. Alimenta o campo de Meta Description
-            const descField = document.getElementById('MetaDescription');
-            descField.value = plainText.substring(0, 160);
-            
-            // 4. Atualiza o contador e o preview do Google
-            updateCounter();
-            updateGooglePreview();
-        }
+        // Switch de Status
+        const updateStatusLabel = () => {
+            if (sw.checked) {
+                label.innerText = "Publicado";
+                label.className = "text-success fw-bold";
+            } else {
+                label.innerText = "Rascunho";
+                label.className = "text-danger fw-bold";
+            }
+        };
+        sw.addEventListener('change', updateStatusLabel);
 
-        function updateCounter() {
-            const count = descField.value.length;
-            document.getElementById('descCounter').innerText = `${count} / 160 caracteres`;
-            document.getElementById('descCounter').className = count >= 150 ? "text-danger small" : "text-muted small";
-        }
+        // 5. Submit do Formulário
+        document.getElementById('addTranslationForm').onsubmit = function() {
+            document.getElementById('quill-content').value = quill.root.innerHTML;
+            return true;
+        };
 
-        function updateGooglePreview() {
-            document.getElementById('preview-title').innerText = titleInput.value || "Título do Post";
-            document.getElementById('preview-slug').innerText = slugInput.value || "slug-do-post";
-            document.getElementById('preview-desc').innerText = descField.value || "A descrição aparecerá aqui...";
-        }
-
-        // Script para o Switch de Status (Igual ao Create)
-const sw = document.getElementById('publishSwitch');
-const label = document.getElementById('statusLabel');
-
-const updateStatusLabel = () => {
-    if (sw.checked) {
-        label.innerText = "Publicado";
-        label.className = "text-success fw-bold";
-    } else {
-        label.innerText = "Rascunho";
-        label.className = "text-danger fw-bold";
-    }
-};
-
-sw.addEventListener('change', updateStatusLabel);
-// Inicializa o estado correto ao carregar a página
-updateStatusLabel();
+        // Inicialização
+        updateStatusLabel();
+        updateGooglePreview();
     </script>
 }

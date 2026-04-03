@@ -1,4 +1,4 @@
-/* --- 1. CONFIGURAÇÕES GLOBAIS E RESET --- */
+/* --- 1. CONFIGURAï¿½ï¿½ES GLOBAIS E RESET --- */
 html {
     scroll-padding-top: 75px; /* Ajuste para sua Navbar fixa */
     position: relative;
@@ -12,7 +12,7 @@ body {
     color: #212529; /* Melhor contraste global */
 }
 
-/* --- 2. NAVEGAÇÃO --- */
+/* --- 2. NAVEGAï¿½ï¿½O --- */
 .navbar-brand {
     letter-spacing: 1px;
     font-size: 1.5rem;
@@ -38,7 +38,7 @@ body {
         background-color: rgba(255, 255, 255, 0.2);
     }
 
-/* --- 3. COMPONENTES E ANIMAÇÕES --- */
+/* --- 3. COMPONENTES E ANIMAï¿½ï¿½ES --- */
 .transition-hover {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -65,7 +65,7 @@ img.shadow-lg {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-/* --- 4. SEÇÃO FEATURES (HOME) --- */
+/* --- 4. SEï¿½ï¿½O FEATURES (HOME) --- */
 #features .card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     border-radius: 1rem;
@@ -107,7 +107,7 @@ img.shadow-lg {
     }
 
     .post-excerpt img {
-        display: none; /* Não mostra imagens do editor no card da lista */
+        display: none; /* Nï¿½o mostra imagens do editor no card da lista */
     }
 
 .post-content img {
@@ -130,7 +130,7 @@ footer p, footer a {
         text-decoration: underline;
     }
 
-/* --- 7. UTILITÁRIOS --- */
+/* --- 7. UTILITï¿½RIOS --- */
 .bg-light {
     background-color: #f8f9fa !important;
 }
@@ -138,7 +138,7 @@ footer p, footer a {
 .table-responsive {
     overflow: visible !important; /* Permite dropdowns dentro de tabelas */
 }
-/* Customização da Paginação */
+/* Customizaï¿½ï¿½o da Paginaï¿½ï¿½o */
 .pagination .page-link {
     color: #4dabff; /* Aquele azul de alto contraste que definimos */
     border-radius: 5px;
@@ -161,7 +161,7 @@ footer p, footer a {
     transition: all 0.3s ease;
 }
 
-    /* Efeito de expansão ao focar (opcional, dá um toque premium) */
+    /* Efeito de expansï¿½o ao focar (opcional, dï¿½ um toque premium) */
     .input-group input[name="searchTerm"]:focus {
         max-width: 250px !important;
         background-color: #fff !important;
@@ -180,6 +180,71 @@ footer p, footer a {
     max-height: 100px;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Limita a 2 linhas e coloca reticências */
+    -webkit-line-clamp: 2; /* Limita a 2 linhas e coloca reticï¿½ncias */
     -webkit-box-orient: vertical;
+}
+
+/* 1. Mata o scroll horizontal no site todo */
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* 2. Ajusta o dropdown de idiomas para nÃ£o ocupar espaÃ§o extra */
+.nav-item.dropdown {
+    display: flex;
+    align-items: center;
+}
+
+/* 3. Reduz o espaÃ§amento entre itens do menu APENAS em telas menores */
+@media (max-width: 1200px) {
+    .navbar-nav .nav-link {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        font-size: 0.9rem; /* Diminui a fonte levemente antes de virar o menu hambÃºrguer */
+    }
+}
+
+/* 4. ForÃ§a a barra de busca a encolher se o espaÃ§o acabar */
+.navbar .input-group {
+    max-width: 150px;
+}
+.navbar-collapse {
+    overflow: visible; /* Garante que o dropdown de idioma nÃ£o seja cortado */
+}
+
+/* Evita que o botÃ£o de login fique muito colado na borda da tela */
+.navbar .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* 1. Remove qualquer scroll acidental na Navbar */
+.navbar {
+    height: auto !important;      /* Garante que a altura cresÃ§a com o conteÃºdo */
+    min-height: 56px;             /* Altura padrÃ£o do Bootstrap */
+    overflow: visible !important; /* Permite que os dropdowns flutuem sem criar scroll */
+}
+
+/* 2. Garante que o menu colapsÃ¡vel nÃ£o tenha altura fixa */
+.navbar-collapse {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* 3. Ajuste para o formulÃ¡rio de busca nÃ£o empurrar a altura */
+.navbar form {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.content-area {
+  max-width: 900px; /* Largura ideal para leitura */
+    margin: 0 auto;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Um leve destaque do fundo */
+    text-align: left;
 }

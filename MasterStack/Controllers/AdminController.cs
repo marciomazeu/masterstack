@@ -1,4 +1,4 @@
-﻿using MasterStack.Data; // Ajuste para o seu namespace
+﻿using MasterStack.Data;
 using MasterStack.Models;
 using MasterStack.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -7,23 +7,23 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
-using System.Globalization;
-using System.Security.Claims;
-using static System.Net.Mime.MediaTypeNames;
-
+using System.IO;
 
 namespace MasterStack.Controllers
 {
-
-  [Authorize]
-public class AdminController : Controller
+    [Authorize]
+    public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IStringLocalizer<AdminController> _localizer;
-       private readonly IWebHostEnvironment _webHostEnvironment;
-       private readonly UserManager<IdentityUser> _userManager; // Adicione o UserManager
+        private readonly IStringLocalizer<SharedResource> _localizer; // Use SharedResource para bater com as views
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public AdminController(IStringLocalizer<AdminController> localizer, ApplicationDbContext context,IWebHostEnvironment webHostEnvironment, UserManager<IdentityUser> userManager)
+        public AdminController(
+            IStringLocalizer<SharedResource> localizer, 
+            ApplicationDbContext context, 
+            IWebHostEnvironment webHostEnvironment, 
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _localizer = localizer;
@@ -31,233 +31,221 @@ public class AdminController : Controller
             _userManager = userManager;
         }
 
-        [HttpGet]
-        [Route("/pt-BR/Admin/Dashboard")] // Força o reconhecimento imediato
-        [Route("{culture}/Admin/Dashboard")]
-        public async Task<IActionResult> Dashboard(string searchTerm, string cultureFilter, string status, int page = 1)
+        [HttpGet("{culture}/Admin/Dashboard")]
+        [Authorize(Roles = "Admin,Author")]
+        public async Task<IActionResult> Dashboard(string culture, string searchTerm, string cultureFilter, string status, int page = 1)
+        {
+            int pageSize = 10;
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Challenge();
+
+            var query = _context.BlogPosts
+                .Include(p => p.Translations)
+                .Include(p => p.Author)
+                .AsQueryable();
+
+            if (!User.IsInRole("Admin"))
+                query = query.Where(p => p.AuthorId == currentUser.Id);
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                searchTerm = searchTerm.ToLower();
+                query = query.Where(p => p.Translations.Any(t => t.Title.ToLower().Contains(searchTerm)));
+            }
+
+            var totalPosts = await query.CountAsync();
+            var posts = await query.OrderByDescending(p => p.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            ViewBag.PostsPT = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "pt-BR");
+            ViewBag.PostsEN = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "en-US");
+            ViewBag.PostsFR = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "fr-CA");
+
+            return View(new DashboardViewModel { Posts = posts, PaginaAtual = page, TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize) });
+        }
+
+        [HttpGet("{culture}/Admin/Profile")]
+        public async Task<IActionResult> Profile()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            return View(new ProfileViewModel { 
+                DisplayName = user.DisplayName, 
+                Bio = user.Bio, 
+                TwitterUrl = user.TwitterUrl, 
+                LinkedInUrl = user.LinkedInUrl, 
+                GitHubUrl = user.GitHubUrl, 
+                CurrentImageUrl = user.ProfileImageUrl 
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+           if (!ModelState.IsValid) 
+            {
+                var userForError = await _userManager.GetUserAsync(User);
+                
+                // IMPORTANTE: Recarregue os dados que o usuário JÁ TINHA se ele mandou vazio
+                // Isso evita que o objeto volte "capado" para a View
+                model.CurrentImageUrl = userForError?.ProfileImageUrl;
+                
+                // Se o erro for apenas na Bio ou redes sociais, mas o nome estava certo,
+                // o ModelState deveria aceitar. Se ele trava em tudo, force a limpeza:
+                // ModelState.Clear(); // <-- Use apenas se o erro for persistente mesmo com campo cheio
+                
+                return View("Profile", model);
+            }
+
+            string? oldImagePath = null; // Guardamos para deletar APENAS se o banco salvar com sucesso
+
+            if (model.NewImage != null && model.NewImage.Length > 0)
+            {
+                var uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles");
+                if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+
+                // Geramos o nome e o caminho físico
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(model.NewImage.FileName)}";
+                var filePath = Path.Combine(uploadFolder, fileName);
+
+                // Salvamos a nova imagem
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await model.NewImage.CopyToAsync(stream);
+                }
+
+                // Se o usuário já tinha uma imagem (e não era a padrão), guardamos o caminho para limpar depois
+                if (!string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.Contains("default"))
+                {
+                    oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, user.ProfileImageUrl.TrimStart('/'));
+                }
+
+                user.ProfileImageUrl = "/uploads/profiles/" + fileName;
+            }
+
+            user.DisplayName = model.DisplayName;
+            user.Bio = model.Bio;
+            user.LinkedInUrl = model.LinkedInUrl;
+            user.TwitterUrl = model.TwitterUrl;
+            user.GitHubUrl = model.GitHubUrl;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded) 
+            {
+                // SÓ AGORA deletamos a imagem antiga fisicamente
+                if (oldImagePath != null && System.IO.File.Exists(oldImagePath))
+                {
+                    try { System.IO.File.Delete(oldImagePath); } catch { /* Logar erro de IO se necessário */ }
+                }
+
+                TempData["Success"] = _localizer["ProfileUpdatedSuccess"].Value;
+                return RedirectToAction(nameof(Profile));
+            }
+            
+
+            // Se falhou o UpdateAsync, temos que remover a imagem nova que foi salva no disco para não virar lixo
+            // (Opcional, mas profissional)
+
+            return View("Profile", model);
+        }
+
+        // --- SISTEMA DE LIMPEZA DE IMAGENS ---
+
+        [HttpGet("/Admin/scan-orphaned-images")]
+        public async Task<IActionResult> ScanOrphanedImages()
+        {
+            var usedNames = await GetUsedImagesList();
+            var physicalPaths = GetAllPhysicalFiles();
+            
+            // Compara o NOME do arquivo físico com a lista de NOMES usados no banco
+            var count = physicalPaths.Count(path => !usedNames.Contains(Path.GetFileName(path)));
+            return Ok(new { count });
+        }
+
+        [HttpPost("/Admin/cleanup-images")]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CleanupImages()
+        {
+            var usedNames = await GetUsedImagesList();
+            var physicalPaths = GetAllPhysicalFiles();
+            int deletedCount = 0;
+
+            foreach (var path in physicalPaths)
+            {
+                var fileName = Path.GetFileName(path);
+                if (!usedNames.Contains(fileName))
+                {
+                    try {
+                        System.IO.File.Delete(path);
+                        deletedCount++;
+                    } catch (Exception ex) {
+                        Console.WriteLine($"Falha ao deletar {fileName}: {ex.Message}");
+                    }
+                }
+            }
+
+            return Json(new { success = true, message = $"Sucesso! {deletedCount} imagens órfãs foram removidas." });
+        }
+
+        private async Task<HashSet<string>> GetUsedImagesList()
 {
-    int pageSize = 10;
-    
-    // 1. Iniciamos a query incluindo as traduções
-    // 1. ATUALIZADO: Incluímos as traduções E o autor (AuthorProfile)
-    var query = _context.BlogPosts
-        .Include(p => p.Translations)
-        .Include(p => p.Author) // Isso traz o DisplayName e a Foto do autor
-        .AsQueryable();
-
-    // 2. Filtro por Termo de Busca (Título em qualquer tradução)
-    if (!string.IsNullOrEmpty(searchTerm))
-    {
-        searchTerm = searchTerm.ToLower();
-        query = query.Where(p => p.Translations.Any(t => t.Title.ToLower().Contains(searchTerm)));
-    }
-
-    // 3. Filtro por Cultura
-    if (!string.IsNullOrEmpty(cultureFilter))
-    {
-        query = query.Where(p => p.Translations.Any(t => t.Culture == cultureFilter));
-    }
-
-    // 4. Filtro por Status (Publicado/Rascunho)
-    // Sendo realista: se o post tem várias línguas, ele é rascunho se QUALQUER tradução for rascunho
-    // Ou se a tradução específica filtrada for rascunho.
-    if (!string.IsNullOrEmpty(status))
-    {
-        if (status == "published")
-            query = query.Where(p => p.Translations.Any(t => t.IsPublished));
-        else if (status == "draft")
-            query = query.Where(p => p.Translations.Any(t => !t.IsPublished));
-    }
-
-    // 5. Execução da Paginação e Busca
-    var totalPosts = await query.CountAsync();
-    var posts = await query
-        .OrderByDescending(p => p.CreatedAt)
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
+    // Pegamos apenas o NOME do arquivo (ex: foto.webp), independente da pasta no banco
+    var postImages = await _context.BlogPostTranslations
+        .Where(t => t.ImageUrl != null)
+        .Select(t => Path.GetFileName(t.ImageUrl))
         .ToListAsync();
 
-    // 6. Dados para as Estatísticas e Filtros na View
-    ViewData["CurrentFilter"] = searchTerm;
-    ViewData["CurrentCulture"] = cultureFilter;
-    ViewData["CurrentStatus"] = status ?? "all";
+    var profileImages = await _context.Users
+        .Where(u => u.ProfileImageUrl != null)
+        .Select(u => Path.GetFileName(u.ProfileImageUrl))
+        .ToListAsync();
     
-    // Contagens rápidas para os cards de estatística
-    ViewBag.PostsPT = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "pt-BR");
-    ViewBag.PostsEN = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "en-US");
-    ViewBag.PostsFR = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "fr-CA");
+    var used = postImages.Concat(profileImages)
+        .Where(name => !string.IsNullOrEmpty(name))
+        .Distinct()
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-    var model = new DashboardViewModel
-    {
-        Posts = posts,
-        PaginaAtual = page,
-        TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize)
+    // Proteção de arquivos padrão
+    used.Add("default-profile.png");
+    used.Add("default-post.jpg");
+    used.Add("404.svg"); // Não esqueça dos assets da sua página de erro
+    return used;
+}
+
+        private List<string> GetAllPhysicalFiles()
+{
+    // Lista todas as pastas onde você armazena mídia
+    var folders = new[] { 
+        Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog"), // Pasta dos posts
+        Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles") // Pasta de perfis
     };
-
-    return View(model);
-}
-
-[HttpGet]
-[Route("/pt-BR/Admin/Profile")] // Força o reconhecimento imediato
-[Route("{culture}/Admin/Profile")]
-public async Task<IActionResult> Profile()
-{
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) return Redirect("/Identity/Account/Login");
-
-    var profile = await _context.AuthorProfiles
-        .FirstOrDefaultAsync(p => p.UserId == user.Id);
-
-    // Se o perfil não existir, enviamos uma ViewModel vazia para a View
-    // A View decidirá se mostra o formulário de criação ou edição
-    var viewModel = new ProfileViewModel();
-
-    if (profile != null)
+    
+    var allFiles = new List<string>();
+    foreach(var folder in folders) 
     {
-        viewModel.DisplayName = profile.DisplayName;
-        viewModel.Bio = profile.Bio;
-        viewModel.TwitterUrl = profile.TwitterUrl;
-        viewModel.LinkedInUrl = profile.LinkedInUrl;
-        viewModel.GitHubUrl = profile.GitHubUrl;
-        viewModel.CurrentImageUrl = profile.ProfileImageUrl;
-    }
-
-    return View(viewModel);
-}
-
-// REMOVI A DUPLICIDADE AQUI: Apenas um UpdateProfile (POST)
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
-{
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) return Challenge();
-
-    // 1. Busca o perfil ou cria um novo vinculado ao ID do usuário logado
-    var profile = await _context.AuthorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
-    bool isNew = false;
-
-    if (profile == null)
-    {
-        profile = new AuthorProfile { UserId = user.Id };
-        isNew = true;
-    }
-
-    // 2. Lógica de Upload da Imagem (NewImage vem da ProfileViewModel)
-    if (model.NewImage != null && model.NewImage.Length > 0)
-    {
-        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.NewImage.FileName);
-        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/profiles");
-        
-        if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
-
-        var filePath = Path.Combine(uploadPath, fileName);
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        if(Directory.Exists(folder)) 
         {
-            await model.NewImage.CopyToAsync(stream);
-        }
-        profile.ProfileImageUrl = "/uploads/profiles/" + fileName;
-    }
-
-    // 3. Atualiza os dados
-    profile.DisplayName = model.DisplayName;
-    profile.Bio = model.Bio;
-    profile.LinkedInUrl = model.LinkedInUrl;
-    profile.TwitterUrl = model.TwitterUrl;
-    profile.GitHubUrl = model.GitHubUrl;
-
-    if (isNew) _context.AuthorProfiles.Add(profile);
-    else _context.Update(profile);
-
-    await _context.SaveChangesAsync();
-
-    TempData["Success"] = "Perfil salvo com sucesso!";
-    return RedirectToAction(nameof(Profile));
-}
-
-// O método CreateProfile agora apenas redireciona para a View de Profile
-[HttpGet]
-public IActionResult CreateProfile()
-{
-    return View("Profile", new ProfileViewModel());
-}
-        [HttpGet("/admin/scan-orphaned-images")]
-public async Task<IActionResult> ScanOrphanedImages()
-{
-    var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
-    if (!Directory.Exists(uploadPath)) return Ok(new { count = 0 });
-
-    var physicalFiles = Directory.GetFiles(uploadPath).Select(Path.GetFileName).ToList();
-    var translations = await _context.BlogPostTranslations.ToListAsync();
-    var dbReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-    foreach (var t in translations)
-    {
-        if (!string.IsNullOrEmpty(t.ImageUrl)) dbReferences.Add(Path.GetFileName(t.ImageUrl));
-        
-        var matches = System.Text.RegularExpressions.Regex.Matches(t.Content ?? "", @"<img.+?src=[""'](.+?)[""'].*?>");
-        foreach (System.Text.RegularExpressions.Match match in matches)
-        {
-            dbReferences.Add(Path.GetFileName(match.Groups[1].Value));
+            // Busca todos os arquivos dentro das pastas
+            allFiles.AddRange(Directory.GetFiles(folder));
         }
     }
-
-    // Apenas conta quantos arquivos da pasta não estão no banco
-    var count = physicalFiles.Count(f => !dbReferences.Contains(f));
-    return Ok(new { count });
+    return allFiles;
 }
 
-        [HttpPost("/admin/cleanup-images")] // Rota absoluta, sem depender do padrão global no registro
-[ValidateAntiForgeryToken] // Boa prática já que é um POST
-public async Task<IActionResult> CleanupImages()
-{
-    try 
-    {
-        var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
-        
-        if (!Directory.Exists(uploadPath)) 
-            return Json(new { success = false, message = "Pasta de uploads não encontrada." });
-
-        // 1. Arquivos físicos
-        var physicalFiles = Directory.GetFiles(uploadPath).Select(Path.GetFileName).ToList();
-
-        // 2. Referências no Banco
-        var translations = await _context.BlogPostTranslations.ToListAsync();
-        var dbReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var t in translations)
+        private List<string> GetPhysicalFilesPath()
         {
-            if (!string.IsNullOrEmpty(t.ImageUrl))
-                dbReferences.Add(Path.GetFileName(t.ImageUrl));
-
-            // Regex para pegar imagens no HTML
-            var matches = System.Text.RegularExpressions.Regex.Matches(t.Content ?? "", @"<img.+?src=[""'](.+?)[""'].*?>");
-            foreach (System.Text.RegularExpressions.Match match in matches)
-            {
-                var imgPath = match.Groups[1].Value;
-                dbReferences.Add(Path.GetFileName(imgPath));
-            }
+             var paths = new[] { 
+                Path.Combine(_webHostEnvironment.WebRootPath, "uploads"),
+                Path.Combine(_webHostEnvironment.WebRootPath, "uploads/profiles")
+            };
+            var files = new List<string>();
+            foreach(var p in paths) if(Directory.Exists(p)) files.AddRange(Directory.GetFiles(p));
+            return files;
         }
-
-        // 3. Deletar órfãos
-        int deletedCount = 0;
-        foreach (var fileName in physicalFiles)
-        {
-            if (!dbReferences.Contains(fileName))
-            {
-                var fullPath = Path.Combine(uploadPath, fileName);
-                System.IO.File.Delete(fullPath);
-                deletedCount++;
-            }
-        }
-
-        return Json(new { success = true, message = $"{deletedCount} imagens removidas com sucesso." });
-    }
-    catch (Exception ex)
-    {
-        return Json(new { success = false, message = "Erro: " + ex.Message });
-    }
-}
-        
     }
 }

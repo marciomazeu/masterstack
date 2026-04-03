@@ -1,7 +1,10 @@
 ﻿@model MasterStack.ViewModels.DashboardViewModel
 @using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer Localizer
 @using System.Web
+@using Microsoft.Extensions.Localization
+
+@inject IStringLocalizer<SharedResource> Localizer
+
 @{
     ViewData["Title"] = Localizer["AdminDashboard"];
     var culture = ViewContext.RouteData.Values["culture"];
@@ -35,9 +38,12 @@
             <a asp-controller="BlogPosts" asp-action="Create" asp-route-culture="@cultureString" class="btn btn-success px-4">
                 <i class="fas fa-plus me-1"></i> @Localizer["NewPost"]
             </a>
-            <button onclick="confirmCleanup()" class="btn btn-outline-danger">
-                <i class="fas fa-broom me-1"></i> Limpar Imagens
-            </button>
+            @if (User.IsInRole("Admin"))
+            {
+                <button onclick="confirmCleanup()" class="btn btn-outline-danger">
+                    <i class="fas fa-broom me-1"></i> @Localizer["CleanupImages"]
+                </button>
+            }
         </div>
     </div>
 
@@ -193,13 +199,15 @@
                                         </a>
 
                                         <button type="button" class="btn btn-outline-danger" 
+                                                data-bs-toggle="modal" data-bs-target="#deleteModal"
                                                 onclick="prepareDelete('@Url.Action("DeleteTranslation", "BlogPosts", new { id = t.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(t.Title))', false)">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
 
-                                        @if (isFirst)
+                                       @if (isFirst)
                                         {
                                             <button type="button" class="btn btn-danger" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
                                                     onclick="prepareDelete('@Url.Action("DeletePost", "BlogPosts", new { id = item.Id })', '@Html.Raw(HttpUtility.JavaScriptStringEncode(principal.Title))', true)">
                                                 <i class="fas fa-bomb"></i>
                                             </button>
@@ -276,54 +284,84 @@
     <script>
         // Lógica de exclusão unificada
         function prepareDelete(url, title, isFullPost) {
-            document.getElementById('postTitleToDelete').innerText = title;
-            document.getElementById('deleteForm').action = url;
-            const warning = document.getElementById('fullDeleteWarning');
-            const actionText = document.getElementById('deleteActionText');
+        document.getElementById('postTitleToDelete').innerText = title;
+        document.getElementById('deleteForm').action = url;
+        
+        const warning = document.getElementById('fullDeleteWarning');
+        const actionText = document.getElementById('deleteActionText');
 
-            if (isFullPost) {
-                warning.classList.remove('d-none');
-                actionText.innerText = "@Localizer["ConfirmFullDeleteMessage"]";
-            } else {
-                warning.classList.add('d-none');
-                actionText.innerText = "@Localizer["ConfirmTranslationDeleteMessage"]";
-            }
-            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        // Blindagem: Use aspas duplas e JavaScriptStringEncode para evitar quebras
+        if (isFullPost) {
+            warning.classList.remove('d-none');
+            actionText.innerText = "@Html.Raw(HttpUtility.JavaScriptStringEncode(Localizer["ConfirmFullDeleteMessage"].Value))";
+        } else {
+            warning.classList.add('d-none');
+            actionText.innerText = "@Html.Raw(HttpUtility.JavaScriptStringEncode(Localizer["ConfirmTranslationDeleteMessage"].Value))";
         }
+    }
 
         // Limpeza de imagens órfãs blindada com cultura dinâmica
         async function confirmCleanup() {
-            const currentLang = document.documentElement.lang || 'pt-BR';
-            Swal.fire({ title: 'Escaneando...', didOpen: () => { Swal.showLoading(); } });
+    // Captura as traduções do C# para o JS
+    const i18n = {
+        title: "@Localizer["ConfirmCleanupTitle"]",
+        scanning: "@Localizer["Scanning"]",
+        noOrphans: "@Localizer["NoOrphanedImages"]",
+        foundText: "@Localizer["FoundOrphanedImages"]", // Ex: "Encontramos {0} imagens órfãs. Apagar?"
+        confirmBtn: "@Localizer["Btn_ConfirmCleanup"]",
+        cancelBtn: "@Localizer["Cancel"]",
+        successTitle: "@Localizer["Success"]",
+        errorTitle: "@Localizer["Error"]",
+        serverError: "@Localizer["ServerError"]"
+    };
 
-            try {
-                const scanResponse = await fetch(`/Admin/scan-orphaned-images`);
-                const scanData = await scanResponse.json();
+    // 1. Alerta de "Escaneando"
+    Swal.fire({
+        title: i18n.scanning,
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
 
-                if (scanData.count === 0) {
-                    Swal.fire('Tudo limpo!', 'Nenhuma imagem órfã encontrada.', 'success');
-                    return;
-                }
+    try {
+        // Rota que criamos no Controller para verificar
+        const response = await fetch(`/Admin/scan-orphaned-images`);
+        const data = await response.json();
 
-                const result = await Swal.fire({
-                    title: 'Limpeza de Disco',
-                    html: `Encontramos <b>${scanData.count}</b> imagens órfãs. Apagar?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sim, apagar!'
-                });
+        if (data.count === 0) {
+            Swal.fire(i18n.successTitle, i18n.noOrphans, 'success');
+            return;
+        }
 
-                if (result.isConfirmed) {
-                    const response = await fetch(`/Admin/cleanup-images`, { 
-                        method: 'POST', 
-                        headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
-                    });
-                    const data = await response.json();
-                    Swal.fire('Sucesso', data.message, 'success');
-                }
-            } catch (e) {
-                Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
+        // 2. Pergunta se deseja deletar a quantidade encontrada
+        const result = await Swal.fire({
+            title: i18n.title,
+            html: i18n.foundText.replace("{0}", `<strong>${data.count}</strong>`),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: i18n.confirmBtn,
+            cancelButtonText: i18n.cancelBtn
+        });
+
+        if (result.isConfirmed) {
+            Swal.fire({ title: i18n.scanning, didOpen: () => { Swal.showLoading(); } });
+
+            const deleteResponse = await fetch(`/Admin/cleanup-images`, { 
+                method: 'POST', 
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+            });
+            
+            const deleteData = await deleteResponse.json();
+            
+            if (deleteData.success) {
+                Swal.fire(i18n.successTitle, deleteData.message, 'success');
+            } else {
+                Swal.fire(i18n.errorTitle, deleteData.message, 'error');
             }
         }
+    } catch (e) {
+        Swal.fire(i18n.errorTitle, i18n.serverError, 'error');
+    }
+}
     </script>
 }

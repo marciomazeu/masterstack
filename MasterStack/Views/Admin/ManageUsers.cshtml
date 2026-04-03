@@ -1,0 +1,59 @@
+@model IEnumerable<MasterStack.Models.UserRolesViewModel>
+
+@{
+    ViewData["Title"] = "Gerenciar Usuários";
+    Layout = "_LayoutAdmin"; // Use o seu layout de admin
+}
+
+<div class="container-fluid mt-4">
+    <h2>Gerenciar Usuários e Perfis</h2>
+    <hr />
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome / Exibição</th>
+                        <th>Email</th>
+                        <th>Perfis Atuais</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.DisplayName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @foreach (var role in user.Roles)
+                                {
+                                    <span class="badge @(role == "Admin" ? "bg-danger" : role == "Author" ? "bg-primary" : "bg-secondary")">
+                                        @role
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <form asp-action="ChangeRole" method="post" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                    <select name="newRole" class="form-select form-select-sm d-inline-block w-auto">
+                                        <option value="User">Tornar Leitor</option>
+                                        <option value="Author">Tornar Autor</option>
+                                        <option value="Admin">Tornar Admin</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-dark">Atualizar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div> 

@@ -55,56 +55,86 @@
             </a>
         </div>
 
-        @if (t != null)
+       @if (t != null)
+{
+    <h1 class="mb-3 fw-bold display-5">@t.Title</h1>
+    
+    <div class="text-muted mb-4 small d-flex align-items-center">
+        <i class="far fa-calendar-alt me-2"></i>
+        @Model.CreatedAt.ToString("D", new System.Globalization.CultureInfo(currentCulture))
+        <span class="mx-2">|</span>
+        <i class="far fa-clock me-2"></i> @Localizer["ReadingTime", "5 min"] @* Exemplo de chave de tradução *@
+    </div>
+
+    <div class="mb-5">
+        <img src="@ViewBag.FinalImagePath" class="img-fluid rounded-4 shadow-sm w-100" 
+             style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
+    </div>
+
+    @* Conteúdo do Post com espaçamento melhorado *@
+    <div class="post-content mb-5">
+        @Html.Raw(t.Content)
+    </div>
+}
+
+@* Bloco do Autor Refinado *@
+<section class="author-card p-4 bg-light rounded-4 border-0 shadow-sm my-5">
+    <div class="d-flex align-items-center">
+        @if (Model.Author != null)
         {
-            <h1 class="mb-3 fw-bold">@t.Title</h1>
-                    @* Opcional: Mostrar que foi atualizado se houver data de alteração *@
-            <div class="text-muted mb-4 small">
-                <i class="far fa-calendar-alt me-1"></i>
-                @Model.CreatedAt.ToString("D", new System.Globalization.CultureInfo(ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR"))
-            </div>
-
-            <div class="mb-4">
-                <img src="@ViewBag.FinalImagePath" class="img-fluid rounded shadow w-100" style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
-            </div>
-
-            <div class="post-content fs-5 leading-relaxed">
-                @Html.Raw(t.Content)
-            </div>
-        }
-        @* Bloco do Autor *@
-        <div class="d-flex align-items-center py-4 border-top border-bottom my-5">
-            <div class="author-info d-flex align-items-center my-4 p-3 bg-light rounded">
-            @if (Model.Author != null)
-            {
-                <img src="@(string.IsNullOrEmpty(Model.Author.ProfileImageUrl) ? "/img/default-avatar.png" : Model.Author.ProfileImageUrl)" 
-                    class="rounded-circle me-3" 
-                    style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ddd;" 
-                    alt="@Model.Author.DisplayName">
+            <img src="@(string.IsNullOrEmpty(Model.Author.ProfileImageUrl) ? "/img/default-avatar.png" : Model.Author.ProfileImageUrl)" 
+                 class="rounded-circle me-4 shadow-sm" 
+                 style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #fff;" 
+                 alt="@Model.Author.DisplayName">
+            
+            <div class="flex-grow-1">
+                <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@Localizer["WrittenBy"]</span>
+                <h5 class="mb-1 fw-bold">@Model.Author.DisplayName</h5>
                 
-                <div>
-                    <p class="mb-0 small text-muted">Escrito por</p>
-                    <h6 class="mb-0 fw-bold">@Model.Author.DisplayName</h6>
-                    @if (!string.IsNullOrEmpty(Model.Author.Bio))
-                    {
-                        <small class="text-muted">@Model.Author.Bio</small>
+                @if (!string.IsNullOrEmpty(Model.Author.Bio))
+                {
+                    <p class="text-muted small mb-2 italic">"@Model.Author.Bio"</p>
+                }
+
+                @* Ícones de Redes Sociais Dinâmicos *@
+                <div class="d-flex gap-3 mt-2">
+                    @if (!string.IsNullOrEmpty(Model.Author.LinkedInUrl)) {
+                        <a href="@Model.Author.LinkedInUrl" target="_blank" class="text-secondary"><i class="fab fa-linkedin fa-lg"></i></a>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Author.TwitterUrl)) {
+                        <a href="@Model.Author.TwitterUrl" target="_blank" class="text-secondary"><i class="fab fa-x-twitter fa-lg"></i></a>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Author.GitHubUrl)) {
+                        <a href="@Model.Author.GitHubUrl" target="_blank" class="text-secondary"><i class="fab fa-github fa-lg"></i></a>
                     }
                 </div>
-            }
-            else
-            {
-                <div class="text-muted small">
-                    <i class="fas fa-user-edit me-1"></i> Equipe MasterStack
-                </div>
-            }
-           
-
-    
-            
-
-        </div>
-           
+            </div>
+        }
+        else
+        {
+            <div class="py-2">
+                <i class="fas fa-user-edit me-2 text-primary"></i> 
+                <span class="fw-bold">Equipe MasterStack</span>
+            </div>
+        }
     </div>
+</section>
+
+@section Styles {
+    <style>
+        /* Melhora a legibilidade do texto vindo do banco */
+        .post-content {
+            line-height: 1.8;
+            color: #2d3436;
+            font-size: 1.15rem;
+        }
+        .post-content p { margin-bottom: 1.5rem; }
+        .post-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 2rem 0; }
+        
+        .author-card { transition: transform 0.2s; }
+        .author-card:hover { transform: translateY(-3px); }
+    </style>
+}
    
 
 @section Head {
