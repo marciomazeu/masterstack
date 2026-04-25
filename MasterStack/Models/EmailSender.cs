@@ -15,34 +15,6 @@ namespace MasterStack.Services // Ajuste para seu namespace
             _config = config;
         }
 
-//         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
-//         {
-//             var smtpHost = _config["EmailSettings:Host"];
-//             var smtpPort = int.Parse(_config["EmailSettings:Port"] ?? "587");
-//             var smtpUser = _config["EmailSettings:apikey"]; // Aqui vai "apikey"
-//             var smtpPass = _config["EmailSettings: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"]; // Aqui vai a sua SG.xxx
-
-//             using (var client = new SmtpClient(smtpHost, smtpPort))
-// {
-//     // ORDEM IMPORTANTE: 
-//     client.UseDefaultCredentials = false; // 1. Desliga o padrão do Windows
-//     client.Credentials = new NetworkCredential(smtpUser, smtpPass); // 2. Define API Key
-//     client.EnableSsl = true; // 3. Ativa a segurança
-
-//     var from = new MailAddress("marciomazeu@hotmail.com", "MasterStack");
-//     var to = new MailAddress(email.Trim());
-
-//     using (var mailMessage = new MailMessage(from, to))
-//     {
-//         mailMessage.Subject = subject;
-//         mailMessage.Body = htmlMessage;
-//         mailMessage.IsBodyHtml = true;
-        
-//         // Garante que o envio aguarde a autenticação
-//         await client.SendMailAsync(mailMessage);
-//     }
-// }
-
     public async Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         var smtpHost = _config["EmailSettings:Host"];
