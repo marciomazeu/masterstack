@@ -19,39 +19,36 @@ public class StaticPagesController : Controller
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
-        return View(await _context.StaticPages.Include(p => p.Translations).ToListAsync());
+        // Removi o filtro .Where para que a View receba TUDO 
+        // e ela mesma separe o que é Ativo e o que é Lixeira nas abas
+        var pages = await _context.StaticPages
+            .Include(p => p.Translations)
+            .ToListAsync();
+        return View(pages);
     }
 
-[AllowAnonymous] // Permite que visitantes vejam, mesmo sem serem Admin
+[AllowAnonymous]
 [HttpGet("/{culture}/p/{slug}")]
 public async Task<IActionResult> Page(string culture, string slug)
 {
-    // 1. Busca a página e TODAS as suas traduções
     var page = await _context.StaticPages
-        .Include(p => p.Translations)
-        .FirstOrDefaultAsync(p => p.Slug == slug);
+    .Include(p => p.Translations)
+    .FirstOrDefaultAsync(p => p.Slug == slug && !p.IsDeleted); // <-- Filtro essencial
 
-    // 2. Se a slug não existe no banco (ex: digitou errado), aí sim é 404
     if (page == null) return NotFound();
 
-    // 3. Tenta buscar a tradução exata do idioma da URL
-    var translation = page.Translations.FirstOrDefault(t => t.Culture == culture);
+    var translation = page.Translations.FirstOrDefault(t => t.Culture == culture)
+                      ?? page.Translations.FirstOrDefault(t => t.Culture.StartsWith(culture.Split('-')[0]))
+                      ?? page.Translations.FirstOrDefault();
 
-    // 4. SE NÃO ACHOU (Plano B): Tenta buscar apenas pelo prefixo (ex: 'en' em vez de 'en-US')
-    if (translation == null)
-    {
-        var shortCulture = culture.Split('-')[0]; // Pega apenas o "en" ou "pt"
-        translation = page.Translations.FirstOrDefault(t => t.Culture.StartsWith(shortCulture));
-    }
-
-    // 5. SE AINDA NÃO ACHOU (Plano C): Pega a primeira tradução que existir (Geralmente o PT-BR)
-    if (translation == null)
-    {
-        translation = page.Translations.FirstOrDefault();
-    }
-
-    // Se a página existe mas não tem NENHUMA tradução (erro de cadastro), 404
     if (translation == null) return NotFound();
+
+    // --- IMPORTANTE: Alimenta as Meta Tags para o Layout ---
+    ViewData["Title"] = !string.IsNullOrWhiteSpace(translation.SeoTitle) 
+                        ? translation.SeoTitle 
+                        : translation.Title;
+
+    ViewData["Description"] = translation.SeoDescription;
 
     return View(translation);
 }
@@ -78,7 +75,9 @@ public async Task<IActionResult> Create(StaticPage staticPage, List<StaticPageTr
         staticPage.Translations = validTranslations;
         _context.StaticPages.Add(staticPage);
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+        
+        var culture = RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+        return RedirectToAction(nameof(Index), new { culture = culture }); // Adicione isso
     }
 
     // Se chegou aqui, nada foi preenchido corretamente
@@ -100,49 +99,130 @@ public async Task<IActionResult> Create(StaticPage staticPage, List<StaticPageTr
         return View(staticPage);
     }
 
- [HttpPost("Edit/{id}")]
+[HttpPost("Edit/{id}")]
 [ValidateAntiForgeryToken]
-public async Task<IActionResult> Edit(int id, StaticPage staticPage, List<StaticPageTranslation> translations)
+public async Task<IActionResult> Edit(int id, StaticPage staticPage)
 {
     if (id != staticPage.Id) return NotFound();
 
+    // 1. Busca a página original com as traduções atuais do banco
+    var pageInDb = await _context.StaticPages
+        .Include(p => p.Translations)
+        .FirstOrDefaultAsync(m => m.Id == id);
+
+    if (pageInDb == null) return NotFound();
+
     try
     {
-        // 1. Limpa qualquer rastreamento residual para evitar o erro de "already tracked"
-        _context.ChangeTracker.Clear();
+        // 2. Atualiza os dados da página principal
+        pageInDb.Slug = staticPage.Slug;
 
-        // 2. Atualiza a página principal (Slug, etc)
-        _context.Entry(staticPage).State = EntityState.Modified;
-
-        // 3. Itera sobre as traduções enviadas no Payload
-        foreach (var translation in translations)
+        // 3. Atualiza as traduções uma por uma
+        foreach (var submittedTrans in staticPage.Translations)
         {
-            // Vincula ao ID da página pai por segurança
-            translation.StaticPageId = id;
+            var dbTrans = pageInDb.Translations
+                .FirstOrDefault(t => t.Culture == submittedTrans.Culture);
 
-            if (translation.Id > 0)
+            if (dbTrans != null)
             {
-                // Se já existe (como o seu fr-CA que tem Id 3), forçamos o estado de modificado
-                _context.Entry(translation).State = EntityState.Modified;
+                // Atualiza os campos existentes, incluindo os novos de SEO
+                dbTrans.Title = submittedTrans.Title;
+                dbTrans.Content = submittedTrans.Content;
+                dbTrans.SeoTitle = submittedTrans.SeoTitle; // <--- NOVO
+                dbTrans.SeoDescription = submittedTrans.SeoDescription; // <--- NOVO
             }
-            else
+            else if (!string.IsNullOrWhiteSpace(submittedTrans.Title))
             {
-                // Se fosse uma tradução nova (Id 0)
-                _context.StaticPageTranslations.Add(translation);
+                // Se for um idioma novo que não existia no banco antes
+                pageInDb.Translations.Add(submittedTrans);
             }
         }
 
         await _context.SaveChangesAsync();
-
-        // 4. Redireciona para a Home ou Index usando a cultura da rota
+        
         var culture = RouteData.Values["culture"]?.ToString() ?? "pt-BR";
-        return RedirectToAction("Index", "Home", new { culture = culture });
+        return RedirectToAction(nameof(Index), new { culture = culture });
     }
     catch (Exception ex)
     {
-        // Se der erro, você conseguirá ver o motivo aqui no Debug
         ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
         return View(staticPage);
     }
 }
+
+   [HttpPost("Delete/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var page = await _context.StaticPages.FindAsync(id);
+        if (page != null)
+        {
+            page.IsDeleted = true;
+            page.DeletedAt = DateTime.Now;
+            _context.Entry(page).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
+
+        // Pega a cultura atual da rota para não quebrar o redirecionamento
+        var culture = RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+        
+        // Redireciona passando a cultura de volta
+        return RedirectToAction(nameof(Index), new { culture = culture });
+    }
+
+    [HttpGet("Trash")]
+    public async Task<IActionResult> Trash()
+    {
+        // Mostra apenas o que foi deletado
+        var deletedPages = await _context.StaticPages
+            .Include(p => p.Translations)
+            .Where(p => p.IsDeleted)
+            .ToListAsync();
+            
+        return View(deletedPages);
+    }
+
+    // POST: Admin/StaticPages/Restore/5
+    [HttpPost("Restore/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Restore(int id)
+    {
+        var page = await _context.StaticPages.FindAsync(id);
+        if (page == null) return NotFound();
+
+        page.IsDeleted = false;
+        page.DeletedAt = null;
+
+        _context.Entry(page).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+
+        // Captura a cultura da rota atual
+        var culture = RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+
+        // Força o retorno para a listagem principal do Admin
+        return LocalRedirect($"/{culture}/Admin/StaticPages");
+    }
+
+    // Opcional: Hard Delete (Apagar do banco de vez)
+   [HttpPost("HardDelete/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HardDelete(int id)
+    {
+        // Busca a página incluindo as traduções para garantir que o EF apague tudo em cascata
+        var page = await _context.StaticPages
+            .Include(p => p.Translations)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (page != null)
+        {
+            _context.StaticPages.Remove(page);
+            await _context.SaveChangesAsync();
+        }
+        
+        // Captura a cultura para o redirecionamento
+        var culture = RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+        
+        // Redirecionamento blindado contra 404
+        return LocalRedirect($"/{culture}/Admin/StaticPages");
+    }
 }

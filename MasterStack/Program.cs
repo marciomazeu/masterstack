@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using MasterStack.Services; // Seu namespace
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +26,8 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 builder.Services.AddControllersWithViews()
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();
+
+    builder.Services.AddRazorPages();
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -48,8 +53,12 @@ builder.Services.AddControllersWithViews(options =>
 
 //conexao com o banco de dados
 // Substitua o UseSqlServer por este:
+// builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    // Substitua o UseSqlServer por UseNpgsql
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 1. Adiciona o servi�o de compress�o
 builder.Services.AddResponseCompression(options =>
@@ -69,18 +78,13 @@ builder.Services.AddResponseCompression(options =>
 // })
 // .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// No Program.cs
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
-    .AddRoles<IdentityRole>() // Se for usar as Roles Admin/Author
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-
-// Configura o Cookie do Identity para entender sua rota de cultura
+// --- [CONFIGURAÇÃO DE COOKIE FLEXÍVEL] ---
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    // Remova o "/Identity" do caminho, pois o seu Controller é "Account"
-    options.LoginPath = "/pt-BR/Account/Login";
-    options.LogoutPath = "/pt-BR/Account/Logout";
-    options.AccessDeniedPath = "/pt-BR/Account/AccessDenied";
+    // Remova o pt-BR fixo. O ASP.NET tentará achar a rota correta.
+    options.LoginPath = "/Account/Login"; 
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -92,6 +96,17 @@ builder.Services.Configure<IISServerOptions>(options =>
 {
     options.MaxRequestBodySize = 50 * 1024 * 1024;
 });
+
+// --- [REGISTRO DO EMAIL SENDER] ---
+builder.Services.AddTransient<IEmailSender, EmailSender>();
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
+    options.SignIn.RequireConfirmedAccount = true;
+    options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultProvider;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
 var app = builder.Build();
 // 1. Em produção, usamos o Handler. Em desenvolvimento, a página técnica.
 if (!app.Environment.IsDevelopment())
@@ -164,7 +179,17 @@ app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
 
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+//cache de imagens
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Cache de 30 dias para imagens, css e js
+        const int durationInSeconds = 60 * 60 * 24 * 30;
+        ctx.Context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.CacheControl] =
+            "public,max-age=" + durationInSeconds;
+    }
+});
 
 app.UseRequestLocalization(localizationOptions);
 
@@ -174,15 +199,18 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 1. Rota Localizada (Sempre primeiro)
 app.MapControllerRoute(
     name: "localized",
     pattern: "{culture}/{controller=Home}/{action=Index}/{id?}");
 
+// 2. Rota Padrão (Fallback)
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    name: "localized",
+    pattern: "{culture=pt-BR}/{controller=Home}/{action=Index}/{id?}"); // Adicionei =pt-BR
 
-app.MapRazorPages(); // OBRIGATÓRIO para o Identity funcionar
+// 3. Razor Pages (Identity) - Se houver conflito, os Controllers acima ganham prioridade
+app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())
 {

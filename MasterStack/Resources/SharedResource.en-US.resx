@@ -657,4 +657,100 @@
     <value>Blog</value>
     <comment/>
   </data>
+  <data name="ConfirmEmailTitle" xml:space="preserve">
+    <value>Email Confirmed</value>
+    <comment/>
+  </data>
+  <data name="ConfirmSuccessHeader" xml:space="preserve">
+    <value>All set!</value>
+    <comment/>
+  </data>
+  <data name="ConfirmSuccessMessage" xml:space="preserve">
+    <value>Your email has been successfully confirmed. You now have full access to MasterStack.</value>
+    <comment/>
+  </data>
+  <data name="GoToHome" xml:space="preserve">
+    <value>Go to Home</value>
+    <comment/>
+  </data>
+  <data name="EmailConfirmationSubject" xml:space="preserve">
+    <value>Confirm your account - MasterStack</value>
+    <comment/>
+  </data>
+  <data name="EmailGreeting" xml:space="preserve">
+    <value>Hello</value>
+    <comment/>
+  </data>
+  <data name="EmailInstruction" xml:space="preserve">
+    <value>Please confirm your account by clicking the link below:</value>
+    <comment/>
+  </data>
+  <data name="ConfirmLinkText" xml:space="preserve">
+    <value>Confirm my account</value>
+    <comment/>
+  </data>
+  <data name="EmailFooter" xml:space="preserve">
+    <value>If you did not create this account, please ignore this email.</value>
+    <comment/>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Forgot password</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordSubject" xml:space="preserve">
+    <value>Reset Password - MasterStack</value>
+    <comment/>
+  </data>
+  <data name="SendResetLink" xml:space="preserve">
+    <value>Send recovery link</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordInstruction" xml:space="preserve">
+    <value>You requested a password reset. Click the link to proceed:</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordLinkText" xml:space="preserve">
+    <value>Reset my password</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordTitle" xml:space="preserve">
+    <value>Reset Password</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordSubtitle" xml:space="preserve">
+    <value>Choose a new secure password for your account.</value>
+    <comment/>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>New Password</value>
+    <comment/>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>Confirm New Password</value>
+    <comment/>
+  </data>
+  <data name="UpdatePasswordButton" xml:space="preserve">
+    <value>Update Password</value>
+    <comment/>
+  </data>
+  <data name="ForgotPasswordInstruction" xml:space="preserve">
+    <value>Enter your email to receive a reset link.</value>
+    <comment/>
+  </data>
+  <data name="BackToLogin" xml:space="preserve">
+    <value>Back to Login</value>
+    <comment/>
+  </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Reset Password</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordConfirmationTitle" xml:space="preserve">
+    <value>Password Changed!</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordConfirmationMessage" xml:space="preserve">
+    <value>Your password has been successfully reset. You can now log in to your account.</value>
+    <comment/>
+  </data>
 </root>

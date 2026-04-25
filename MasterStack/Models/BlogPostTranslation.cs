@@ -43,12 +43,16 @@ namespace MasterStack.Models
 
         public virtual Language? Language { get; set; }
 
+        [StringLength(100)]
+        [Display(Name = "Título SEO")]
+        public string? MetaTitle { get; set; } // Adicione isto aqui
+
         [StringLength(160)]
-    public string? MetaDescription { get; set; } // Resumo para o Google
+        public string? MetaDescription { get; set; } // Resumo para o Google
 
-    public string? MetaKeywords { get; set; }
+        public string? MetaKeywords { get; set; }
 
-    [Display(Name = "Publicado")]
-public bool IsPublished { get; set; } = false; // Por padrão, nasce como rascunho
+        [Display(Name = "Publicado")]
+        public bool IsPublished { get; set; } = false; // Por padrão, nasce como rascunho
     }
 }

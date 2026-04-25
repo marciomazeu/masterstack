@@ -309,69 +309,75 @@ private string RemoveAccents(string text)
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title,Content,ImageUrl,Slug")] BlogPostTranslation translation, IFormFile? novaImagem)
-{
-    if (id != translation.Id) return NotFound();
-
-    // 1. Slug Único (Mantendo sua preferência por unicidade global)
-    translation.Slug = await GetUniqueSlugAsync(translation.Title, translation.Culture, translation.Id);
-    ModelState.Remove("Slug");
-
-    if (ModelState.IsValid)
-    {
-        try
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,BlogPostId,Culture,Title,Content,ImageUrl,Slug,MetaDescription,MetaKeywords,IsPublished")] BlogPostTranslation translation, IFormFile? novaImagem)
         {
-            // 2. Sanitização (Segurança contra XSS)
-            var sanitizer = new HtmlSanitizer();
-            translation.Content = sanitizer.Sanitize(translation.Content);
+            if (id != translation.Id) return NotFound();
 
-            // 3. Gerenciamento de Imagem
-            if (novaImagem != null && novaImagem.Length > 0)
+            // 1. Geração de Slug Único
+            // Assume-se que você tem este método implementado no Controller ou num Service
+            translation.Slug = await GetUniqueSlugAsync(translation.Title, translation.Culture, translation.Id);
+            ModelState.Remove("Slug");
+
+            if (ModelState.IsValid)
             {
-                // Busca o caminho antigo para deletar depois
-                var oldDbPath = await _context.BlogPostTranslations
-                    .Where(t => t.Id == id)
-                    .Select(t => t.ImageUrl)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-
-                // Processa a nova imagem usando o padrão WebP que definimos
-                // Esse método já salva no disco e retorna o caminho para o banco
-                string? newPath = await ProcessAndSaveWebP(novaImagem);
-
-                if (!string.IsNullOrEmpty(newPath))
+                try
                 {
-                    // Deleta o arquivo físico antigo se ele existir
-                    if (!string.IsNullOrEmpty(oldDbPath))
+                    // 2. Sanitização de Segurança (Anti-XSS)
+                    var sanitizer = new HtmlSanitizer();
+                    translation.Content = sanitizer.Sanitize(translation.Content);
+
+                    // 3. Sanitização de SEO (Remover HTML da descrição)
+                    if (!string.IsNullOrEmpty(translation.MetaDescription))
                     {
-                        // Remove a "/" inicial para o Path.Combine funcionar corretamente
-                        var oldFileName = oldDbPath.TrimStart('/').Replace("uploads/blog/", "");
-                        string fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog", oldFileName);
-                        
-                        if (System.IO.File.Exists(fullOldPath))
+                        translation.MetaDescription = Regex.Replace(translation.MetaDescription, "<.*?>", string.Empty);
+                    }
+
+                    // 4. Gerenciamento de Imagem (Físico + Banco)
+                    if (novaImagem != null && novaImagem.Length > 0)
+                    {
+                        // Recupera o caminho antigo para limpeza
+                        var oldDbPath = await _context.BlogPostTranslations
+                            .Where(t => t.Id == id)
+                            .Select(t => t.ImageUrl)
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync();
+
+                        // Processa e Salva a Nova Imagem (WebP)
+                        string? newPath = await ProcessAndSaveWebP(novaImagem);
+
+                        if (!string.IsNullOrEmpty(newPath))
                         {
-                            System.IO.File.Delete(fullOldPath);
+                            // Deleta o arquivo físico antigo se existir
+                            if (!string.IsNullOrEmpty(oldDbPath))
+                            {
+                                var oldFileName = Path.GetFileName(oldDbPath);
+                                string fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog", oldFileName);
+                                
+                                if (System.IO.File.Exists(fullOldPath))
+                                {
+                                    System.IO.File.Delete(fullOldPath);
+                                }
+                            }
+                            
+                            translation.ImageUrl = newPath;
                         }
                     }
+
+                    _context.Update(translation);
+                    await _context.SaveChangesAsync();
                     
-                    translation.ImageUrl = newPath;
+                    TempData["Success"] = "Post atualizado com sucesso!";
+                    return RedirectToAction("Dashboard", "Admin", new { culture = translation.Culture });
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!TranslationExists(translation.Id)) return NotFound();
+                    else throw;
                 }
             }
-
-            _context.Update(translation);
-            await _context.SaveChangesAsync();
-            TempData["Success"] = "Alterações salvas com sucesso!";
-            return RedirectToAction("Dashboard", "Admin", new { culture = translation.Culture });
+            return View(translation);
         }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!TranslationExists(translation.Id)) return NotFound();
-            else throw;
-        }
-    }
-    return View(translation);
-}
 
         // 1. Rota para abrir o formulário
 [HttpGet]
@@ -394,72 +400,90 @@ public async Task<IActionResult> EditTranslation(int id)
     return View(model);
 }
 
-        [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
-{
-    if (!ModelState.IsValid) return View(model);
-
-    // 1. Busca a tradução
-    var translation = await _context.BlogPostTranslations
-        .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
-
-    if (translation == null) return NotFound();
-
-    // 2. Validação Extra: O Slug é único para esta cultura?
-    // Verifica se existe OUTRO post (id diferente) com o mesmo slug na mesma cultura
-    var slugExists = await _context.BlogPostTranslations
-        .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
-
-    if (slugExists)
-    {
-        ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
-        return View(model);
-    }
-
-    // 3. Atualiza os campos (Agora com segurança após o check de null)
-    translation.Title = model.Title;
-    translation.Content = model.Content;
-    translation.Slug = model.Slug?.Trim().ToLower(); // Slugs devem ser sempre minúsculos
-    translation.MetaDescription = model.MetaDescription;
-    translation.MetaKeywords = model.MetaKeywords;
-    translation.IsPublished = model.IsPublished;
-
-    // 4. Lógica de Imagem (Seu código está ótimo aqui)
-    if (model.NewImage != null && model.NewImage.Length > 0)
-    {
-        string oldImageUrl = translation.ImageUrl;
-        string? newWebPPath = await ProcessAndSaveWebP(model.NewImage);
-
-        if (newWebPPath != null)
+       [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
         {
-            translation.ImageUrl = newWebPPath;
-            if (!string.IsNullOrEmpty(oldImageUrl))
+            if (!ModelState.IsValid) return View(model);
+
+            // 1. Busca a tradução
+            var translation = await _context.BlogPostTranslations
+                .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
+
+            if (translation == null) return NotFound();
+
+            // 2. Validação de Slug Único (Excelente lógica já implementada)
+            var slugExists = await _context.BlogPostTranslations
+                .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
+
+            if (slugExists)
             {
-                var relativePath = oldImageUrl.TrimStart('/');
-                var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
-                if (System.IO.File.Exists(fullOldPath)) System.IO.File.Delete(fullOldPath);
+                ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
+                return View(model);
+            }
+
+            // --- NOVIDADE: SANITIZAÇÃO (O "Pulo do Gato" para o Roadmap) ---
+            var sanitizer = new Ganss.Xss.HtmlSanitizer();
+            
+            // Protege contra scripts maliciosos no editor Quill
+            translation.Content = sanitizer.Sanitize(model.Content);
+
+            // Garante que a descrição do Google não tenha tags HTML residuais
+            if (!string.IsNullOrEmpty(model.MetaDescription))
+            {
+                translation.MetaDescription = System.Text.RegularExpressions.Regex
+                    .Replace(model.MetaDescription, "<.*?>", string.Empty);
+            }
+            // ---------------------------------------------------------------
+
+            // 3. Atualiza os campos
+            translation.Title = model.Title;
+            translation.Slug = model.Slug?.Trim().ToLower(); 
+            translation.MetaKeywords = model.MetaKeywords;
+            translation.IsPublished = model.IsPublished;
+
+            // 4. Lógica de Imagem (Mantive sua lógica de deleção física, que está correta)
+            if (model.NewImage != null && model.NewImage.Length > 0)
+            {
+                string? oldImageUrl = translation.ImageUrl;
+                string? newWebPPath = await ProcessAndSaveWebP(model.NewImage);
+
+                if (newWebPPath != null)
+                {
+                    translation.ImageUrl = newWebPPath;
+                    
+                    // Deleta o arquivo antigo para não entulhar o servidor
+                    if (!string.IsNullOrEmpty(oldImageUrl))
+                    {
+                        var relativePath = oldImageUrl.TrimStart('/');
+                        var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
+                        
+                        if (System.IO.File.Exists(fullOldPath)) 
+                        {
+                            System.IO.File.Delete(fullOldPath);
+                        }
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError("NewImage", "Erro ao processar a imagem.");
+                    return View(model);
+                }
+            }
+
+            // 5. Persistência
+            try
+            {
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Tradução atualizada com sucesso!";
+                return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
+                return View(model);
             }
         }
-        else
-        {
-            ModelState.AddModelError("NewImage", "Erro ao processar a imagem.");
-            return View(model);
-        }
-    }
-
-    // 5. Persistência
-    try
-    {
-        await _context.SaveChangesAsync();
-        return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
-    }
-    catch (DbUpdateConcurrencyException)
-    {
-        ModelState.AddModelError("", "Erro de concorrência.");
-        return View(model);
-    }
-}
 
         // GET: BlogPosts/Delete/5
         [HttpGet]

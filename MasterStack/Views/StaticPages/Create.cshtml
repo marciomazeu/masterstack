@@ -62,49 +62,51 @@
     
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function() {
         var editors = [];
-        // Vamos inicializar 3 editores (PT, EN, FR)
+        
+        // Configuração da Toolbar (O que faz o botão de imagem aparecer)
+        var toolbarOptions = [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
+            ['link', 'image', 'video'], // O BOTÃO DE IMAGEM ESTÁ AQUI
+            ['clean']
+        ];
+
+        // Inicializar os 3 editores
         for (var i = 0; i < 3; i++) {
-            var element = document.getElementById('editor-' + i);
-            if (element) {
-                var quill = new Quill('#editor-' + i, {
+            var elementId = '#editor-' + i;
+            if (document.querySelector(elementId)) {
+                var quill = new Quill(elementId, {
                     theme: 'snow',
-                    placeholder: 'Escreva o conteúdo aqui...'
+                    placeholder: 'Escreva o conteúdo em ' + (i==0 ? 'Português' : i==1 ? 'Inglês' : 'Francês'),
+                    modules: {
+                        toolbar: toolbarOptions // Ativa a barra completa
+                    }
                 });
                 editors.push(quill);
-                console.log("Editor " + i + " inicializado com sucesso!");
-            } else {
-                console.error("Não achei a div editor-" + i);
             }
         }
 
-        // Vincular ao envio do formulário
+        // VINCULAR AO ENVIO DO FORMULÁRIO (Apenas um evento unificado)
         var form = document.getElementById('staticPageForm');
         form.onsubmit = function() {
             for (var j = 0; j < editors.length; j++) {
-                document.getElementById('content-' + j).value = editors[j].root.innerHTML;
+                var contentInput = document.getElementById('content-' + j);
+                var html = editors[j].root.innerHTML;
+
+                // Limpa o conteúdo se estiver vazio (padrão do Quill para "vazio")
+                if (html === '<p><br></p>') html = "";
+
+                contentInput.value = html;
+                console.log("Capturado Editor " + j + ":", html);
             }
+            return true; // Permite o envio do form
         };
     });
-        // Antes de enviar, copia o HTML do Quill para os inputs ocultos
-        document.getElementById('staticPageForm').onsubmit = function() {
-    // Percorre todos os editores (um para cada aba: PT, EN, FR)
-    for (var i = 0; i < editors.length; i++) {
-        // Pega o input oculto correspondente
-        var contentInput = document.getElementById('content-' + i);
-        
-        // Pega o HTML de dentro do editor Quill
-        var html = editors[i].root.innerHTML;
-
-        // Se o editor estiver vazio (apenas uma quebra de linha), limpamos para evitar erro
-        if (html === '<p><br></p>') html = "";
-
-        // Aloca o valor no input que será enviado ao C#
-        contentInput.value = html;
-        
-        console.log("Conteúdo capturado do editor " + i + ": ", html); // Para você ver no console do navegador
-    }
-};
-    </script>
+</script>
 }

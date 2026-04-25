@@ -657,4 +657,104 @@
     <value>Blog</value>
     <comment/>
   </data>
+  <data name="ConfirmEmailTitle" xml:space="preserve">
+    <value>E-mail Confirmé</value>
+    <comment/>
+  </data>
+  <data name="ConfirmSuccessHeader" xml:space="preserve">
+    <value>Tout est prêt !</value>
+    <comment/>
+  </data>
+  <data name="ConfirmSuccessMessage" xml:space="preserve">
+    <value>Votre e-mail a été confirmé com succès. Vous avez agora un accès complet à MasterStack.</value>
+    <comment/>
+  </data>
+  <data name="GoToHome" xml:space="preserve">
+    <value>Aller à l'accueil</value>
+    <comment/>
+  </data>
+  <data name="Menu_ManagePages" xml:space="preserve">
+    <value>Gérer des pages</value>
+    <comment/>
+  </data>
+  <data name="EmailConfirmationSubject" xml:space="preserve">
+    <value>Confirmez votre compte - MasterStack</value>
+    <comment/>
+  </data>
+  <data name="EmailGreeting" xml:space="preserve">
+    <value>Bonjour</value>
+    <comment/>
+  </data>
+  <data name="EmailInstruction" xml:space="preserve">
+    <value>Veuillez confirmer votre compte en cliquant sur le lien ci-dessous :</value>
+    <comment/>
+  </data>
+  <data name="ConfirmLinkText" xml:space="preserve">
+    <value>Confirmer mon compte</value>
+    <comment/>
+  </data>
+  <data name="EmailFooter" xml:space="preserve">
+    <value>Si vous n'avez pas créé ce compte, veuillez ignorer cet e-mail.</value>
+    <comment/>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Mot de passe oublié</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordSubject" xml:space="preserve">
+    <value>Réinitialiser le mot de passe</value>
+    <comment/>
+  </data>
+  <data name="SendResetLink" xml:space="preserve">
+    <value>Envoyer le lien de récupération</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordInstruction" xml:space="preserve">
+    <value>Vous avez demandé une réinitialisation de mot de passe. Cliquez sur le lien pour continuer :</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordLinkText" xml:space="preserve">
+    <value>Réinitialiser mon mot de passe</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordTitle" xml:space="preserve">
+    <value>Réinitialiser le mot de passe</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordSubtitle" xml:space="preserve">
+    <value>Choisissez um nouveau mot de passe sécurisé.</value>
+    <comment/>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nouveau mot de passe</value>
+    <comment/>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>Confirmer le nouveau mot de passe</value>
+    <comment/>
+  </data>
+  <data name="UpdatePasswordButton" xml:space="preserve">
+    <value>Mettre à jour le mot de passe</value>
+    <comment/>
+  </data>
+  <data name="ForgotPasswordInstruction" xml:space="preserve">
+    <value>Entrez seu e-mail pour recevoir um lien de réinitialisation.</value>
+    <comment/>
+  </data>
+  <data name="BackToLogin" xml:space="preserve">
+    <value>Retour à la conexão</value>
+    <comment/>
+  </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Mot de passe oublié</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordConfirmationTitle" xml:space="preserve">
+    <value>Mot de passe modifié !</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordConfirmationMessage" xml:space="preserve">
+    <value>Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant accéder à votre compte.</value>
+    <comment/>
+  </data>
 </root>

@@ -1,0 +1,43 @@
+@model IEnumerable<MasterStack.Models.StaticPage>
+@{
+    var culture = ViewBag.CurrentCulture as string;
+}
+
+<div class="footer-section">
+    @* Título: Azul e Negrito *@
+    <h5 class="text-uppercase mb-4 font-weight-bold text-primary" style="font-size: 1rem;">
+        Institucional
+    </h5>
+    
+    <ul class="list-unstyled">
+        @foreach (var staticPage in Model)
+        {
+            @* RESOLUÇÃO DO ERRO: Definimos a variável translation aqui dentro *@
+            var translation = staticPage.Translations.FirstOrDefault(t => t.Culture == culture) 
+                              ?? staticPage.Translations.FirstOrDefault();
+
+            if (translation != null)
+            {
+                <li class="mb-2">
+                    @* fw-light: Deixa a fonte mais fina e elegante *@
+                    @* text-white-50: Garante o contraste suave que você busca *@
+                    <a href="/@culture/p/@staticPage.Slug" 
+                       class="text-white-50 text-decoration-none fw-light footer-link">
+                        @translation.Title
+                    </a>
+                </li>
+            }
+        }
+    </ul>
+</div>
+
+<style>
+    .footer-link {
+        font-size: 0.95rem;
+        transition: color 0.2s ease-in-out;
+    }
+    .footer-link:hover {
+        color: #0d6efd !important; /* Muda para o azul da marca no hover */
+        text-decoration: underline !important;
+    }
+</style>

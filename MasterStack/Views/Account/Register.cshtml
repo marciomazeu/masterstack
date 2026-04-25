@@ -1,11 +1,13 @@
-
 @using Microsoft.Extensions.Localization
+@using Microsoft.Extensions.Configuration
 @inject IStringLocalizer<SharedResource> Localizer
-    @model RegisterViewModel
+@inject IConfiguration Configuration
+@model RegisterViewModel
 
 @{
     ViewData["Title"] = Localizer["RegisterTitle"];
     var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+    var siteKey = Configuration["ReCaptcha:SiteKey"];
 }
 
 <div class="container mt-5">
@@ -20,15 +22,20 @@
                         <div class="alert alert-danger">@ViewBag.Error</div>
                     }
 
-                    <form asp-action="Register" asp-route-culture="@culture" method="post">
+                    @* ADICIONADO O ID="registerForm" AQUI *@
+                    <form id="registerForm" asp-action="Register" asp-route-culture="@culture" method="post">
+                        
+                        @* O campo oculto que receberá o token *@
+                        <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response" />
+
                         <div class="mb-3">
                             <label class="form-label">@Localizer["DisplayName"]</label>
-                            <input type="text" name="displayName" class="form-control" placeholder="@Localizer["DisplayNamePlaceholder"]" required />
+                            <input type="text" name="displayName" class="form-control" required />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">@Localizer["Email"]</label>
-                            <input type="email" name="email" class="form-control" placeholder="@Localizer["EmailPlaceholder"]" required />
+                            <input type="email" name="email" class="form-control" required />
                         </div>
 
                         <div class="mb-3">
@@ -41,10 +48,31 @@
                             <input type="password" name="confirmPassword" class="form-control" required />
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">@Localizer["RegisterButton"]</button>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                            @Localizer["RegisterButton"]
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @* Carrega o script apenas nesta página *@
+    <script src="https://www.google.com/recaptcha/api.js?render=@siteKey"></script>
+    <script>
+        document.getElementById("registerForm").addEventListener("submit", function(e) {
+            e.preventDefault(); 
+            
+            grecaptcha.ready(function() {
+                grecaptcha.execute('@siteKey', {action: 'register'}).then(function(token) {
+                    // Preenche o input hidden com o token gerado
+                    document.getElementById("g-recaptcha-response").value = token;
+                    // Envia o formulário de verdade
+                    document.getElementById("registerForm").submit();
+                });
+            });
+        });
+    </script>
+}

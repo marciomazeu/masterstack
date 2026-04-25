@@ -11,26 +11,14 @@ namespace MasterStack.Models
         
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        // --- CAMPO PARA SOFT DELETE ---
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
+        // ------------------------------
+
         // Relacionamento: Uma página tem várias traduções
         public virtual ICollection<StaticPageTranslation> Translations { get; set; } = new List<StaticPageTranslation>();
     }
 
-    public class StaticPageTranslation
-    {
-        public int Id { get; set; }
-        public int StaticPageId { get; set; }
-        
-        [Required]
-        public string Culture { get; set; } // pt-BR, en-US, fr-CA
-        
-        [Required]
-        [Display(Name = "Título")]
-        public string Title { get; set; }
-        
-        [Required]
-        [Display(Name = "Conteúdo")]
-        public string Content { get; set; } // Aqui salvaremos o HTML do Quill
-
-        public virtual StaticPage StaticPage { get; set; }
-    }
+  
 }

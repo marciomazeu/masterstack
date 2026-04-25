@@ -665,4 +665,100 @@
     <value>Blog</value>
     <comment/>
   </data>
+  <data name="Menu_ManagePages" xml:space="preserve">
+    <value>Gerenciar Páginas</value>
+    <comment/>
+  </data>
+  <data name="ConfirmEmailTitle" xml:space="preserve">
+    <value>E-mail Confirmado</value>
+    <comment/>
+  </data>
+  <data name="ConfirmSuccessHeader" xml:space="preserve">
+    <value>Tudo pronto!</value>
+    <comment/>
+  </data>
+  <data name="ConfirmSuccessMessage" xml:space="preserve">
+    <value>O seu e-mail foi confirmado com sucesso. Agora você tem acesso total ao MasterStack.</value>
+    <comment/>
+  </data>
+  <data name="GoToHome" xml:space="preserve">
+    <value>Ir para a Home</value>
+    <comment/>
+  </data>
+  <data name="EmailConfirmationSubject" xml:space="preserve">
+    <value>Confirme sua conta - MasterStack</value>
+    <comment/>
+  </data>
+  <data name="EmailGreeting" xml:space="preserve">
+    <value>Olá</value>
+    <comment/>
+  </data>
+  <data name="EmailInstruction" xml:space="preserve">
+    <value>Por favor, confirme sua conta clicando no link abaixo:</value>
+    <comment/>
+  </data>
+  <data name="ConfirmLinkText" xml:space="preserve">
+    <value>Confirmar minha conta</value>
+    <comment/>
+  </data>
+  <data name="EmailFooter" xml:space="preserve">
+    <value>Se você não criou esta conta, ignore este e-mail.</value>
+    <comment/>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Esqueci minha senha</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordSubject" xml:space="preserve">
+    <value>Redefinir Senha - MasterStack</value>
+    <comment/>
+  </data>
+  <data name="SendResetLink" xml:space="preserve">
+    <value>Enviar link de recuperação</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordInstruction" xml:space="preserve">
+    <value>Você solicitou a redefinição de sua senha. Clique no link para prosseguir:</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordLinkText" xml:space="preserve">
+    <value>Redefinir minha senha</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordTitle" xml:space="preserve">
+    <value>Redefinir Senha</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordSubtitle" xml:space="preserve">
+    <value>Escolha uma nova senha segura para sua conta.</value>
+    <comment/>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>Confirmar Nova Senha</value>
+    <comment/>
+  </data>
+  <data name="UpdatePasswordButton" xml:space="preserve">
+    <value>Atualizar Senha</value>
+    <comment/>
+  </data>
+  <data name="ForgotPasswordInstruction" xml:space="preserve">
+    <value>Insira seu e-mail para receber o link de redefinição.</value>
+    <comment/>
+  </data>
+  <data name="BackToLogin" xml:space="preserve">
+    <value>Voltar para o Login</value>
+    <comment/>
+  </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Esqueci a Senha</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordConfirmationTitle" xml:space="preserve">
+    <value>Senha Alterada!</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordConfirmationMessage" xml:space="preserve">
+    <value>Sua senha foi redefinida com sucesso. Você já pode acessar sua conta.</value>
+    <comment/>
+  </data>
 </root>

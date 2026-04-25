@@ -32,6 +32,22 @@
         ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
         ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
     }
+
+    var translation = Model.Translations?.FirstOrDefault(t => t.Culture == currentCulture) 
+                      ?? Model.Translations?.FirstOrDefault();
+
+    if (translation != null)
+    {
+        // Como o Blog não tem MetaTitle, usamos o Title do Post
+        ViewData["Title"] = translation.Title + " | Blog MasterStack";
+        
+      // Como o Blog não tem MetaDescription, usamos o Summary (ou Content limpo)
+        // Se você tiver um campo 'Summary', use-o. Se não, limpamos o HTML do Content.
+        var plainText = System.Text.RegularExpressions.Regex.Replace(translation.Content ?? "", "<.*?>", string.Empty);
+        
+        // Tenta usar o Summary se existir, senão pega os primeiros 160 caracteres do texto
+        ViewData["Description"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
+    }
 }
 @section MetaTags {
     <title>@t.Title | NomeDoBlog</title>

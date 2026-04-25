@@ -2,8 +2,13 @@
 
 
 @{
+   // Definindo os dados que o Layout vai "pescar" lá em cima
     ViewData["Title"] = Model.Title;
-    ViewData["Description"] = "Saiba mais sobre o MasterStack e nossa missão.";
+    
+    // Se você ainda não tem um campo 'SeoDescription' no banco, 
+    // podemos extrair um resumo do conteúdo por enquanto:
+    var rawContent = System.Text.RegularExpressions.Regex.Replace(Model.Content, "<.*?>", string.Empty);
+    ViewData["Description"] = rawContent.Length > 150 ? rawContent.Substring(0, 150) + "..." : rawContent;
 }
 
 @if (User.IsInRole("Admin"))

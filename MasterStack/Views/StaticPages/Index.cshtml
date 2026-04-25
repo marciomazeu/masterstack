@@ -1,0 +1,134 @@
+@model IEnumerable<MasterStack.Models.StaticPage>
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    ViewData["Title"] = "Gerenciar Páginas";
+    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+
+    var activePages = Model.Where(p => !p.IsDeleted).ToList();
+    var deletedPages = Model.Where(p => p.IsDeleted).ToList();
+    
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3"><i class="fas fa-file-alt me-2 text-primary"></i> Gerenciar Conteúdo</h1>
+        <a asp-action="Create" asp-route-culture="@currentCulture" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nova Página
+        </a>
+    </div>
+
+    <ul class="nav nav-tabs" id="pageTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button">
+                Ativas <span class="badge bg-secondary ms-1">@activePages.Count</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link text-danger" id="trash-tab" data-bs-toggle="tab" data-bs-target="#trash" type="button">
+                Lixeira <span class="badge bg-danger ms-1">@deletedPages.Count</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 p-4 bg-white shadow-sm">
+        
+        <div class="tab-pane fade show active" id="active">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Slug</th>
+                        <th>Idiomas</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in activePages) {
+                        <tr>
+                            <td><code>/@item.Slug</code></td>
+                            <td>
+                                @foreach(var t in item.Translations){
+                                    <span class="badge border text-dark me-1">@t.Culture.ToUpper()</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-controller="StaticPages" 
+                                asp-action="Edit" 
+                                asp-route-id="@item.Id" 
+                                asp-route-culture="@currentCulture" 
+                                class="btn btn-sm btn-light border" 
+                                title="Editar">
+                                    <i class="fas fa-edit text-primary"></i>
+                                </a>
+                                
+                               <form asp-controller="StaticPages" 
+                                    asp-action="Delete" 
+                                    asp-route-id="@item.Id" 
+                                    asp-route-culture="@currentCulture" 
+                                    method="post" 
+                                    class="d-inline">
+                                    
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Mover para a lixeira?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-pane fade" id="trash">
+            <table class="table align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Página</th>
+                        <th>Deletada em</th>
+                        <th class="text-end">Recuperação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!deletedPages.Any()) {
+                        <tr><td colspan="3" class="text-center py-4 text-muted">Lixeira vazia.</td></tr>
+                    }
+                    @foreach (var item in deletedPages) {
+                        <tr>
+                            <td><strong>@item.Translations.FirstOrDefault()?.Title</strong> <br> <small>@item.Slug</small></td>
+                            <td>@item.DeletedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <form asp-controller="StaticPages" 
+                                    asp-action="Restore" 
+                                    asp-route-id="@item.Id" 
+                                    asp-route-culture="@currentCulture" 
+                                    method="post" 
+                                    class="d-inline">
+                                    
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-undo me-1"></i> Restaurar
+                                    </button>
+                                </form>
+
+                                <form asp-controller="StaticPages" 
+                                    asp-action="HardDelete" 
+                                    asp-route-id="@item.Id" 
+                                    asp-route-culture="@currentCulture" 
+                                    method="post" 
+                                    class="d-inline">
+                                    
+                                    <button type="submit" class="btn btn-sm btn-link text-danger" 
+                                            onclick="return confirm('CUIDADO: Isso apagará os dados do banco para sempre! Confirmar?')">
+                                        Apagar permanentemente
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

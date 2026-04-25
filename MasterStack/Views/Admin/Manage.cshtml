@@ -1,0 +1,83 @@
+@model MasterStack.Models.StaticPage
+
+<div class="container mt-4">
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Configurações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="Slug" class="form-label fw-bold">URL da Página (Slug)</label>
+                    <input asp-for="Slug" class="form-control" placeholder="ex: sobre-nos" />
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs" id="langTabs" role="tablist">
+            @for (int i = 0; i < Model.Translations.Count; i++)
+            {
+                var t = Model.Translations.ElementAt(i);
+                <li class="nav-item">
+                    <button class="nav-link @(i == 0 ? "active" : "")" id="tab-@t.Culture" 
+                            data-bs-toggle="tab" data-bs-target="#content-@t.Culture" type="button">
+                        @t.Culture.ToUpper()
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-content border border-top-0 p-4 bg-white shadow-sm mb-4">
+            @for (int i = 0; i < Model.Translations.Count; i++)
+            {
+                var t = Model.Translations.ElementAt(i);
+                <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="content-@t.Culture">
+                    
+                    @* Campos Ocultos Necessários para o POST *@
+                    <input type="hidden" name="Translations[@i].Id" value="@t.Id" />
+                    <input type="hidden" name="Translations[@i].Culture" value="@t.Culture" />
+                    <input type="hidden" name="Translations[@i].StaticPageId" value="@Model.Id" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Título da Página (H1)</label>
+                        <input name="Translations[@i].Title" class="form-control" value="@t.Title" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Conteúdo HTML</label>
+                        <textarea name="Translations[@i].Content" class="form-control" rows="10">@t.Content</textarea>
+                    </div>
+
+                    <div class="card border-info mb-3">
+                        <div class="card-header bg-info text-dark fw-bold">
+                            <i class="fas fa-search me-2"></i> Otimização para Buscadores (SEO) - @t.Culture
+                        </div>
+                        <div class="card-body bg-light">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Título SEO (Meta Title)</label>
+                                    <input name="Translations[@i].SeoTitle" class="form-control" 
+                                           maxlength="70" value="@t.SeoTitle" 
+                                           placeholder="Deixe vazio para usar o título principal" />
+                                    <div class="form-text">Ideal: até 70 caracteres.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Descrição SEO (Meta Description)</label>
+                                    <textarea name="Translations[@i].SeoDescription" class="form-control" 
+                                              maxlength="160" rows="2">@t.SeoDescription</textarea>
+                                    <div class="form-text">Ideal: até 160 caracteres.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg px-5">
+            <i class="fas fa-save me-2"></i> Salvar Alterações
+        </button>
+    </form>
+</div>

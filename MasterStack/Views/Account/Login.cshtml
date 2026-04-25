@@ -1,4 +1,6 @@
 ﻿@using Microsoft.Extensions.Localization
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @inject IStringLocalizer<SharedResource> Localizer
 @{
     Layout = null; 
@@ -29,7 +31,7 @@
                         @* Aqui o erro já deve vir traduzido do Controller, mas podemos garantir *@
                         <div class="alert alert-danger small">@ViewBag.Error</div>
                     }
-
+                    <input type="hidden" id="recaptchaToken" name="recaptchaToken" />
                     <form asp-controller="Account" asp-action="Login" asp-route-culture="@culture" method="post">
                         
                         <div class="mb-3">
@@ -52,6 +54,11 @@
                                 @Localizer["RegisterHere"]
                             </a>
                         </div>
+                        <div class="mb-3">
+    <a asp-controller="Account" asp-action="ForgotPassword" asp-route-culture="@culture">
+    @Localizer["ForgotPassword"]
+</a>
+</div>
                     </form>
                 </div>
             </div>
@@ -63,3 +70,12 @@
 </div>
 </body>
 </html>
+
+<script src="https://www.google.com/recaptcha/api.js?render=@Configuration["Recaptcha:SiteKey"]"></script>
+<script>
+  grecaptcha.ready(function() {
+      grecaptcha.execute('@Configuration["Recaptcha:SiteKey"]', {action: 'submit'}).then(function(token) {
+          document.getElementById('recaptchaToken').value = token;
+      });
+  });
+</script>
