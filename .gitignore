@@ -32,6 +32,10 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+[Bb]in/
+[Oo]bj/
+appsettings.Production.json
+*.user
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
