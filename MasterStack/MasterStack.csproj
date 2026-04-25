@@ -5,7 +5,8 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>MasterStack</RootNamespace>
-	</PropertyGroup>
+	  <UserSecretsId>7aeca7c6-9b53-4907-ba5e-532c0d98fb30</UserSecretsId>
+  </PropertyGroup>
 
 <ItemGroup>
   <PackageReference Include="HtmlSanitizer" Version="8.1.870" />
