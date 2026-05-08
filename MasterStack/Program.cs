@@ -73,10 +73,6 @@ builder.Services.AddResponseCompression(options =>
             "application/json"
         });
 });
-// builder.Services.AddDefaultIdentity<IdentityUser>(options => {
-//     options.SignIn.RequireConfirmedAccount = false;
-// })
-// .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // --- [CONFIGURAÇÃO DE COOKIE FLEXÍVEL] ---
 builder.Services.ConfigureApplicationCookie(options =>
@@ -200,14 +196,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // 1. Rota Localizada (Sempre primeiro)
+// Ordem importa: a rota com cultura deve vir PRIMEIRO
 app.MapControllerRoute(
-    name: "localized",
+    name: "culture-route",
     pattern: "{culture}/{controller=Home}/{action=Index}/{id?}");
 
-// 2. Rota Padrão (Fallback)
 app.MapControllerRoute(
-    name: "localized",
-    pattern: "{culture=pt-BR}/{controller=Home}/{action=Index}/{id?}"); // Adicionei =pt-BR
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // 3. Razor Pages (Identity) - Se houver conflito, os Controllers acima ganham prioridade
 app.MapRazorPages();
@@ -255,5 +251,6 @@ using (var scope = app.Services.CreateScope())
     await CreateTestUser("autor@masterstack.com", "Autor de Conteúdo", "Author", "Master@123");
     await CreateTestUser("leitor@masterstack.com", "Leitor Comum", "User", "Master@123");
 }
+
 
 app.Run();

@@ -757,4 +757,72 @@
     <value>Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant accéder à votre compte.</value>
     <comment/>
   </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Gestion des Utilisateurs</value>
+    <comment/>
+  </data>
+  <data name="UsersRegistered" xml:space="preserve">
+    <value>Utilisateurs inscrits</value>
+    <comment/>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Rôles</value>
+    <comment/>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>État</value>
+    <comment/>
+  </data>
+  <data name="Blocked" xml:space="preserve">
+    <value>Bloqué</value>
+    <comment/>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>En attente</value>
+    <comment/>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Actif</value>
+    <comment/>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Modifier</value>
+    <comment/>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+    <comment/>
+  </data>
+  <data name="ConfirmDeleteUser" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</value>
+    <comment/>
+  </data>
+  <data name="AccountLocked" xml:space="preserve">
+    <value>Ce compte est verrouillé. Veuillez contacter le suporte.</value>
+    <comment/>
+  </data>
+  <data name="UserManagementMessage" xml:space="preserve">
+    <value>Gérer les autorisations et l’accès à la plateforme</value>
+    <comment/>
+  </data>
+  <data name="EmailOrName" xml:space="preserve">
+    <value>Recherche par nom ou adresse e-mail...</value>
+    <comment/>
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value>Le champ {0} est obligatoire.</value>
+    <comment/>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>L’adresse e-mail saisie n’est pas valide.</value>
+    <comment/>
+  </data>
+  <data name="MaxLengthError" xml:space="preserve">
+    <value>Le champ {0} ne peut pas dépasser {1} caractères.</value>
+    <comment/>
+  </data>
+  <data name="EmailChangeDisabled" xml:space="preserve">
+    <value>L'e-mail ne peut pas être modifié para des raisons de sécurité.</value>
+    <comment/>
+  </data>
 </root>

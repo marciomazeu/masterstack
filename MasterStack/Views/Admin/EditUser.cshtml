@@ -1,0 +1,55 @@
+
+@model MasterStack.ViewModels.EditUserViewModel
+@using Microsoft.Extensions.Localization
+
+@inject IStringLocalizer<MasterStack.SharedResource> Localizer
+
+<div class="container mt-4">
+    <div class="card shadow border-0">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">@Localizer["EditUser"]: @Model.Email</h4>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="EditUser" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">@Localizer["DisplayName"]</label>
+                        @* O label virá automático do Resource baseado no Display Name *@
+                        @* <label asp-for="DisplayName" class="form-label"></label> *@
+                        <input asp-for="DisplayName" class="form-control" />
+
+                        @* A mensagem de erro aparecerá traduzida se a validação falhar *@
+                        <span asp-validation-for="DisplayName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">@Localizer["Email"]</label>
+                        <input asp-for="Email" class="form-control" readonly />
+                        <small class="text-muted">@Localizer["EmailChangeDisabled"]</small>
+                    </div>
+                </div>
+
+                <hr />
+
+                <h5 class="mb-3">@Localizer["Roles"] / @Localizer["Permissions"]</h5>
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    @foreach (var role in Model.AllRoles)
+                    {
+                        <div class="form-check form-switch p-3 border rounded shadow-sm bg-light">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" 
+                                   name="selectedRoles" value="@role" 
+                                   @(Model.UserRoles.Contains(role) ? "checked" : "")>
+                            <label class="form-check-label fw-bold">@role</label>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Users" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
+                    <button type="submit" class="btn btn-primary px-4">@Localizer["Save"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

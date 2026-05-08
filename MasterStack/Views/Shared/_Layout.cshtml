@@ -87,7 +87,7 @@
         <li class="nav-item">
             <a class="nav-link text-white" asp-area="" asp-controller="StaticPages" asp-action="Page" 
                asp-route-culture="@currentCulture" asp-route-slug="sobre-nos">
-                Sobre
+                @Localizer["MenuAbout"]
             </a>
         </li>
     </ul>
@@ -140,7 +140,7 @@
                 <li><h6 class="dropdown-header">@Localizer["Menu_Administration"]</h6></li>
                 
                 @* --- REINSERINDO OS BOTÕES DE ADMIN --- *@
-                @if (User.IsInRole("Admin"))
+                @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
                 {
                     <li>
                         <a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@currentCulture">
@@ -153,7 +153,10 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item text-danger" asp-controller="Admin" asp-action="ManageUsers" asp-route-culture="@currentCulture">
+                        <a class="dropdown-item text-danger" 
+                        asp-controller="Admin" 
+                        asp-action="Users" 
+                        asp-route-culture="@currentCulture">
                             <i class="fas fa-users-cog me-2"></i> @Localizer["Menu_ManageUsers"]
                         </a>
                     </li>

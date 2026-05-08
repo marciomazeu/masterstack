@@ -761,4 +761,72 @@
     <value>Sua senha foi redefinida com sucesso. Você já pode acessar sua conta.</value>
     <comment/>
   </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Gestão de Usuários</value>
+    <comment/>
+  </data>
+  <data name="UsersRegistered" xml:space="preserve">
+    <value>Usuários Registrados</value>
+    <comment/>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Níveis de Acesso</value>
+    <comment/>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+    <comment/>
+  </data>
+  <data name="Blocked" xml:space="preserve">
+    <value>Bloqueado</value>
+    <comment/>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pendente</value>
+    <comment/>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Ativo</value>
+    <comment/>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+    <comment/>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Excluir</value>
+    <comment/>
+  </data>
+  <data name="ConfirmDeleteUser" xml:space="preserve">
+    <value>Tem certeza que deseja excluir este usuário?</value>
+    <comment/>
+  </data>
+  <data name="AccountLocked" xml:space="preserve">
+    <value>Esta conta está suspensa. Entre em contato com o suporte.</value>
+    <comment/>
+  </data>
+  <data name="UserManagementMessage" xml:space="preserve">
+    <value>Gerencie permissões e acessos da plataforma</value>
+    <comment/>
+  </data>
+  <data name="EmailOrName" xml:space="preserve">
+    <value>Pesquisar por nome ou email...</value>
+    <comment/>
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value>O campo {0} é obrigatório.</value>
+    <comment/>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>O e-mail informado é inválido.</value>
+    <comment/>
+  </data>
+  <data name="MaxLengthError" xml:space="preserve">
+    <value>O campo {0} não pode exceder {1} caracteres.</value>
+    <comment/>
+  </data>
+  <data name="EmailChangeDisabled" xml:space="preserve">
+    <value>O e-mail não pode ser alterado por motivos de segurança.</value>
+    <comment/>
+  </data>
 </root>

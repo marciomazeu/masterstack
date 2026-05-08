@@ -301,13 +301,12 @@
     }
 
         // Limpeza de imagens órfãs blindada com cultura dinâmica
-        async function confirmCleanup() {
-    // Captura as traduções do C# para o JS
+     async function confirmCleanup() {
     const i18n = {
         title: "@Localizer["ConfirmCleanupTitle"]",
         scanning: "@Localizer["Scanning"]",
         noOrphans: "@Localizer["NoOrphanedImages"]",
-        foundText: "@Localizer["FoundOrphanedImages"]", // Ex: "Encontramos {0} imagens órfãs. Apagar?"
+        foundText: "@Localizer["FoundOrphanedImages"]",
         confirmBtn: "@Localizer["Btn_ConfirmCleanup"]",
         cancelBtn: "@Localizer["Cancel"]",
         successTitle: "@Localizer["Success"]",
@@ -315,7 +314,6 @@
         serverError: "@Localizer["ServerError"]"
     };
 
-    // 1. Alerta de "Escaneando"
     Swal.fire({
         title: i18n.scanning,
         allowOutsideClick: false,
@@ -323,8 +321,13 @@
     });
 
     try {
-        // Rota que criamos no Controller para verificar
-        const response = await fetch(`/Admin/scan-orphaned-images`);
+        // Rota ABSOLUTA (sem o prefixo de cultura /pt-BR/)
+        const scanUrl = `/Admin/scan-orphaned-images`; 
+        const response = await fetch(scanUrl);
+        
+        // Se a rota der 404, o response.json() vai falhar com o erro "Unexpected token <"
+        if (!response.ok) throw new Error("Rota não encontrada");
+
         const data = await response.json();
 
         if (data.count === 0) {
@@ -332,7 +335,6 @@
             return;
         }
 
-        // 2. Pergunta se deseja deletar a quantidade encontrada
         const result = await Swal.fire({
             title: i18n.title,
             html: i18n.foundText.replace("{0}", `<strong>${data.count}</strong>`),
@@ -346,11 +348,21 @@
         if (result.isConfirmed) {
             Swal.fire({ title: i18n.scanning, didOpen: () => { Swal.showLoading(); } });
 
-            const deleteResponse = await fetch(`/Admin/cleanup-images`, { 
-                method: 'POST', 
-                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            
+            // Rota ABSOLUTA para o POST
+            const cleanupUrl = `/Admin/cleanup-images`;
+            const deleteResponse = await fetch('/Admin/cleanup-images', { 
+                method: 'POST',
+                headers: {
+                    // Tente este nome exato (sem hifens entre Request e Verification)
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                    'Content-Type': 'application/json'
+                }
             });
             
+            if (!deleteResponse.ok) throw new Error("Erro na limpeza");
+
             const deleteData = await deleteResponse.json();
             
             if (deleteData.success) {
@@ -360,6 +372,7 @@
             }
         }
     } catch (e) {
+        console.error("Erro detalhado:", e);
         Swal.fire(i18n.errorTitle, i18n.serverError, 'error');
     }
 }

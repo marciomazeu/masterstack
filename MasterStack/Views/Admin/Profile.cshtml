@@ -38,10 +38,13 @@ else
                 <div class="card shadow-sm">
                     <div class="card-header bg-white fw-bold">@Localizer["PublicInformation"]: @Model.DisplayName</div>
                     <div class="card-body">
-                        <form asp-action="UpdateProfile" method="post" enctype="multipart/form-data">
+                       <form asp-action="UpdateProfile" 
+                            asp-route-culture="@ViewContext.RouteData.Values["culture"]" 
+                            method="post" 
+                            enctype="multipart/form-data">
                             @* SUMÁRIO DE ERROS (Opcional, mas ajuda muito) *@
                             <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-
+                            @Html.AntiForgeryToken()
                             <input type="file" id="fileInput" name="NewImage" class="d-none" onchange="previewImage(this)">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">@Localizer["DisplayName"]</label>

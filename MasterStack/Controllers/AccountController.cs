@@ -11,6 +11,7 @@ using MasterStack.ViewModels;
 namespace MasterStack.Controllers
 {
     [Route("{culture}/Account")]
+    [Route("Account")]
     public class AccountController : Controller
     {
        private readonly SignInManager<ApplicationUser> _signInManager;
@@ -34,37 +35,47 @@ namespace MasterStack.Controllers
         _configuration = configuration;
     }
 
-        [HttpGet("Login")]
-    public IActionResult Login(string returnUrl = null)
+    [HttpGet("Login")]
+    public IActionResult Login(string culture, string returnUrl = null)
     {
+        // 1. Prioriza a cultura da URL, se não houver, usa a do sistema
+        ViewBag.CurrentCulture = culture ?? RouteData.Values["culture"] ?? "pt-BR";
+        
+        // 2. Armazena a URL de retorno para o formulário saber para onde ir após o sucesso
         ViewBag.ReturnUrl = returnUrl;
+        
         return View();
     }
 
-        [HttpPost("Login")]
+[HttpPost("Login")]
 public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
 {
-    // 1. Tenta o login usando o SignInManager do Identity
-    // O terceiro parâmetro (false) é para 'RememberMe'
-    // O quarto parâmetro (false) é para 'LockoutOnFailure' (bloquear se errar muito)
-    var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: false);
+    // MUDANÇA: lockoutOnFailure alterado para 'true'
+    var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: true);
 
     if (result.Succeeded)
     {
-        // Pega a cultura da rota ou parâmetro
-        culture ??= (string)RouteData.Values["culture"] ?? "pt-BR";
-
-        // Se houver uma URL de retorno (ex: tentou acessar Admin sem logar), manda pra lá
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        var user = await _userManager.FindByNameAsync(username);
+        
+        // Se for Admin ou Autor, manda para o Dashboard
+        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
         {
-            return Redirect(returnUrl);
+            return RedirectToAction("Dashboard", "Admin", new { culture = culture });
         }
 
-        return RedirectToAction("Dashboard", "Admin", new { culture = culture });
+        // Se for User (Leitor), manda para o Perfil dele
+        return RedirectToAction("Profile", "Admin", new { culture = culture });
     }
 
-    // Se falhar, volta pra tela de login com erro
-    //ViewBag.Error = "Usuário ou senha inválidos no sistema Identity";
+    // NOVA LÓGICA: Verifica se a falha foi por causa de um bloqueio
+    if (result.IsLockedOut)
+    {
+        // Certifique-se de ter essa chave "AccountLocked" no seu arquivo de tradução
+        ViewBag.Error = _localizer["AccountLocked"].Value; 
+        return View();
+    }
+
+    // Se falhar por senha errada ou usuário inexistente
     ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
     return View();
 }

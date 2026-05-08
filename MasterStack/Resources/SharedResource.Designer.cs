@@ -29,7 +29,7 @@ namespace MasterStack {
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal SharedResource() {
+        public SharedResource() {
         }
         
         /// <summary>
@@ -327,6 +327,38 @@ namespace MasterStack {
         public static string Bio {
             get {
                 return ResourceManager.GetString("Bio", resourceCulture);
+            }
+        }
+
+         public static string RequiredField {
+            get {
+                return ResourceManager.GetString("RequiredField", resourceCulture);
+            }
+        }
+
+        public static string Email {
+            get {
+                return ResourceManager.GetString("Email", resourceCulture);
+            }
+        }
+
+        public static string MaxLengthError {
+            get {
+                return ResourceManager.GetString("MaxLengthError", resourceCulture);
+            }
+        }
+
+        public static string InvalidEmail {
+            get {
+                return ResourceManager.GetString("InvalidEmail", resourceCulture);
+            }
+        }
+
+        
+
+        public static string EmailChangeDisabled {
+            get {
+                return ResourceManager.GetString("EmailChangeDisabled", resourceCulture);
             }
         }
     }

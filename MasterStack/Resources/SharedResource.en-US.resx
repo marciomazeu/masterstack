@@ -753,4 +753,72 @@
     <value>Your password has been successfully reset. You can now log in to your account.</value>
     <comment/>
   </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>User Management</value>
+    <comment/>
+  </data>
+  <data name="UsersRegistered" xml:space="preserve">
+    <value>Registered users</value>
+    <comment/>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Roles</value>
+    <comment/>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+    <comment/>
+  </data>
+  <data name="Blocked" xml:space="preserve">
+    <value>Blocked</value>
+    <comment/>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pending</value>
+    <comment/>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Active</value>
+    <comment/>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+    <comment/>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment/>
+  </data>
+  <data name="ConfirmDeleteUser" xml:space="preserve">
+    <value>Are you sure you want to delete this user?</value>
+    <comment/>
+  </data>
+  <data name="AccountLocked" xml:space="preserve">
+    <value>This account is locked. Please contact support.</value>
+    <comment/>
+  </data>
+  <data name="UserManagementMessage" xml:space="preserve">
+    <value>Manage platform permissions and accesses</value>
+    <comment/>
+  </data>
+  <data name="EmailOrName" xml:space="preserve">
+    <value>Search by name or email...</value>
+    <comment/>
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value>The {0} field is required.</value>
+    <comment/>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>The email provided is invalid.</value>
+    <comment/>
+  </data>
+  <data name="MaxLengthError" xml:space="preserve">
+    <value>{0} cannot exceed {1} characters.</value>
+    <comment/>
+  </data>
+  <data name="EmailChangeDisabled" xml:space="preserve">
+    <value>Email cannot be changed for security reasons.</value>
+    <comment/>
+  </data>
 </root>

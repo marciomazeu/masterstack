@@ -11,28 +11,32 @@ using System.IO;
 
 namespace MasterStack.Controllers
 {
-    [Authorize]
+[Authorize(Roles = "Admin")]
+[Route("{culture?}/Admin")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IStringLocalizer<SharedResource> _localizer; // Use SharedResource para bater com as views
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AdminController(
             IStringLocalizer<SharedResource> localizer, 
             ApplicationDbContext context, 
             IWebHostEnvironment webHostEnvironment, 
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager)
         {
             _context = context;
             _localizer = localizer;
             _webHostEnvironment = webHostEnvironment;
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
-        [HttpGet("{culture}/Admin/Dashboard")]
-        [Authorize(Roles = "Admin,Author")]
+        [HttpGet]
+[Route("Dashboard")]
         public async Task<IActionResult> Dashboard(string culture, string searchTerm, string cultureFilter, string status, int page = 1)
         {
             int pageSize = 10;
@@ -63,7 +67,55 @@ namespace MasterStack.Controllers
             return View(new DashboardViewModel { Posts = posts, PaginaAtual = page, TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize) });
         }
 
-        [HttpGet("{culture}/Admin/Profile")]
+        [HttpGet("Users")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Users(string searchTerm, string roleFilter, int page = 1)
+        {
+            int pageSize = 15;
+            var query = _userManager.Users.AsQueryable();
+
+            // 1. Busca por Nome ou Email
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                searchTerm = searchTerm.ToLower();
+                query = query.Where(u => u.Email.ToLower().Contains(searchTerm) || 
+                                        u.DisplayName.ToLower().Contains(searchTerm));
+            }
+
+            // 2. Filtro por Role (Opcional, mas útil no futuro)
+            // Nota: Identity não permite filtrar roles facilmente no IQueryable puro sem Join,
+            // mas para grandes volumes, você pode usar o _context.UserRoles.
+
+            var totalUsers = await query.CountAsync();
+            var usersData = await query
+                .OrderBy(u => u.DisplayName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var userList = new List<UserListViewModel>();
+            foreach (var user in usersData)
+            {
+                userList.Add(new UserListViewModel
+                {
+                    Id = user.Id,
+                    DisplayName = user.DisplayName ?? "N/A",
+                    Email = user.Email ?? string.Empty,
+                    Roles = await _userManager.GetRolesAsync(user),
+                    IsEmailConfirmed = user.EmailConfirmed,
+                    IsLockedOut = await _userManager.IsLockedOutAsync(user)
+                });
+            }
+
+            ViewBag.TotalPaginas = (int)Math.Ceiling(totalUsers / (double)pageSize);
+            ViewBag.PaginaAtual = page;
+            ViewBag.SearchTerm = searchTerm;
+
+            return View(userList);
+        }
+
+        [HttpGet("Profile")]
+        [Authorize(Roles = "Admin,User,Author")]
         public async Task<IActionResult> Profile()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -81,6 +133,7 @@ namespace MasterStack.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,User,Author")]
         public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -156,6 +209,7 @@ namespace MasterStack.Controllers
         // --- SISTEMA DE LIMPEZA DE IMAGENS ---
 
         [HttpGet("/Admin/scan-orphaned-images")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ScanOrphanedImages()
         {
             var usedNames = await GetUsedImagesList();
@@ -168,7 +222,7 @@ namespace MasterStack.Controllers
 
         [HttpPost("/Admin/cleanup-images")]
         [Authorize(Roles = "Admin")]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> CleanupImages()
         {
             var usedNames = await GetUsedImagesList();
@@ -246,6 +300,91 @@ namespace MasterStack.Controllers
             var files = new List<string>();
             foreach(var p in paths) if(Directory.Exists(p)) files.AddRange(Directory.GetFiles(p));
             return files;
+        }
+
+        [HttpPost("ToggleLock/{userId}")] // Adicione o parâmetro na rota aqui também!
+    [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleLock(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            
+            if (user == null) return NotFound();
+
+            // Impede que você bloqueie a si mesmo (auto-lockout)
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser?.Id == user.Id)
+            {
+                TempData["Error"] = "Você não pode bloquear sua própria conta.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                // Desbloqueia definindo a data de fim para agora
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow);
+                TempData["Success"] = $"Usuário {user.Email} desbloqueado.";
+            }
+            else
+            {
+                // Bloqueia por 100 anos
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+                TempData["Success"] = $"Usuário {user.Email} bloqueado com sucesso.";
+            }
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpGet]
+[Route("EditUser/{id}")]
+public async Task<IActionResult> EditUser(string id)
+{
+    var user = await _userManager.FindByIdAsync(id);
+    if (user == null) return NotFound();
+
+    var model = new EditUserViewModel
+    {
+        Id = user.Id,
+        DisplayName = user.DisplayName ?? string.Empty,
+        Email = user.Email ?? string.Empty,
+        UserRoles = (await _userManager.GetRolesAsync(user)).ToList(),
+        // Usando a solução que remove o erro de nullability:
+        AllRoles = _roleManager.Roles
+            .Select(r => r.Name)
+            .Where(n => n != null)
+            .Cast<string>()
+            .ToList()
+    };
+
+    // Forçamos o nome da View para não haver erro de localização de arquivo
+    return View("EditUser", model); 
+}
+
+        [HttpPost("EditUser/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditUser(EditUserViewModel model, List<string> selectedRoles)
+        {
+            var user = await _userManager.FindByIdAsync(model.Id);
+            if (user == null) return NotFound();
+
+            user.DisplayName = model.DisplayName;
+            // user.Email = model.Email; // Geralmente admin não muda email, mas pode habilitar se quiser
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            
+            // Atualiza os dados básicos
+            var updateResult = await _userManager.UpdateAsync(user);
+            
+            if (updateResult.Succeeded)
+            {
+                // Gerenciamento de Roles: Remove as antigas e adiciona as novas
+                await _userManager.RemoveFromRolesAsync(user, userRoles);
+                await _userManager.AddToRolesAsync(user, selectedRoles);
+
+                TempData["Success"] = "Usuário atualizado com sucesso.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            return View(model);
         }
     }
 }
