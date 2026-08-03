@@ -249,4 +249,20 @@
     <value>Email cannot be changed for security reasons.</value>
     <comment/>
   </data>
+  <data name="Blog_PostNotAvailableMessage" xml:space="preserve">
+    <value>This post hasn't been translated into the selected language. Showing original version.</value>
+    <comment/>
+  </data>
+  <data name="Blog_PostNotAvailableTitle" xml:space="preserve">
+    <value>Language unavailable</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_PT" xml:space="preserve">
+    <value>Biography (Portuguese)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_EN" xml:space="preserve">
+    <value>Biography (English)</value>
+    <comment/>
+  </data>
 </root>

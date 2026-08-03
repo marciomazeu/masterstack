@@ -1,5 +1,6 @@
 ﻿using MasterStack.Data;
 using MasterStack.Models;
+using MasterStack.Services;
 using MasterStack.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -11,28 +12,32 @@ using System.IO;
 
 namespace MasterStack.Controllers
 {
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Author")]
 [Route("{culture?}/Admin")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IStringLocalizer<SharedResource> _localizer; // Use SharedResource para bater com as views
+        private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly GeminiAiService _geminiAiService; // 🔥 Mantido aqui
 
         public AdminController(
             IStringLocalizer<SharedResource> localizer, 
             ApplicationDbContext context, 
             IWebHostEnvironment webHostEnvironment, 
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager,
+            GeminiAiService geminiAiService
+        )
         {
             _context = context;
             _localizer = localizer;
             _webHostEnvironment = webHostEnvironment;
             _userManager = userManager;
             _roleManager = roleManager;
+            _geminiAiService = geminiAiService; // 🔥 Agora ele NUNCA será nulo
         }
 
         [HttpGet]
@@ -69,12 +74,14 @@ namespace MasterStack.Controllers
 
         [HttpGet("Users")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Users(string searchTerm, string roleFilter, int page = 1)
+        public async Task<IActionResult> Users(string searchTerm, string roleFilter, string status, int page = 1)
         {
             int pageSize = 15;
+            
+            // 1. Iniciamos a query básica
             var query = _userManager.Users.AsQueryable();
 
-            // 1. Busca por Nome ou Email
+            // 2. Filtro por Busca (Nome/Email)
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
@@ -82,17 +89,40 @@ namespace MasterStack.Controllers
                                         u.DisplayName.ToLower().Contains(searchTerm));
             }
 
-            // 2. Filtro por Role (Opcional, mas útil no futuro)
-            // Nota: Identity não permite filtrar roles facilmente no IQueryable puro sem Join,
-            // mas para grandes volumes, você pode usar o _context.UserRoles.
+            // 3. Filtro por Status (Ativo/Bloqueado)
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status == "locked")
+                {
+                    query = query.Where(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+                }
+                else if (status == "active")
+                {
+                    query = query.Where(u => u.LockoutEnd == null || u.LockoutEnd <= DateTimeOffset.UtcNow);
+                }
+            }
+
+            // 4. Filtro por Role (Nível de Acesso)
+            // Usamos o Join com UserRoles para filtrar direto no Banco de Dados
+            if (!string.IsNullOrEmpty(roleFilter))
+            {
+                var role = await _roleManager.FindByNameAsync(roleFilter);
+                if (role != null)
+                {
+                    query = query.Where(u => _context.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == role.Id));
+                }
+            }
 
             var totalUsers = await query.CountAsync();
+            
+            // 5. Paginação e Projeção (Buscamos apenas o necessário)
             var usersData = await query
                 .OrderBy(u => u.DisplayName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
+            // 6. Preenchimento do ViewModel
             var userList = new List<UserListViewModel>();
             foreach (var user in usersData)
             {
@@ -101,110 +131,26 @@ namespace MasterStack.Controllers
                     Id = user.Id,
                     DisplayName = user.DisplayName ?? "N/A",
                     Email = user.Email ?? string.Empty,
+                    // Roles e Lockout ainda precisam ser verificados via UserManager
                     Roles = await _userManager.GetRolesAsync(user),
                     IsEmailConfirmed = user.EmailConfirmed,
                     IsLockedOut = await _userManager.IsLockedOutAsync(user)
                 });
             }
 
+            // 7. Dados para a View (Preservando filtros nos links de paginação)
             ViewBag.TotalPaginas = (int)Math.Ceiling(totalUsers / (double)pageSize);
             ViewBag.PaginaAtual = page;
             ViewBag.SearchTerm = searchTerm;
+            ViewBag.StatusFilter = status;
+            ViewBag.RoleFilter = roleFilter;
+            
+            // Lista de Roles para o Dropdown do Filtro
+            ViewBag.AllRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
 
             return View(userList);
         }
-
-        [HttpGet("Profile")]
-        [Authorize(Roles = "Admin,User,Author")]
-        public async Task<IActionResult> Profile()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return RedirectToAction("Login", "Account");
-
-            return View(new ProfileViewModel { 
-                DisplayName = user.DisplayName, 
-                Bio = user.Bio, 
-                TwitterUrl = user.TwitterUrl, 
-                LinkedInUrl = user.LinkedInUrl, 
-                GitHubUrl = user.GitHubUrl, 
-                CurrentImageUrl = user.ProfileImageUrl 
-            });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,User,Author")]
-        public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge();
-
-           if (!ModelState.IsValid) 
-            {
-                var userForError = await _userManager.GetUserAsync(User);
-                
-                // IMPORTANTE: Recarregue os dados que o usuário JÁ TINHA se ele mandou vazio
-                // Isso evita que o objeto volte "capado" para a View
-                model.CurrentImageUrl = userForError?.ProfileImageUrl;
-                
-                // Se o erro for apenas na Bio ou redes sociais, mas o nome estava certo,
-                // o ModelState deveria aceitar. Se ele trava em tudo, force a limpeza:
-                // ModelState.Clear(); // <-- Use apenas se o erro for persistente mesmo com campo cheio
-                
-                return View("Profile", model);
-            }
-
-            string? oldImagePath = null; // Guardamos para deletar APENAS se o banco salvar com sucesso
-
-            if (model.NewImage != null && model.NewImage.Length > 0)
-            {
-                var uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles");
-                if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
-
-                // Geramos o nome e o caminho físico
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(model.NewImage.FileName)}";
-                var filePath = Path.Combine(uploadFolder, fileName);
-
-                // Salvamos a nova imagem
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await model.NewImage.CopyToAsync(stream);
-                }
-
-                // Se o usuário já tinha uma imagem (e não era a padrão), guardamos o caminho para limpar depois
-                if (!string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.Contains("default"))
-                {
-                    oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, user.ProfileImageUrl.TrimStart('/'));
-                }
-
-                user.ProfileImageUrl = "/uploads/profiles/" + fileName;
-            }
-
-            user.DisplayName = model.DisplayName;
-            user.Bio = model.Bio;
-            user.LinkedInUrl = model.LinkedInUrl;
-            user.TwitterUrl = model.TwitterUrl;
-            user.GitHubUrl = model.GitHubUrl;
-
-            var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded) 
-            {
-                // SÓ AGORA deletamos a imagem antiga fisicamente
-                if (oldImagePath != null && System.IO.File.Exists(oldImagePath))
-                {
-                    try { System.IO.File.Delete(oldImagePath); } catch { /* Logar erro de IO se necessário */ }
-                }
-
-                TempData["Success"] = _localizer["ProfileUpdatedSuccess"].Value;
-                return RedirectToAction(nameof(Profile));
-            }
-            
-
-            // Se falhou o UpdateAsync, temos que remover a imagem nova que foi salva no disco para não virar lixo
-            // (Opcional, mas profissional)
-
-            return View("Profile", model);
-        }
+        
 
         // --- SISTEMA DE LIMPEZA DE IMAGENS ---
 
@@ -373,6 +319,13 @@ public async Task<IActionResult> EditUser(string id)
             
             // Atualiza os dados básicos
             var updateResult = await _userManager.UpdateAsync(user);
+
+            // Verificação sugerida para o seu POST de EditUser:
+            if (user.Id == _userManager.GetUserId(User) && !selectedRoles.Contains("Admin"))
+            {
+                TempData["Error"] = "Operação negada: Você não pode remover seu próprio nível de administrador.";
+                return RedirectToAction(nameof(Users));
+            }
             
             if (updateResult.Succeeded)
             {
@@ -386,5 +339,72 @@ public async Task<IActionResult> EditUser(string id)
 
             return View(model);
         }
+    
+
+    [HttpPost]
+    [Route("[action]")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> GenerateAiContent()
+    {
+        // 🔥 CORREÇÃO: Lendo direto do formulário para evitar quebras de binding ou XSS do .NET
+        string topic = Request.Form["topic"].ToString();
+        string culture = Request.Form["culture"].ToString();
+        string length = Request.Form["length"].ToString();
+        string? opinion = Request.Form["opinion"].ToString();
+
+        if (string.IsNullOrWhiteSpace(topic))
+            return BadRequest("O tema não pode estar vazio.");
+
+        try
+        {
+            // 🔥 Chamando o serviço correto (_geminiAiService) com os 4 parâmetros alinhados
+            var result = await _geminiAiService.GeneratePostSuggestionAsync(topic, culture, length, opinion);
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CRITICAL ERROR IN GENERATE]: {ex.Message} -> {ex.StackTrace}");
+            return StatusCode(500, $"Erro interno no serviço de IA: {ex.Message} -> {ex.InnerException?.Message}");
+        }
+    }
+
+    [HttpPost]
+    [Route("[action]")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> RefineAiContent()
+    {
+        string culture = Request.Form["culture"].ToString();
+        string opinion = Request.Form["opinion"].ToString();
+        string currentContent = Request.Form["currentContent"].ToString();
+
+        if (string.IsNullOrEmpty(currentContent) || string.IsNullOrEmpty(opinion))
+        {
+            return BadRequest("O conteúdo atual e a opinião são obrigatórios para o refinamento.");
+        }
+
+        try
+        {
+            // 🔥 Ajustado para usar o _geminiAiService correto também
+            var result = await _geminiAiService.RefinePostAsync(currentContent, opinion, culture);
+            
+            if (result == null)
+            {
+                return StatusCode(500, "A IA retornou uma resposta inválida.");
+            }
+
+            return Ok(new {
+                title = result.Title ?? "",
+                slug = result.Slug ?? "",
+                metaDescription = result.MetaDescription ?? "",
+                content = result.Content ?? ""
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CRITICAL ERROR IN REFINE]: {ex.Message} -> {ex.StackTrace}");
+            return StatusCode(500, $"Erro interno no refinamento: {ex.Message}");
+        }
+    }
     }
 }

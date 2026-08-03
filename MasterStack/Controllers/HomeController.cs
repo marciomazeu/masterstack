@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using MasterStack.ViewModels;
+using System.Threading.Tasks;
 
 namespace MasterStack.Controllers
 {
@@ -22,10 +24,19 @@ namespace MasterStack.Controllers
             _context = context;
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public async Task<IActionResult> Index()
+{
+    var model = new HomeViewModel();
+
+    // 🔥 Usando BlogPosts (conforme seu DbContext) e incluindo as traduções
+    model.LatestPosts = await _context.BlogPosts
+        .Include(p => p.Translations)
+        .OrderByDescending(p => p.Id) 
+        .Take(3)
+        .ToListAsync();
+
+    return View(model);
+}
 
         public IActionResult Privacy()
         {

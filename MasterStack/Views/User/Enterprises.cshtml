@@ -1,0 +1,506 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+@model MasterStack.ViewModels.EnterprisesPageViewModel
+
+@{
+    ViewData["Title"] = Localizer["PageTitle_ENTERPRISE"];
+
+    var userLat = Model.User?.Latitude?.ToString(CultureInfo.InvariantCulture) ?? "46.8138";
+    var userLng = Model.User?.Longitude?.ToString(CultureInfo.InvariantCulture) ?? "-71.2080";
+    var userLocation = $"{Model.User?.City ?? "Québec"}, {Model.User?.CountryCode ?? "CA"}";
+    var searchRadius = Model.User?.SearchRadiusKm > 0 ? Model.User.SearchRadiusKm : 50;
+}
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="container-fluid py-3 px-4">
+
+    <!-- 1. ALERT DE AJUDA -->
+    <div class="alert alert-light border-start border-4 border-primary shadow-sm mb-4">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle-fill fs-4 text-primary me-3"></i>
+            <div>
+                <strong>@Localizer["HowSearchWorks"]</strong>
+                <p class="mb-0 text-secondary small">
+                    @Html.Raw(string.Format(Localizer["InfoBannerText"].Value, userLocation))
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CABEÇALHO ESCURO CORRIGIDO -->
+    <div class="bg-dark text-white rounded p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm">
+        <h5 class="mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-building"></i> @Localizer["HeaderTitle"]
+        </h5>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-info text-dark p-2 fs-6">
+                <i class="bi bi-geo-alt-fill"></i> @Localizer["CenteredAt"]: @userLocation (@searchRadius km)
+            </span>
+            <a asp-action="Profile" asp-controller="User" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-pencil"></i> @Localizer["ChangeLocation"]
+            </a>
+        </div>
+    </div>
+
+    <!-- 3. BARRA DE FERRAMENTAS E FILTROS -->
+    <div class="d-flex justify-content-start align-items-center gap-2 mb-3 flex-wrap">
+        <button id="btnUpdateOsm" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-clockwise"></i> @Localizer["UpdateOsmBtn"]
+        </button>
+        
+        <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#searchPreferencesModal">
+            <i class="bi bi-sliders"></i> @string.Format(Localizer["RadiusLabel"].Value, searchRadius)
+        </button>
+
+        <a asp-action="FetchTechJobsNearby" asp-controller="User" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
+        </a>
+    </div>
+
+    <div class="row g-3">
+        <!-- COLUNA DA ESQUERDA: LISTA LATERAL -->
+        <div class="col-lg-5 col-md-6">
+            <div class="card border-0 shadow-sm p-3" style="max-height: 75vh; display: flex; flex-direction: column;">
+                
+                <ul class="nav nav-pills nav-justified mb-3" id="exploreTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold" id="jobs-tab" data-bs-toggle="pill" data-bs-target="#jobs-panel" type="button" role="tab">
+                            <i class="fas fa-briefcase text-success me-1"></i> @string.Format(Localizer["TabJobs"].Value, Model.JobPostings.Count)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="companies-tab" data-bs-toggle="pill" data-bs-target="#companies-panel" type="button" role="tab">
+                            <i class="fas fa-building text-primary me-1"></i> @string.Format(Localizer["TabCompanies"].Value, Model.Companies.Count)
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content flex-grow-1 overflow-auto pe-1" id="exploreTabsContent">
+                    
+                    <!-- ABA 1: VAGAS -->
+                    <div class="tab-pane fade show active" id="jobs-panel" role="tabpanel">
+                        @if (!Model.JobPostings.Any())
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-search fa-2x mb-2 text-secondary"></i>
+                                <p class="mb-0">@Html.Raw(Localizer["NoJobsFound"].Value)</p>
+                            </div>
+                        }
+                        @foreach (var job in Model.JobPostings)
+                        {
+                            <div class="card border border-light-subtle shadow-sm mb-3 item-card job-card">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        @if (job.Location.Contains("[Adzuna]"))
+                                        {
+                                            <span class="badge bg-warning text-dark me-1">Adzuna</span>
+                                        }
+                                        else if (job.Location.Contains("[Jooble]"))
+                                        {
+                                            <span class="badge bg-purple text-white me-1" style="background-color: #6f42c1;">Jooble</span>
+                                        }
+                                        <h6 class="fw-bold mb-0 text-primary">@job.Title</h6>
+                                        <span class="badge @(job.IsExactLocation ? "bg-success-subtle text-success border border-success-subtle" : "bg-warning-subtle text-warning border border-warning-subtle")">
+                                            @(job.IsExactLocation ? Localizer["BadgeInPerson"].Value : Localizer["BadgeRemote"].Value)
+                                        </span>
+                                    </div>
+                                    <p class="small mb-1 fw-medium text-dark"><i class="fas fa-building text-muted me-1"></i> @job.CompanyName</p>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary btn-sm fw-bold" 
+                                                onclick="focusJobOnMap('@job.Id', @job.Latitude.ToString(CultureInfo.InvariantCulture), @job.Longitude.ToString(CultureInfo.InvariantCulture), @job.IsExactLocation.ToString().ToLower())">
+                                            📍 @Localizer["ViewOnMapBtn"]
+                                        </button>
+                                        @if (!string.IsNullOrEmpty(job.RedirectUrl))
+                                        {
+                                            <a href="@job.RedirectUrl" target="_blank" class="btn btn-sm btn-success fw-bold">
+                                                @Localizer["ApplyBtn"] <i class="fas fa-external-link-alt ms-1"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- ABA 2: EMPRESAS -->
+                    <div class="tab-pane fade" id="companies-panel" role="tabpanel">
+                        @if (Model.Companies != null && Model.Companies.Any())
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var company in Model.Companies)
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">@company.Name</h6>
+                                            <small class="text-muted"><i class="bi bi-geo-alt"></i> @company.City (@company.DistanceInKm km)</small>
+                                        </div>
+                                        <span class="badge bg-light text-dark border">@company.DistanceInKm km</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- ⚠️ MENSAGEM DE AVISO QUANDO NÃO HÁ EMPRESAS CADASTRADAS -->
+                            <div class="alert alert-warning text-center my-3 p-4 border-warning">
+                                <i class="bi bi-building-exclamation text-warning display-5 mb-2 d-block"></i>
+                                <h6 class="fw-bold text-dark mb-1">@Localizer["NoCompaniesTitle"]</h6>
+                                <p class="text-muted small mb-3">
+                                    @Html.Raw(string.Format(Localizer["NoCompaniesDesc"].Value, string.IsNullOrEmpty(Model.User.City) ? Localizer["YourLocation"].Value : Model.User.City))
+                                </p>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('btnUpdateOsm')?.click();">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> @Localizer["FetchOsmAction"]
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA DA DIREITA: MAPA -->
+        <div class="col-lg-7 col-md-6">
+            <div class="card border-0 shadow-sm p-2">
+                <div id="map" style="width: 100%; height: 620px; border-radius: 8px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL E TOAST -->
+<div class="modal fade" id="searchPreferencesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>@Localizer["ModalTitle"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="UpdateSearchPreferences" asp-controller="User" method="post">
+                <div class="modal-body py-3">
+                    <p class="small text-muted mb-3">@Localizer["ModalSubtitle"]</p>
+                    
+                    <div class="mb-3">
+                        <label for="searchRadiusRange" class="form-label fw-bold small">@Localizer["ModalRadiusLabel"]</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="range" class="form-range" id="searchRadiusRange" min="5" max="100" step="5" 
+                                   value="@(Model.User?.SearchRadiusKm ?? 25)" 
+                                   oninput="document.getElementById('radiusValue').innerText = this.value">
+                            <span class="badge bg-primary fs-6" style="min-width: 65px;"><span id="radiusValue">@(Model.User?.SearchRadiusKm ?? 25)</span> km</span>
+                        </div>
+                        <input type="hidden" id="searchRadius" name="searchRadiusKm" value="@(Model.User?.SearchRadiusKm ?? 25)" />
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="includeRemoteCanada" name="includeRemoteCanada" value="true" checked>
+                        <label class="form-check-label fw-bold small text-dark" for="includeRemoteCanada">
+                            @Localizer["ModalRemoteSwitchLabel"]
+                        </label>
+                        <div class="form-text small">@Localizer["ModalRemoteSwitchHelp"]</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="preferredTitle" class="form-label fw-bold small">@Localizer["ModalTitleLabel"]</label>
+                        <input type="text" class="form-control" id="preferredTitle" name="preferredJobTitle" 
+                               value="@(Model.User?.PreferredJobTitle ?? "developer")" placeholder="@Localizer["ModalTitlePlaceholder"]" />
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm fw-bold" data-bs-dismiss="modal">@Localizer["CancelBtn"]</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold">@Localizer["SavePreferencesBtn"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="jobSyncToast" class="toast align-items-center text-white bg-dark border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+                <div id="toastSpinner" class="spinner-border spinner-border-sm text-light d-none" role="status"></div>
+                <span id="toastMessage">@Localizer["SyncingMessage"]</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    let map; 
+    const jobMarkers = {};
+    const companyMarkers = {};
+    let activeRegionCircle = null;
+
+    const jobPostings = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((object)Model?.JobPostings ?? new object[0]));
+    const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((object)Model?.Companies ?? new object[0]));
+
+    function createCompanyIcon(officeType) {
+        let iconClass = 'fa-building';
+        let bgColor = '#0d6efd';
+
+        if (officeType) {
+            const typeLower = officeType.toLowerCase();
+            if (typeLower.includes('headquarters') || typeLower.includes('matriz')) {
+                iconClass = 'fa-city';
+                bgColor = '#6f42c1';
+            } else if (typeLower.includes('tech') || typeLower.includes('ti')) {
+                iconClass = 'fa-laptop-code';
+                bgColor = '#0dcaf0';
+            } else if (typeLower.includes('branch') || typeLower.includes('filial')) {
+                iconClass = 'fa-store';
+                bgColor = '#20c997';
+            }
+        }
+
+        return L.divIcon({
+            html: `<div style="background-color: ${bgColor}; color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas ${iconClass}" style="font-size: 14px;"></i></div>`,
+            className: '',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+    }
+
+    const jobIcon = L.divIcon({
+        html: '<div style="background-color: #198754; color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-briefcase" style="font-size: 14px;"></i></div>',
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const userLat = parseFloat("@userLat".replace(',', '.'));
+        const userLng = parseFloat("@userLng".replace(',', '.'));
+
+        map = L.map('map').setView([userLat, userLng], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        L.marker([userLat, userLng]).addTo(map)
+            .bindPopup("<div class='text-center'><b>📍 @Localizer["UserLocationPopup"]</b></div>")
+            .openPopup();
+
+        if (Array.isArray(initialCompanies) && initialCompanies.length > 0) {
+            initialCompanies.forEach(company => addCompanyToMap(company));
+        }
+
+        loadJobsAndMap(jobPostings);
+
+        map.on('zoomend', function () {
+            const currentZoom = map.getZoom();
+            map.eachLayer(function (layer) {
+                if (layer.getTooltip && layer.getTooltip()) {
+                    if (currentZoom >= 13) {
+                        layer.openTooltip();
+                    } else {
+                        layer.closeTooltip();
+                    }
+                }
+            });
+        });
+
+        const rangeInput = document.getElementById('searchRadiusRange');
+        if (rangeInput) {
+            rangeInput.addEventListener('input', function() {
+                document.getElementById('searchRadius').value = this.value;
+            });
+        }
+    });
+
+    function addCompanyToMap(company) {
+        const rawLat = company.latitude ?? company.Latitude;
+        const rawLng = company.longitude ?? company.Longitude;
+
+        const lat = typeof rawLat === 'string' ? parseFloat(rawLat.replace(',', '.')) : rawLat;
+        const lng = typeof rawLng === 'string' ? parseFloat(rawLng.replace(',', '.')) : rawLng;
+
+        if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
+            const officeType = company.officeType || company.OfficeType || 'Empresa';
+            const companyName = company.name || company.Name || 'Empresa de TI';
+            const description = company.description || company.Description || '';
+
+            const customIcon = createCompanyIcon(officeType);
+            const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+
+            marker.bindTooltip(`<b>${companyName}</b>`, {
+                permanent: false,
+                direction: 'top',
+                offset: [0, -15]
+            });
+
+            marker.bindPopup(`
+                <div style="min-width: 190px;" class="p-1">
+                    <span class="badge bg-primary mb-1">${officeType}</span>
+                    <h6 class="fw-bold mb-1" style="color: #212529;">${companyName}</h6>
+                    <p class="small text-muted mb-2">${description}</p>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" 
+                       target="_blank" class="btn btn-sm btn-outline-primary w-100 mt-1 fw-bold">
+                       <i class="fas fa-map-marked-alt me-1"></i> @Localizer["OpenGoogleMapsBtn"]
+                    </a>
+                </div>
+            `);
+
+            companyMarkers[`${lat}_${lng}`] = marker;
+        }
+    }
+
+    function focusCompanyOnMap(lat, lng) {
+        const parsedLat = parseFloat(lat);
+        const parsedLng = parseFloat(lng);
+
+        if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+            map.flyTo([parsedLat, parsedLng], 15, { duration: 1.2 });
+            const key = `${parsedLat}_${parsedLng}`;
+            if (companyMarkers[key]) {
+                companyMarkers[key].openPopup();
+            }
+        }
+    }
+
+    function loadJobsAndMap(jobs) {
+        if (!map || !Array.isArray(jobs)) return;
+
+        const userLat = parseFloat("@userLat".replace(',', '.'));
+        const userLng = parseFloat("@userLng".replace(',', '.'));
+
+        jobs.forEach(job => {
+            const isExact = job.isExactLocation ?? job.IsExactLocation;
+            const lat = parseFloat(job.latitude ?? job.Latitude);
+            const lng = parseFloat(job.longitude ?? job.Longitude);
+            const jobId = job.id ?? job.Id;
+
+            const isGenericCoordinates = Math.abs(lat - userLat) < 0.001 && Math.abs(lng - userLng) < 0.001;
+
+            if (isExact && !isGenericCoordinates && !isNaN(lat) && !isNaN(lng)) {
+                const marker = L.marker([lat, lng], { icon: jobIcon }).addTo(map)
+                    .bindPopup(`
+                        <div style="min-width: 200px;" class="p-1">
+                            <span class="badge bg-success mb-1">@Localizer["BadgeInPerson"]</span>
+                            <h6 class="fw-bold mb-1 text-primary">${job.title || job.Title}</h6>
+                            <p class="small mb-1"><b>@Localizer["CompanyLabel"]:</b> ${job.companyName || job.CompanyName}</p>
+                            <p class="small text-muted mb-2"><i class="fas fa-location-dot me-1"></i>${job.location || job.Location}</p>
+                            ${(job.redirectUrl || job.RedirectUrl) ? `<a href="${job.redirectUrl || job.RedirectUrl}" target="_blank" class="btn btn-sm btn-success text-white w-100 fw-bold">@Localizer["ViewJobBtn"] <i class="fas fa-external-link-alt ms-1"></i></a>` : ''}
+                        </div>
+                    `);
+
+                if (jobId) {
+                    jobMarkers[jobId] = marker;
+                }
+            }
+        });
+    }
+
+    function focusJobOnMap(jobId, lat, lng, isExactLocation) {
+        const userLat = parseFloat("@userLat".replace(',', '.'));
+        const userLng = parseFloat("@userLng".replace(',', '.'));
+
+        if (activeRegionCircle) {
+            map.removeLayer(activeRegionCircle);
+            activeRegionCircle = null;
+        }
+
+        if (isExactLocation && jobMarkers[jobId]) {
+            const marker = jobMarkers[jobId];
+            const markerLatLng = marker.getLatLng();
+            map.flyTo([markerLatLng.lat, markerLatLng.lng], 15, { duration: 1.2 });
+            marker.openPopup();
+            return;
+        }
+
+        map.flyTo([userLat, userLng], 12, { duration: 1.2 });
+
+        activeRegionCircle = L.circle([userLat, userLng], {
+            color: '#0d6efd',
+            fillColor: '#0d6efd',
+            fillOpacity: 0.15,
+            radius: 6000
+        }).addTo(map);
+
+        activeRegionCircle.bindPopup(`
+            <div style="text-align: center; font-family: sans-serif; padding: 6px;">
+                <span class="badge bg-primary mb-1">📍 @Localizer["BadgeRemoteArea"]</span><br>
+                <strong style="color: #0d6efd;">@Localizer["RegionOf"] @(Model.User?.City ?? "Québec")</strong><br>
+                <small class="text-muted">@Localizer["RemoteAreaHelp"]</small>
+            </div>
+        `).openPopup();
+    }
+
+    document.getElementById('btnUpdateOsm')?.addEventListener('click', async function () {
+        const btn = this;
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> @Localizer["SearchingStatus"]...`;
+
+        try {
+            const culture = document.documentElement.lang || 'pt-BR';
+            const response = await fetch(`/${culture}/User/FetchNearbyCompaniesFromOSM`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                showToast(`@Localizer["OsmErrorText"]: ${errorText}`);
+                return;
+            }
+
+            const companies = await response.json();
+
+            if (companies.length === 0) {
+                showToast("@Localizer["OsmNoCompaniesText"]");
+                return;
+            }
+
+            if (typeof renderOsmCompaniesOnMap === 'function') {
+                renderOsmCompaniesOnMap(companies);
+            } else {
+                console.log("OSM Companies:", companies);
+                showToast(`@Localizer["OsmSuccessText"]`);
+                location.reload(); 
+            }
+
+        } catch (error) {
+            console.error("OSM Error:", error);
+            showToast("@Localizer["OsmConnectionErrorText"]");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    function showToast(message, isLoading = false, type = 'dark') {
+        const toastEl = document.getElementById('jobSyncToast');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastSpinner = document.getElementById('toastSpinner');
+
+        if (!toastEl) return;
+
+        toastMessage.textContent = message;
+        toastEl.className = `toast align-items-center text-white bg-${type} border-0 shadow`;
+
+        if (isLoading) {
+            toastSpinner.classList.remove('d-none');
+        } else {
+            toastSpinner.classList.add('d-none');
+        }
+
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+    }
+</script>

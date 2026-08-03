@@ -94,39 +94,45 @@ namespace MasterStack.Controllers
         [Route("{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)
         {
-           var currentTranslation = await _context.BlogPostTranslations
-            .Include(t => t.BlogPost)
-                .ThenInclude(p => p.Author) // <--- O Autor está aqui no Post Pai
-            .Include(t => t.BlogPost)
-                .ThenInclude(p => p.Translations)
-            .FirstOrDefaultAsync(t => t.Slug == slug);
+            // 1. IMPORTANTE: Buscamos o slug, mas incluímos as traduções deletadas na busca inicial
+    // para que o sistema consiga "achar o rastro" do post pai.
+    var entryPoint = await _context.BlogPostTranslations
+        .Include(t => t.BlogPost).ThenInclude(p => p.Author)
+        .Include(t => t.BlogPost).ThenInclude(p => p.Translations)
+        .IgnoreQueryFilters() // Se você usou o Global Filter, precisa disso para achar o slug deletado
+        .FirstOrDefaultAsync(t => t.Slug == slug);
 
-            if (currentTranslation == null) return NotFound();
+    // Se nem com IgnoreQueryFilters ele achar, aí sim o post não existe (404 real)
+    if (entryPoint == null) return NotFound();
 
-            // 1. Lógica de Redirecionamento (Já estava ótima)
-            if (currentTranslation.Culture.ToLower() != culture.ToLower())
-            {
-                var targetTranslation = currentTranslation.BlogPost.Translations
-                    .FirstOrDefault(t => t.Culture.ToLower() == culture.ToLower());
+    // 2. Agora buscamos a tradução ATIVA para a cultura solicitada
+    var currentTranslation = entryPoint.BlogPost.Translations
+        .FirstOrDefault(t => t.Culture.ToLower() == culture.ToLower() && !t.IsDeleted);
 
-                if (targetTranslation != null)
-                {
-                    return RedirectToAction(nameof(Details), new
-                    {
-                        culture = targetTranslation.Culture,
-                        slug = targetTranslation.Slug
-                    });
-                }
-                ViewBag.TranslationWarning = true;
-            }
+    // 3. Lógica de Fallback
+    if (currentTranslation == null)
+    {
+        // Se a tradução pedida não existe ou foi apagada, pegamos a primeira tradução ATIVA disponível
+        currentTranslation = entryPoint.BlogPost.Translations
+            .FirstOrDefault(t => !t.IsDeleted);
 
-            // 2. LÓGICA DA IMAGEM (Onde estava o erro)
-            var imageFileName = "/uploads/default-post.jpg";
+        // Se o post não tem NENHUMA tradução ativa (apagou tudo), aí é 404.
+        if (currentTranslation == null) return NotFound();
+
+        ViewBag.ShowTranslationUnavailable = true;
+    }
+    else if (currentTranslation.Slug != slug)
+    {
+        // Redireciona para o slug correto se o usuário usou um slug antigo/deletado
+        return RedirectToActionPermanent(nameof(Details), new { culture = culture, slug = currentTranslation.Slug });
+    }
+
+            // 3. LÓGICA DA IMAGEM (Mantida e protegida)
+            var imageFileName = "/uploads/blog/default-post.jpg"; // Ajustei o path para o seu padrão anterior
             var request = HttpContext.Request;
 
             if (!string.IsNullOrEmpty(currentTranslation.ImageUrl))
             {
-                // Usando o ambiente injetado para validar o arquivo na wwwroot
                 var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, currentTranslation.ImageUrl.TrimStart('/'));
 
                 if (System.IO.File.Exists(physicalPath))
@@ -135,13 +141,12 @@ namespace MasterStack.Controllers
                 }
             }
 
-            // Para as Meta Tags (Social Media)
+            // Para as Meta Tags e View
             ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName.Replace("\\", "/")}";
-            // Para a View usar no <img> tag
             ViewBag.FinalImagePath = imageFileName;
-
             ViewBag.CurrentTranslation = currentTranslation;
 
+            // Retornamos o BlogPost (Pai), mas a View usará o ViewBag.CurrentTranslation para o texto
             return View(currentTranslation.BlogPost);
         }
 
@@ -185,7 +190,8 @@ public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? c
 
         var post = new BlogPost 
         { 
-            CreatedAt = DateTime.Now,
+            //CreatedAt = DateTime.Now,
+            CreatedAt = DateTime.UtcNow, // Use sempre UtcNow no PostgreSQL
             AuthorId = user.Id 
         };
         
@@ -214,18 +220,31 @@ public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? c
         TempData["Success"] = "Post criado com sucesso!";
         return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
     }
-    catch (Exception)
+    catch (Exception ex)
     {
-        await transaction.RollbackAsync();
+        // await transaction.RollbackAsync();
         
-        // Limpeza de segurança: Se deu erro no banco, deleta a imagem física
-        if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
-        {
-            var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
-            if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
-        }
+        // // Limpeza de segurança: Se deu erro no banco, deleta a imagem física
+        // if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
+        // {
+        //     var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
+        //     if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
+        // }
 
-        ModelState.AddModelError("", "Erro técnico ao salvar. O arquivo foi removido e os dados protegidos.");
+        // ModelState.AddModelError("", "Erro técnico ao salvar. O arquivo foi removido e os dados protegidos.");
+
+        await transaction.RollbackAsync();//temporario
+    
+    // Deleta a imagem (mantém sua lógica de limpeza)
+    if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
+    {
+        var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
+        if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
+    }
+
+    // EXIBE O ERRO REAL NA TELA PARA VOCÊ CONSERTAR
+    var realError = ex.InnerException?.Message ?? ex.Message;
+    ModelState.AddModelError("", $"Erro Real: {realError}");
         return View(model);
     }
 }

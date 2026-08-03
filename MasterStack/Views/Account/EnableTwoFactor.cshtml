@@ -1,0 +1,57 @@
+@model MasterStack.ViewModels.EnableTwoFactorViewModel
+
+<div class="container mt-5">
+    <div class="card max-width-600 mx-auto shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">
+            🔒 Ativar Autenticação em Dois Fatores (2FA)
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+            <p>Siga os passos abaixo para proteger sua conta:</p>
+            <ol>
+                <li>Abra o aplicativo autenticador no seu celular (Google Authenticator, etc).</li>
+                <li>Escaneie o QR Code abaixo:</li>
+            </ol>
+
+            <div class="text-center my-4">
+                <div id="qrCode" class="d-inline-block p-3 bg-white border rounded"></div>
+            </div>
+
+            <div class="alert alert-light border small text-center mb-4">
+                <strong>Chave Manual se não conseguir escanear:</strong> <br/>
+                <code class="text-dark fw-bold">@Model.SharedKey</code>
+            </div>
+
+            <form asp-action="EnableTwoFactor" 
+            asp-controller="Account" 
+            asp-route-culture="@ViewData["CurrentCulture"]" 
+            method="post">
+            
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" asp-for="SharedKey" />
+            <input type="hidden" asp-for="AuthenticatorUri" />
+
+            <div class="mb-3">
+                <label asp-for="VerificationCode" class="form-label fw-bold">Digite os 6 dígitos gerados no celular:</label>
+                <input asp-for="VerificationCode" class="form-control form-control-lg text-center" placeholder="000000" autocomplete="off" required maxlength="6" />
+                <span asp-validation-for="VerificationCode" class="text-danger small"></span>
+            </div>
+            
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold">Verificar e Gravar no Banco</button>
+        </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        new QRCode(document.getElementById("qrCode"), {
+            text: "@Html.Raw(Model.AuthenticatorUri)",
+            width: 200,
+            height: 200
+        });
+    </script>
+}

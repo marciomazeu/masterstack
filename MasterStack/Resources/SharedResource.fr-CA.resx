@@ -825,4 +825,356 @@
     <value>L'e-mail ne peut pas être modifié para des raisons de sécurité.</value>
     <comment/>
   </data>
+  <data name="Pages_ManageTitle" xml:space="preserve">
+    <value>Gérer les pages</value>
+    <comment/>
+  </data>
+  <data name="Pages_ManageContent" xml:space="preserve">
+    <value>Gérer le contenu</value>
+    <comment/>
+  </data>
+  <data name="Pages_NewPage" xml:space="preserve">
+    <value>Nouvelle page</value>
+    <comment/>
+  </data>
+  <data name="Pages_TabActive" xml:space="preserve">
+    <value>Actives</value>
+    <comment/>
+  </data>
+  <data name="Pages_TabTrash" xml:space="preserve">
+    <value>Corbeille</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColSlug" xml:space="preserve">
+    <value>Slug</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColLanguages" xml:space="preserve">
+    <value>Langues</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColActions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColPage" xml:space="preserve">
+    <value>Page</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColDeletedAt" xml:space="preserve">
+    <value>Supprimée le</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColRecovery" xml:space="preserve">
+    <value>Récupération</value>
+    <comment/>
+  </data>
+  <data name="Pages_BtnEdit" xml:space="preserve">
+    <value>Modifier</value>
+    <comment/>
+  </data>
+  <data name="Pages_BtnRestore" xml:space="preserve">
+    <value>Restaurer</value>
+    <comment/>
+  </data>
+  <data name="Pages_BtnHardDelete" xml:space="preserve">
+    <value>Supprimer définitivement</value>
+    <comment/>
+  </data>
+  <data name="Pages_EmptyTrash" xml:space="preserve">
+    <value>La corbeille est vide.</value>
+    <comment/>
+  </data>
+  <data name="Pages_ConfirmTrash" xml:space="preserve">
+    <value>Déplacer vers la corbeille ?</value>
+    <comment/>
+  </data>
+  <data name="Pages_ConfirmHardDelete" xml:space="preserve">
+    <value>ATTENTION : Cela supprimera les données pour toujours ! Confirmer ?</value>
+    <comment/>
+  </data>
+  <data name="Blog_PostNotAvailableTitle" xml:space="preserve">
+    <value>Langue indisponible</value>
+    <comment/>
+  </data>
+  <data name="Blog_PostNotAvailableMessage" xml:space="preserve">
+    <value>Ce post n'a pas été traduit dans la langue sélectionnée. Affichage de la version originale.</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_PT" xml:space="preserve">
+    <value>Biographie (Portugais)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_EN" xml:space="preserve">
+    <value>Biographie (Anglais)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_FR" xml:space="preserve">
+    <value>Biographie (Français)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Author_Translations" xml:space="preserve">
+    <value>Traductions de la biographie de l'auteur</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio" xml:space="preserve">
+    <value>Biographie</value>
+    <comment/>
+  </data>
+  <data name="Home_MetaTitle" xml:space="preserve">
+    <value>MasterStack - Tech, Programmation &amp; Jeux</value>
+    <comment/>
+  </data>
+  <data name="Hero_Title" xml:space="preserve">
+    <value>Du Code à la Manette : Votre Univers Tech</value>
+    <comment/>
+  </data>
+  <data name="Hero_Subtitle" xml:space="preserve">
+    <value>Analyses approfondies du développement logiciel, tests matériels, actualités gaming et tout ce qui vous connecte ao futur.</value>
+    <comment/>
+  </data>
+  <data name="Hero_Btn_ReadNow" xml:space="preserve">
+    <value>Lire les Articles</value>
+    <comment/>
+  </data>
+  <data name="Hero_Btn_Categories" xml:space="preserve">
+    <value>Explorer les Sujets</value>
+    <comment/>
+  </data>
+  <data name="Hero_Img_Alt" xml:space="preserve">
+    <value>Illustration conceptuelle reliant la programmation et les jeux vidéo</value>
+    <comment/>
+  </data>
+  <data name="Nav_Topics" xml:space="preserve">
+    <value>Sujets Tendances</value>
+    <comment/>
+  </data>
+  <data name="Cat_Programming" xml:space="preserve">
+    <value>Programmation</value>
+    <comment/>
+  </data>
+  <data name="Cat_Games" xml:space="preserve">
+    <value>Jeux Vidéo</value>
+    <comment/>
+  </data>
+  <data name="Cat_Tech" xml:space="preserve">
+    <value>Technologie</value>
+    <comment/>
+  </data>
+  <data name="Feed_Title" xml:space="preserve">
+    <value>Publications Récentes</value>
+    <comment/>
+  </data>
+  <data name="Feed_Subtitle" xml:space="preserve">
+    <value>Restez à jour avec les derniers tutoriels, critiques et analyses de notre équipe technique.</value>
+    <comment/>
+  </data>
+  <data name="Sample_Dev_Title" xml:space="preserve">
+    <value>Exploration des nouveautés de C# et .NET pour la performance des microservices</value>
+    <comment/>
+  </data>
+  <data name="Sample_Dev_Excerpt" xml:space="preserve">
+    <value>Découvrez comment les améliorations du runtime impactent directement le débit de votre API.</value>
+    <comment/>
+  </data>
+  <data name="Sample_Games_Title" xml:space="preserve">
+    <value>Comment les moteurs de jeu modernes utilisent le Ray Tracing et l'IA</value>
+    <comment/>
+  </data>
+  <data name="Sample_Games_Excerpt" xml:space="preserve">
+    <value>Une analyse technique du rendu graphique et du comportement dynamique des PNJ dans la prochaine génération.</value>
+    <comment/>
+  </data>
+  <data name="Sample_Tech_Title" xml:space="preserve">
+    <value>L'impact des nouveaux processeurs à architecture ARM sur le marché mobile</value>
+    <comment/>
+  </data>
+  <data name="Sample_Tech_Excerpt" xml:space="preserve">
+    <value>L'efficacité énergétique et la puissance brute de traitement définissent l'avenir des nouveaux appareils.</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Title" xml:space="preserve">
+    <value>Ne manquez pas un seul Stack d'informations</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Subtitle" xml:space="preserve">
+    <value>Abonnez-vous à notre newsletter et recevez os melhores artigos de code et de jeux directement dans votre boîte de réception.</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Placeholder" xml:space="preserve">
+    <value>Entrez votre meilleur e-mail...</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Btn" xml:space="preserve">
+    <value>S'abonner</value>
+    <comment/>
+  </data>
+  <data name="PageTitle_ENTERPRISE" xml:space="preserve">
+    <value>Entreprises et Emplois Tech Proches</value>
+    <comment/>
+  </data>
+  <data name="HowSearchWorks" xml:space="preserve">
+    <value>Comment fonctionne la recherche ?</value>
+    <comment/>
+  </data>
+  <data name="InfoBannerText" xml:space="preserve">
+    <value>Les entreprises sur la carte sont basées sur votre emplacement ({0}). Les offres d'emploi incluent le rayon local et les postes à distance.</value>
+    <comment/>
+  </data>
+  <data name="HeaderTitle" xml:space="preserve">
+    <value>Entreprises Proches</value>
+    <comment/>
+  </data>
+  <data name="CenteredAt" xml:space="preserve">
+    <value>Centré sur</value>
+    <comment/>
+  </data>
+  <data name="ChangeLocation" xml:space="preserve">
+    <value>Modifier le lieu dans le profil</value>
+    <comment/>
+  </data>
+  <data name="UpdateOsmBtn" xml:space="preserve">
+    <value>Mettre à jour OSM</value>
+    <comment/>
+  </data>
+  <data name="RadiusLabel" xml:space="preserve">
+    <value>Rayon : {0} km</value>
+    <comment/>
+  </data>
+  <data name="SearchJobsBtn" xml:space="preserve">
+    <value>Rechercher des Emplois Tech (Adzuna + Jooble)</value>
+    <comment/>
+  </data>
+  <data name="TabJobs" xml:space="preserve">
+    <value>Emplois ({0})</value>
+    <comment/>
+  </data>
+  <data name="TabCompanies" xml:space="preserve">
+    <value>Entreprises ({0})</value>
+    <comment/>
+  </data>
+  <data name="NoJobsFound" xml:space="preserve">
+    <value>Aucun emploi tech trouvé. Cliquez sur « Rechercher des Emplois Tech » pour charger.</value>
+    <comment/>
+  </data>
+  <data name="BadgeInPerson" xml:space="preserve">
+    <value>Présentiel / Lieu Fixe</value>
+    <comment/>
+  </data>
+  <data name="BadgeRemote" xml:space="preserve">
+    <value>Région / À distance</value>
+    <comment/>
+  </data>
+  <data name="ViewOnMapBtn" xml:space="preserve">
+    <value>Voir sur la carte</value>
+    <comment/>
+  </data>
+  <data name="ApplyBtn" xml:space="preserve">
+    <value>Postuler</value>
+    <comment/>
+  </data>
+  <data name="NoCompaniesTitle" xml:space="preserve">
+    <value>Aucune entreprise trouvée dans votre région</value>
+    <comment/>
+  </data>
+  <data name="NoCompaniesDesc" xml:space="preserve">
+    <value>Il n'y a pas d'entreprises enregistrées dans la base de données pour {0}.</value>
+    <comment/>
+  </data>
+  <data name="YourLocation" xml:space="preserve">
+    <value>votre emplacement</value>
+    <comment/>
+  </data>
+  <data name="FetchOsmAction" xml:space="preserve">
+    <value>Cartographier via OpenStreetMap</value>
+    <comment/>
+  </data>
+  <data name="ModalTitle" xml:space="preserve">
+    <value>Préférences de Recherche</value>
+    <comment/>
+  </data>
+  <data name="ModalSubtitle" xml:space="preserve">
+    <value>Ajustez les paramètres pour filtrer les emplois tech et les entreprises sur la carte.</value>
+    <comment/>
+  </data>
+  <data name="ModalRadiusLabel" xml:space="preserve">
+    <value>Rayon de recherche local (en km)</value>
+    <comment/>
+  </data>
+  <data name="ModalRemoteSwitchLabel" xml:space="preserve">
+    <value>Inclure les emplois 100 % à distance à l'échelle nationale</value>
+    <comment/>
+  </data>
+  <data name="ModalRemoteSwitchHelp" xml:space="preserve">
+    <value>Recherche des opportunités nationales ne nécessitant pas de déplacement physique.</value>
+    <comment/>
+  </data>
+  <data name="ModalTitleLabel" xml:space="preserve">
+    <value>Intitulé de poste / Technologie souhaitée</value>
+    <comment/>
+  </data>
+  <data name="ModalTitlePlaceholder" xml:space="preserve">
+    <value>Ex : developer, c#, .net, full stack</value>
+    <comment/>
+  </data>
+  <data name="CancelBtn" xml:space="preserve">
+    <value>Annuler</value>
+    <comment/>
+  </data>
+  <data name="SavePreferencesBtn" xml:space="preserve">
+    <value>Enregistrer les préférences</value>
+    <comment/>
+  </data>
+  <data name="SyncingMessage" xml:space="preserve">
+    <value>Synchronisation...</value>
+    <comment/>
+  </data>
+  <data name="UserLocationPopup" xml:space="preserve">
+    <value>Votre Emplacement</value>
+    <comment/>
+  </data>
+  <data name="OpenGoogleMapsBtn" xml:space="preserve">
+    <value>Ouvrir dans Google Maps</value>
+    <comment/>
+  </data>
+  <data name="CompanyLabel" xml:space="preserve">
+    <value>Entreprise</value>
+    <comment/>
+  </data>
+  <data name="ViewJobBtn" xml:space="preserve">
+    <value>Voir l'offre</value>
+    <comment/>
+  </data>
+  <data name="BadgeRemoteArea" xml:space="preserve">
+    <value>Emplacement Général / À distance</value>
+    <comment/>
+  </data>
+  <data name="RegionOf" xml:space="preserve">
+    <value>Région de</value>
+    <comment/>
+  </data>
+  <data name="RemoteAreaHelp" xml:space="preserve">
+    <value>Le poste est à distance, hybride ou sans adresse physique. Il dessert votre région.</value>
+    <comment/>
+  </data>
+  <data name="SearchingStatus" xml:space="preserve">
+    <value>Recherche en cours</value>
+    <comment/>
+  </data>
+  <data name="OsmErrorText" xml:space="preserve">
+    <value>Erreur lors de la recherche sur OpenStreetMap</value>
+    <comment/>
+  </data>
+  <data name="OsmNoCompaniesText" xml:space="preserve">
+    <value>Aucune entreprise trouvée dans ce rayon.</value>
+    <comment/>
+  </data>
+  <data name="OsmSuccessText" xml:space="preserve">
+    <value>Succès ! Entreprises trouvées via OSM.</value>
+    <comment/>
+  </data>
+  <data name="OsmConnectionErrorText" xml:space="preserve">
+    <value>Échec de connexion lors de la recherche sur OpenStreetMap.</value>
+    <comment/>
+  </data>
 </root>

@@ -1,9 +1,11 @@
+@using Microsoft.Extensions.Localization
 @model MasterStack.ViewModels.ProfileViewModel
+@using System.Globalization
+@inject IStringLocalizer<SharedResource> Localizer
 
 @{
-    ViewData["Title"] = "Meu Perfil";
-    // Se o model for null (caso de erro de rota), criamos um objeto vazio
-    var displayModel = Model ?? new MasterStack.ViewModels.ProfileViewModel();
+    ViewData["Title"] = @Localizer["Profile_Bio"];
+    // Removida a linha que causava o erro de sintaxe e o NullReference
 }
 
 @if (Model == null)
@@ -54,10 +56,30 @@ else
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-bold">@Localizer["Bio"]</label>
-                                <textarea asp-for="Bio" class="form-control" rows="4"></textarea>
-                                <span asp-validation-for="Bio" class="text-danger small"></span>
+                                <label class="form-label">
+                                    @* Corrigido aqui: Acessa direto do Model, sem o ".Author" *@
+                                    @(Model.IsAuthorOrAdmin ? Localizer["Profile_Bio_PT"] : Localizer["Profile_Bio"])
+                                </label>
+                                <textarea asp-for="Bio" class="form-control" rows="3"></textarea>
                             </div>
+                            @if (Model.IsAuthorOrAdmin)
+                            {
+                                <div class="card bg-dark text-light p-3 mb-3 border-secondary">
+                                    <h5 class="card-title text-info">
+                                        <i class="fas fa-language me-2"></i> @Localizer["Profile_Author_Translations"]
+                                    </h5>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">@Localizer["Profile_Bio_EN"]</label>
+                                        <textarea asp-for="Bio_EN" class="form-control" rows="3"></textarea>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">@Localizer["Profile_Bio_FR"]</label>
+                                        <textarea asp-for="Bio_FR" class="form-control" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            }
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
@@ -81,6 +103,34 @@ else
 
                             <button type="submit" class="btn btn-primary px-4">@Localizer["SaveProfile"]</button>
                         </form>
+
+                        <div class="card mt-4 border-0 shadow-sm">
+                        <div class="card-header bg-dark text-white fw-bold">
+                            🛡️ Segurança da Conta
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">
+                                A autenticação em duas etapas (2FA) adiciona uma camada extra de segurança à sua conta, exigindo um código do seu celular na hora do login.
+                            </p>
+
+                            @if (Model.IsTwoFactorEnabled)
+                                {
+                                    <div class="alert alert-success d-flex align-items-center" role="alert">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <div><strong>Status:</strong> Sua conta está protegida com a Autenticação em Dois Fatores.</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <a asp-action="EnableTwoFactor" 
+                                    asp-controller="Account" 
+                                    asp-route-culture="@CultureInfo.CurrentCulture.Name" 
+                                    class="btn btn-primary fw-bold">
+                                        <i class="fas fa-shield-alt me-2"></i> Ativar Proteção de 2 Fatores
+                                    </a>
+                                }
+                        </div>
+                    </div>
                     </div>
                 </div>
             </div>

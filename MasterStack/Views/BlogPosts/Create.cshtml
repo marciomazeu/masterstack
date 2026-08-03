@@ -109,7 +109,7 @@
                                 </button>
                             </div>
                         </div>
-                            <div class="mb-3">
+                        <div class="mb-3">
                             <label asp-for="MetaKeywords" class="form-label small fw-bold">Palavras-chave (Separadas por vírgula)</label>
                             <input asp-for="MetaKeywords" class="form-control form-control-sm" placeholder="ex: dotnet, tutorial, aspnet" />
                             <span asp-validation-for="MetaKeywords" class="text-danger small"></span>
@@ -151,6 +151,69 @@
                         </div>
                     </div>
 
+                    <div class="card mb-4 bg-light border-primary shadow-sm">
+                        <div class="card-header bg-primary text-white fw-bold">🪄 Assistente de Escrita Inteligente</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Tamanho do Artigo</label>
+                                <select id="aiLength" class="form-select form-select-sm">
+                                    <option value="curto (cerca de 400 a 600 palavras)">Curto (Notícia / Rápido)</option>
+                                    <option value="médio (cerca de 800 a 1000 palavras)" selected>Médio (Padrão Blog)</option>
+                                    <option value="longo (cerca de 1200 a 1500 palavras)">Longo (Completo / SEO Avançado)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Tema do Post</label>
+                                <div class="input-group">
+                                    <input type="text" id="aiTopic" class="form-control" placeholder="Ex: Melhores práticas no EF Core...">
+                                    <button class="btn btn-primary" type="button" id="btnGenerateAi" onclick="generateContentWithAi()">
+                                        <span id="aiSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                        Gerar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-success text-uppercase">
+                                    <i class="fas fa-user-edit me-1"></i> Sua Opinião / Melhorias para o Rascunho
+                                </label>
+                                <textarea id="userOpinion" class="form-control form-control-sm" rows="3" 
+                                        placeholder="Ex: Adicione um parágrafo sobre performance e inclua uma tabela comparativa..."></textarea>
+                                
+                                <button type="button" class="btn btn-success btn-sm w-100 mt-2" id="btnRefineAi" onclick="refineContentWithAi()">
+                                    <span id="aiRefineSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                    <i class="fas fa-sync-alt me-1"></i> Refinar Rascunho Atual com Minha Opinião
+                                </button>
+                            </div>
+
+                            <hr />
+
+                            <div class="bg-white p-3 rounded border">
+                                <h6 class="fw-bold small text-muted text-uppercase mb-3">
+                                    <i class="fas fa-shield-alt text-warning me-1"></i> Validador Google AdSense
+                                </h6>
+                                
+                                <ul class="list-unstyled mb-0 small">
+                                    <li class="mb-2 d-flex align-items-center" id="chk-length">
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Mínimo de 600 palavras</span>
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center" id="chk-tables">
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Possui tabelas estruturadas</span>
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center" id="chk-code">
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Possui blocos de código prático</span>
+                                    </li>
+                                    <li class="mb-0 d-flex align-items-center" id="chk-opinion">
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Contém o Toque Humano (Sua Opinião)</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card mb-4">
                         <div class="card-header bg-white fw-bold">Imagem de Capa</div>
                         <div class="card-body">
@@ -166,20 +229,20 @@
                         </div>
                     </div>
 
-<div class="card mb-4">
-    <div class="card-header bg-white fw-bold">Status</div>
-    <div class="card-body">
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
-            <label class="form-check-label fw-bold" for="publishSwitch">
-                <span id="statusLabel" class="text-danger">Rascunho</span>
-            </label>
-        </div>
-        <small class="text-muted d-block mt-2">
-            Se desmarcado, o post não aparecerá na listagem pública.
-        </small>
-    </div>
-</div>
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Status</div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
+                                <label class="form-check-label fw-bold" for="publishSwitch">
+                                    <span id="statusLabel" class="text-danger">Rascunho</span>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Se desmarcado, o post não aparecerá na listagem pública.
+                            </small>
+                        </div>
+                    </div>
                     <div class="card">
                         <div class="card-body">
                             <button type="submit" class="btn btn-success w-100 mb-2 py-2 fw-bold">Publicar Post</button>
@@ -257,56 +320,76 @@
         const slugInput = document.getElementById('Slug');
         const descField = document.getElementById('MetaDescription');
 
-        titleInput.addEventListener('input', function() {
-            if (slugInput.value === "" || slugInput.dataset.auto === "true") {
-                slugInput.value = slugify(this.value);
-                slugInput.dataset.auto = "true";
-            }
-            updateGooglePreview();
-        });
+        if (titleInput) {
+            titleInput.addEventListener('input', function() {
+                if (slugInput && (slugInput.value === "" || slugInput.dataset.auto === "true")) {
+                    slugInput.value = slugify(this.value);
+                    slugInput.dataset.auto = "true";
+                }
+                updateGooglePreview();
+            });
+        }
 
-        slugInput.addEventListener('input', () => { 
-            slugInput.dataset.auto = "false"; 
-            updateGooglePreview(); 
-        });
+        if (slugInput) {
+            slugInput.addEventListener('input', () => { 
+                slugInput.dataset.auto = "false"; 
+                updateGooglePreview(); 
+            });
+        }
 
+        // Monitora o texto do editor para atualizar metadados e validador
         quill.on('text-change', function() {
-            if (descField.value === "" || descField.dataset.auto === "true") {
+            const df = document.getElementById('MetaDescription');
+            if (!df) return; 
+
+            if (df.value === "" || df.dataset.auto === "true") {
                 forceAutoDescription();
             }
             updateGooglePreview();
+            runAdSenseAnalyzer();
         });
 
-        descField.addEventListener('input', () => { 
-            descField.dataset.auto = "false"; 
-            updateGooglePreview();
-            updateCounter();
-        });
+        if (descField) {
+            descField.addEventListener('input', () => { 
+                descField.dataset.auto = "false"; 
+                updateGooglePreview();
+                updateCounter();
+            });
+        }
 
         function forceAutoDescription() {
-            // 1. Pega o HTML do Quill
             const html = quill.root.innerHTML;
-            // 2. Limpa o HTML para texto puro
             const plainText = extractPlainText(html);
-            // 3. Alimenta o campo de Meta Description
-            const descField = document.getElementById('MetaDescription');
-            descField.value = plainText.substring(0, 160);
-            
-            // 4. Atualiza o contador e o preview do Google
+            const df = document.getElementById('MetaDescription');
+            if (!df) return;
+
+            df.value = plainText.substring(0, 160);
             updateCounter();
             updateGooglePreview();
         }
 
         function updateCounter() {
-            const count = descField.value.length;
-            document.getElementById('descCounter').innerText = `${count} / 160 caracteres`;
-            document.getElementById('descCounter').className = count >= 150 ? "text-danger small" : "text-muted small";
+            const df = document.getElementById('MetaDescription');
+            const counter = document.getElementById('descCounter');
+            if (!df || !counter) return;
+
+            const count = df.value.length;
+            counter.innerText = `${count} / 160 caracteres`;
+            counter.className = count >= 150 ? "text-danger small" : "text-muted small";
         }
 
         function updateGooglePreview() {
-            document.getElementById('preview-title').innerText = titleInput.value || "Título do Post";
-            document.getElementById('preview-slug').innerText = slugInput.value || "slug-do-post";
-            document.getElementById('preview-desc').innerText = descField.value || "A descrição aparecerá aqui...";
+            const ti = document.getElementById('Title');
+            const si = document.getElementById('Slug');
+            const df = document.getElementById('MetaDescription');
+
+            const pTitle = document.getElementById('preview-title');
+            const pSlug = document.getElementById('preview-slug');
+            const pDesc = document.getElementById('preview-desc');
+
+            if(pTitle) pTitle.innerText = (ti && ti.value) ? ti.value : "Título do Post";
+            if(pSlug) pSlug.innerText = (si && si.value) ? si.value : "slug-do-post";
+            if(pDesc) pDesc.innerText = (df && df.value) ? df.value : "A descrição aparecerá aqui...";
         }
 
         // 5. Preview da Imagem de Capa
@@ -325,18 +408,169 @@
             return true;
         };
 
-        window.onload = updateGooglePreview;
+        // 7. Configurações de Status Switch
+        const sw = document.getElementById('publishSwitch');
+        const label = document.getElementById('statusLabel');
+        
+        const updateLabel = () => {
+            if(!sw || !label) return;
+            label.innerText = sw.checked ? "Publicado" : "Rascunho";
+            label.className = sw.checked ? "text-success fw-bold" : "text-danger fw-bold";
+        };
 
-        // Script simples para mudar a cor e o texto do status dinamicamente
-    const sw = document.getElementById('publishSwitch');
-    const label = document.getElementById('statusLabel');
-    
-    const updateLabel = () => {
-        label.innerText = sw.checked ? "Publicado" : "Rascunho";
-        label.className = sw.checked ? "text-success fw-bold" : "text-danger fw-bold";
-    };
+        if(sw) {
+            sw.addEventListener('change', updateLabel);
+        }
 
-    sw.addEventListener('change', updateLabel);
-    window.addEventListener('load', updateLabel);
+        // 8. Assistente de Escrita Inteligente com IA
+        async function generateContentWithAi() {
+            // 🔥 CORREÇÃO CRÍTICA: Captura 'aiTopic' que é o ID correto do input no HTML
+            const topicEl = document.getElementById('aiTopic');
+            const lengthEl = document.getElementById('aiLength');
+            const opinionEl = document.getElementById('userOpinion');
+
+            if (!topicEl) return alert('Campo de tema não encontrado.');
+            const topic = topicEl.value.trim();
+
+            if (!topic) return alert('O tema não pode estar vazio!');
+
+            const culture = '@currentCulture';
+            const length = lengthEl ? lengthEl.value : 'médio (cerca de 800 a 1000 palavras)';
+            const opinion = opinionEl ? opinionEl.value.trim() : '';
+
+            document.getElementById('aiSpinner').classList.remove('d-none');
+            document.getElementById('btnGenerateAi').disabled = true;
+
+            try {
+                const response = await fetch('/pt-BR/Admin/GenerateAiContent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `topic=${encodeURIComponent(topic)}&culture=${encodeURIComponent(culture)}&length=${encodeURIComponent(length)}&opinion=${encodeURIComponent(opinion)}`
+                });
+
+                if (!response.ok) throw new Error('Erro na resposta do servidor (Status 500)');
+
+                const data = await response.json();
+                
+                if (titleInput) titleInput.value = data.title || '';
+                if (slugInput) {
+                    slugInput.value = data.slug || '';
+                    slugInput.dataset.auto = "false";
+                }
+                if (descField) descField.value = data.metaDescription || '';
+                
+                quill.root.innerHTML = data.content || '';
+                
+                updateGooglePreview();
+                updateCounter();
+                runAdSenseAnalyzer();
+
+            } catch (error) {
+                alert('Falha ao gerar conteúdo: ' + error.message);
+            } finally {
+                document.getElementById('aiSpinner').classList.add('d-none');
+                document.getElementById('btnGenerateAi').disabled = false;
+            }
+        }
+
+        async function refineContentWithAi() {
+            const currentContent = quill.root.innerHTML.trim();
+            const opinionEl = document.getElementById('userOpinion');
+            if(!opinionEl) return;
+            
+            const opinion = opinionEl.value.trim();
+            const culture = '@currentCulture';
+
+            // 🔥 Mantém os metadados atuais do formulário para não perdê-los no postback
+            const currentTitle = titleInput ? titleInput.value : '';
+            const currentSlug = slugInput ? slugInput.value : '';
+            const currentMeta = descField ? descField.value : '';
+
+            if (!opinion) return alert('Digite o que você quer melhorar ou sua opinião antes de refinar!');
+            if (currentContent === '<p><br></p>' || !currentContent) return alert('Não há nenhum texto no editor para ser refinado!');
+
+            document.getElementById('aiRefineSpinner').classList.remove('d-none');
+            document.getElementById('btnRefineAi').disabled = true;
+
+            try {
+                const response = await fetch('/pt-BR/Admin/RefineAiContent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `culture=${encodeURIComponent(culture)}&opinion=${encodeURIComponent(opinion)}&currentContent=${encodeURIComponent(currentContent)}`
+                });
+
+                if (!response.ok) throw new Error('Erro na requisição de refinamento da IA');
+
+                const data = await response.json();
+                
+                quill.root.innerHTML = data.content || '';
+                
+                // 🔥 Mantém ou atualiza os inputs originais da tela
+                if (titleInput) titleInput.value = data.title || currentTitle;
+                if (slugInput) slugInput.value = data.slug || currentSlug;
+                if (descField) descField.value = data.metaDescription || currentMeta;
+                
+                opinionEl.value = '';
+                
+                updateGooglePreview();
+                updateCounter();
+                runAdSenseAnalyzer();
+
+            } catch (error) {
+                alert('Falha ao refinar conteúdo: ' + error.message);
+            } finally {
+                document.getElementById('aiRefineSpinner').classList.add('d-none');
+                document.getElementById('btnRefineAi').disabled = false;
+            }
+        }
+
+        function runAdSenseAnalyzer() {
+            const html = quill.root.innerHTML;
+            const plainText = extractPlainText(html);
+            const wordCount = plainText.split(/\s+/).filter(w => w.length > 0).length;
+
+            const chkLength = document.getElementById('chk-length');
+            if (chkLength) {
+                if (wordCount >= 600) {
+                    chkLength.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Texto denso (${wordCount} palavras)</span>`;
+                } else {
+                    chkLength.innerHTML = `<i class="fas fa-exclamation-circle text-danger me-2"></i> <span>Muito curto (${wordCount}/600 palavras)</span>`;
+                }
+            }
+
+            const chkTables = document.getElementById('chk-tables');
+            if (chkTables) {
+                if (html.includes('<table')) {
+                    chkTables.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Possui tabelas de comparação</span>`;
+                } else {
+                    chkTables.innerHTML = `<i class="fas fa-times-circle text-muted me-2"></i> <span>Dica: Adicione uma tabela comparativa</span>`;
+                }
+            }
+
+            const chkCode = document.getElementById('chk-code');
+            if (chkCode) {
+                if (html.includes('<pre') || html.includes('<code')) {
+                    chkCode.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Possui exemplos de código</span>`;
+                } else {
+                    chkCode.innerHTML = `<i class="fas fa-times-circle text-muted me-2"></i> <span>Dica: Inclua blocos de código prático</span>`;
+                }
+            }
+
+            const chkOpinion = document.getElementById('chk-opinion');
+            if (chkOpinion) {
+                if (html.includes('<strong>Nota do Autor:</strong>')) {
+                    chkOpinion.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Contém o Toque Humano aplicado</span>`;
+                } else {
+                    chkOpinion.innerHTML = `<i class="fas fa-times-circle text-danger me-2"></i> <span>Falta incluir sua experiência pessoal</span>`;
+                }
+            }
+        }
+
+        // 9. Gatilhos de Inicialização Global
+        window.addEventListener('load', () => {
+            updateGooglePreview();
+            updateLabel();
+            runAdSenseAnalyzer();
+        });
     </script>
 }

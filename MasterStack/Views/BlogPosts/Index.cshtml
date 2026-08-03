@@ -63,9 +63,9 @@
     <div class="card h-100 shadow-sm border-0 hover-lift transition-all">
         @* Imagem com proporção fixa 16:9 *@
         <div class="ratio ratio-16x9 overflow-hidden rounded-top">
-            <img src="@(string.IsNullOrEmpty(translation.ImageUrl) ? "/uploads/default-post.jpg" : translation.ImageUrl)" 
-                 class="card-img-top object-fit-cover w-100 h-100" 
-                 alt="@translation.Title">
+            <img src="@(string.IsNullOrWhiteSpace(translation.ImageUrl) ? Url.Content("~/uploads/default-post.jpg") : translation.ImageUrl)" 
+     class="card-img-top object-fit-cover w-100 h-100" 
+     alt="@translation.Title">
         </div>
 
         <div class="card-body d-flex flex-column p-4">
@@ -90,7 +90,7 @@
             @* Info do Autor no Rodapé do Card *@
             <div class="d-flex align-items-center justify-content-between mt-auto">
                 <div class="d-flex align-items-center">
-                    <img src="@(string.IsNullOrEmpty(item.Author?.ProfileImageUrl) ? "/img/default-avatar.png" : item.Author.ProfileImageUrl)" 
+                    <img src="@(string.IsNullOrEmpty(item.Author?.ProfileImageUrl) ? "/uploads/profile/default-avatar.jpg" : item.Author.ProfileImageUrl)" 
                         class="rounded-circle me-2" 
                         style="width: 32px; height: 32px; object-fit: cover; background-color: #eee;" 
                         alt="@(item.Author?.DisplayName ?? "Autor")">

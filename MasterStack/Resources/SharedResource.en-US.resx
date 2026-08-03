@@ -821,4 +821,360 @@
     <value>Email cannot be changed for security reasons.</value>
     <comment/>
   </data>
+  <data name="Menu_ManagePages" xml:space="preserve">
+    <value>Manage Pages</value>
+    <comment/>
+  </data>
+  <data name="Pages_ManageTitle" xml:space="preserve">
+    <value>Manage Pages</value>
+    <comment/>
+  </data>
+  <data name="Pages_ManageContent" xml:space="preserve">
+    <value>Manage Content</value>
+    <comment/>
+  </data>
+  <data name="Pages_NewPage" xml:space="preserve">
+    <value>New Page</value>
+    <comment/>
+  </data>
+  <data name="Pages_TabActive" xml:space="preserve">
+    <value>Active</value>
+    <comment/>
+  </data>
+  <data name="Pages_TabTrash" xml:space="preserve">
+    <value>Trash</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColSlug" xml:space="preserve">
+    <value>Slug</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColLanguages" xml:space="preserve">
+    <value>Languages</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColActions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColPage" xml:space="preserve">
+    <value>Page</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColDeletedAt" xml:space="preserve">
+    <value>Deleted at</value>
+    <comment/>
+  </data>
+  <data name="Pages_ColRecovery" xml:space="preserve">
+    <value>Recovery</value>
+    <comment/>
+  </data>
+  <data name="Pages_BtnEdit" xml:space="preserve">
+    <value>Edit</value>
+    <comment/>
+  </data>
+  <data name="Pages_BtnRestore" xml:space="preserve">
+    <value>Restore</value>
+    <comment/>
+  </data>
+  <data name="Pages_BtnHardDelete" xml:space="preserve">
+    <value>Delete permanently</value>
+    <comment/>
+  </data>
+  <data name="Pages_EmptyTrash" xml:space="preserve">
+    <value>Trash is empty.</value>
+    <comment/>
+  </data>
+  <data name="Pages_ConfirmTrash" xml:space="preserve">
+    <value>Move to trash?</value>
+    <comment/>
+  </data>
+  <data name="Pages_ConfirmHardDelete" xml:space="preserve">
+    <value>WARNING: This will delete data forever! Confirm?</value>
+    <comment/>
+  </data>
+  <data name="Blog_PostNotAvailableTitle" xml:space="preserve">
+    <value>Language unavailable</value>
+    <comment/>
+  </data>
+  <data name="Blog_PostNotAvailableMessage" xml:space="preserve">
+    <value>This post hasn't been translated into the selected language. Showing original version.</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_PT" xml:space="preserve">
+    <value>Biography (Portuguese)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_EN" xml:space="preserve">
+    <value>Biography (English)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio_FR" xml:space="preserve">
+    <value>Biography (French)</value>
+    <comment/>
+  </data>
+  <data name="Profile_Author_Translations" xml:space="preserve">
+    <value>Author Biography Translations</value>
+    <comment/>
+  </data>
+  <data name="Profile_Bio" xml:space="preserve">
+    <value>Biography</value>
+    <comment/>
+  </data>
+  <data name="Home_MetaTitle" xml:space="preserve">
+    <value>MasterStack - Tech, Programming &amp; Gaming</value>
+    <comment/>
+  </data>
+  <data name="Hero_Title" xml:space="preserve">
+    <value>From Code to Controller: Your Tech Universe</value>
+    <comment/>
+  </data>
+  <data name="Hero_Subtitle" xml:space="preserve">
+    <value>Deep dives into software development, hardware reviews, gaming news, and everything connecting you to the future.</value>
+    <comment/>
+  </data>
+  <data name="Hero_Btn_ReadNow" xml:space="preserve">
+    <value>Read Articles</value>
+    <comment/>
+  </data>
+  <data name="Hero_Btn_Categories" xml:space="preserve">
+    <value>Explore Topics</value>
+    <comment/>
+  </data>
+  <data name="Hero_Img_Alt" xml:space="preserve">
+    <value>Conceptual illustration connecting programming and video games</value>
+    <comment/>
+  </data>
+  <data name="Nav_Topics" xml:space="preserve">
+    <value>Trending Topics</value>
+    <comment/>
+  </data>
+  <data name="Cat_Programming" xml:space="preserve">
+    <value>Programming</value>
+    <comment/>
+  </data>
+  <data name="Cat_Games" xml:space="preserve">
+    <value>Gaming</value>
+    <comment/>
+  </data>
+  <data name="Cat_Tech" xml:space="preserve">
+    <value>Tech</value>
+    <comment/>
+  </data>
+  <data name="Feed_Title" xml:space="preserve">
+    <value>Recent Publications</value>
+    <comment/>
+  </data>
+  <data name="Feed_Subtitle" xml:space="preserve">
+    <value>Stay up to date with the latest tutorials, reviews, and insights from our technical team.</value>
+    <comment/>
+  </data>
+  <data name="Sample_Dev_Title" xml:space="preserve">
+    <value>Exploring what's new in C# and .NET for microservices performance</value>
+    <comment/>
+  </data>
+  <data name="Sample_Dev_Excerpt" xml:space="preserve">
+    <value>Discover how runtime improvements directly impact your API throughput.</value>
+    <comment/>
+  </data>
+  <data name="Sample_Games_Title" xml:space="preserve">
+    <value>How modern game engines are utilizing Ray Tracing and AI</value>
+    <comment/>
+  </data>
+  <data name="Sample_Games_Excerpt" xml:space="preserve">
+    <value>A technical analysis of graphical rendering and dynamic NPC behavior in the next gen.</value>
+    <comment/>
+  </data>
+  <data name="Sample_Tech_Title" xml:space="preserve">
+    <value>The impact of new processors with ARM architecture on the mobile market</value>
+    <comment/>
+  </data>
+  <data name="Sample_Tech_Excerpt" xml:space="preserve">
+    <value>Energy efficiency and raw processing power shape the direction of new devices.</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Title" xml:space="preserve">
+    <value>Don't miss a single Stack of information</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Subtitle" xml:space="preserve">
+    <value>Subscribe to our newsletter and get the best programming and gaming articles straight to your inbox.</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Placeholder" xml:space="preserve">
+    <value>Enter your best email...</value>
+    <comment/>
+  </data>
+  <data name="Newsletter_Btn" xml:space="preserve">
+    <value>Subscribe</value>
+    <comment/>
+  </data>
+  <data name="PageTitle_ENTERPRISE" xml:space="preserve">
+    <value>Nearby Companies &amp; Tech Jobs</value>
+    <comment/>
+  </data>
+  <data name="HowSearchWorks" xml:space="preserve">
+    <value>How does search work?</value>
+    <comment/>
+  </data>
+  <data name="InfoBannerText" xml:space="preserve">
+    <value>Map companies are displayed based on your current location ({0}). Job postings consider local radius and remote options.</value>
+    <comment/>
+  </data>
+  <data name="HeaderTitle" xml:space="preserve">
+    <value>Nearby Companies</value>
+    <comment/>
+  </data>
+  <data name="CenteredAt" xml:space="preserve">
+    <value>Centered at</value>
+    <comment/>
+  </data>
+  <data name="ChangeLocation" xml:space="preserve">
+    <value>Edit profile location</value>
+    <comment/>
+  </data>
+  <data name="UpdateOsmBtn" xml:space="preserve">
+    <value>Update OSM</value>
+    <comment/>
+  </data>
+  <data name="RadiusLabel" xml:space="preserve">
+    <value>Radius: {0} km</value>
+    <comment/>
+  </data>
+  <data name="SearchJobsBtn" xml:space="preserve">
+    <value>Search Tech Jobs (Adzuna + Jooble)</value>
+    <comment/>
+  </data>
+  <data name="TabJobs" xml:space="preserve">
+    <value>Jobs ({0})</value>
+    <comment/>
+  </data>
+  <data name="TabCompanies" xml:space="preserve">
+    <value>Companies ({0})</value>
+    <comment/>
+  </data>
+  <data name="NoJobsFound" xml:space="preserve">
+    <value>No tech jobs found. Click "Search Tech Jobs" to load.</value>
+    <comment/>
+  </data>
+  <data name="BadgeInPerson" xml:space="preserve">
+    <value>In-Person / Fixed Location</value>
+    <comment/>
+  </data>
+  <data name="BadgeRemote" xml:space="preserve">
+    <value>Region / Remote</value>
+    <comment/>
+  </data>
+  <data name="ViewOnMapBtn" xml:space="preserve">
+    <value>View on Map</value>
+    <comment/>
+  </data>
+  <data name="ApplyBtn" xml:space="preserve">
+    <value>Apply</value>
+    <comment/>
+  </data>
+  <data name="NoCompaniesTitle" xml:space="preserve">
+    <value>No companies found in your region</value>
+    <comment/>
+  </data>
+  <data name="NoCompaniesDesc" xml:space="preserve">
+    <value>There are no companies registered in the database for {0}.</value>
+    <comment/>
+  </data>
+  <data name="YourLocation" xml:space="preserve">
+    <value>your location</value>
+    <comment/>
+  </data>
+  <data name="FetchOsmAction" xml:space="preserve">
+    <value>Map companies via OpenStreetMap</value>
+    <comment/>
+  </data>
+  <data name="ModalTitle" xml:space="preserve">
+    <value>Search Preferences</value>
+    <comment/>
+  </data>
+  <data name="ModalSubtitle" xml:space="preserve">
+    <value>Adjust parameters to filter tech jobs and companies on the map.</value>
+    <comment/>
+  </data>
+  <data name="ModalRadiusLabel" xml:space="preserve">
+    <value>Local Search Radius (in km)</value>
+    <comment/>
+  </data>
+  <data name="ModalRemoteSwitchLabel" xml:space="preserve">
+    <value>Include 100% remote jobs nationwide</value>
+    <comment/>
+  </data>
+  <data name="ModalRemoteSwitchHelp" xml:space="preserve">
+    <value>Searches for opportunities nationwide that don't require physical relocation.</value>
+    <comment/>
+  </data>
+  <data name="ModalTitleLabel" xml:space="preserve">
+    <value>Preferred Job Title / Technology</value>
+    <comment/>
+  </data>
+  <data name="ModalTitlePlaceholder" xml:space="preserve">
+    <value>Ex: developer, c#, .net, full stack</value>
+    <comment/>
+  </data>
+  <data name="CancelBtn" xml:space="preserve">
+    <value>Cancel</value>
+    <comment/>
+  </data>
+  <data name="SavePreferencesBtn" xml:space="preserve">
+    <value>Save Preferences</value>
+    <comment/>
+  </data>
+  <data name="SyncingMessage" xml:space="preserve">
+    <value>Syncing...</value>
+    <comment/>
+  </data>
+  <data name="UserLocationPopup" xml:space="preserve">
+    <value>Your Location</value>
+    <comment/>
+  </data>
+  <data name="OpenGoogleMapsBtn" xml:space="preserve">
+    <value>Open in Google Maps</value>
+    <comment/>
+  </data>
+  <data name="CompanyLabel" xml:space="preserve">
+    <value>Company</value>
+    <comment/>
+  </data>
+  <data name="ViewJobBtn" xml:space="preserve">
+    <value>View Job</value>
+    <comment/>
+  </data>
+  <data name="BadgeRemoteArea" xml:space="preserve">
+    <value>General Location / Remote</value>
+    <comment/>
+  </data>
+  <data name="RegionOf" xml:space="preserve">
+    <value>Region of</value>
+    <comment/>
+  </data>
+  <data name="RemoteAreaHelp" xml:space="preserve">
+    <value>The position is remote, hybrid, or lacks a physical street address. It serves your area.</value>
+    <comment/>
+  </data>
+  <data name="SearchingStatus" xml:space="preserve">
+    <value>Searching</value>
+    <comment/>
+  </data>
+  <data name="OsmErrorText" xml:space="preserve">
+    <value>Error fetching from OpenStreetMap</value>
+    <comment/>
+  </data>
+  <data name="OsmNoCompaniesText" xml:space="preserve">
+    <value>No companies found within this radius.</value>
+    <comment/>
+  </data>
+  <data name="OsmSuccessText" xml:space="preserve">
+    <value>Success! Companies loaded from OpenStreetMap.</value>
+    <comment/>
+  </data>
+  <data name="OsmConnectionErrorText" xml:space="preserve">
+    <value>Connection failure while fetching OpenStreetMap data.</value>
+    <comment/>
+  </data>
 </root>

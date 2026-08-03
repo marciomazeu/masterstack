@@ -1,11 +1,12 @@
 ﻿@using Microsoft.AspNetCore.Hosting
 @using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
 @model MasterStack.Models.BlogPost
 @inject IViewLocalizer Localizer
+@inject IStringLocalizer<SharedResource> SharedLocalizer
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _webHostEnvironment
 
 @{
-    // Defina as variáveis globais aqui, fora de qualquer IF
     var request = Context.Request;
     var t = ViewBag.CurrentTranslation as BlogPostTranslation;
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
@@ -15,7 +16,6 @@
     if (t != null)
     {
         ViewData["Title"] = t.Title;
-        // ... (resto da sua lógica de limpeza de HTML) ...
 
         if (!string.IsNullOrEmpty(t.ImageUrl))
         {
@@ -31,114 +31,138 @@
         ViewBag.FinalImagePath = imageFileName;
         ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
         ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
+
+        var plainText = System.Text.RegularExpressions.Regex.Replace(t.Content ?? "", "<.*?>", string.Empty);
+        ViewData["MetaDescription"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
     }
 
-    var translation = Model.Translations?.FirstOrDefault(t => t.Culture == currentCulture) 
-                      ?? Model.Translations?.FirstOrDefault();
-
-    if (translation != null)
+    // 🌐 Lógica de Seleção de Biografia do Autor Dinâmica
+    string authorBioToDisplay = string.Empty;
+    if (Model.Author != null)
     {
-        // Como o Blog não tem MetaTitle, usamos o Title do Post
-        ViewData["Title"] = translation.Title + " | Blog MasterStack";
+        // Tenta buscar a biografia na cultura atual a partir da coleção de traduções do usuário
+        var authorTranslation = Model.Author.Translations?.FirstOrDefault(tr => tr.Culture == currentCulture);
         
-      // Como o Blog não tem MetaDescription, usamos o Summary (ou Content limpo)
-        // Se você tiver um campo 'Summary', use-o. Se não, limpamos o HTML do Content.
-        var plainText = System.Text.RegularExpressions.Regex.Replace(translation.Content ?? "", "<.*?>", string.Empty);
-        
-        // Tenta usar o Summary se existir, senão pega os primeiros 160 caracteres do texto
-        ViewData["Description"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
+        authorBioToDisplay = authorTranslation?.Biography;
+
+        // Se não encontrar tradução para o idioma atual, usa a biografia principal
+        if (string.IsNullOrEmpty(authorBioToDisplay))
+        {
+            authorBioToDisplay = Model.Author.Bio ?? string.Empty;
+        }
     }
 }
-@section MetaTags {
-    <title>@t.Title | NomeDoBlog</title>
-    <meta name="description" content="@t.MetaDescription" />
-    <meta name="keywords" content="@t.MetaKeywords" />
-    <link rel="canonical" href="https://seusite.com/@t.Culture/blog/@t.Slug" />
+
+@section Head {
+    @* Meta Tags dinâmicas para SEO e Redes Sociais *@
+    <meta name="description" content="@ViewData["MetaDescription"]" />
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:image" content="@ViewData["MetaImage"]" />
+    <meta property="og:url" content="@ViewData["CanonicalUrl"]" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    @* Tags hreflang para SEO *@
+    @if (Model.Translations != null)
+    {
+        foreach (var alt in Model.Translations)
+        {
+            <link rel="alternate" hreflang="@alt.Culture.ToLower()"
+                  href="@Url.Action("Details", "BlogPosts", new { culture = alt.Culture, slug = alt.Slug }, request.Scheme)" />
+        }
+    }
 }
 
-    <div class="container mt-4">
-        @if (isFallback)
-        {
-            <div class="alert alert-info py-2 shadow-sm">
-                <i class="fas fa-info-circle me-2"></i>
-                @Localizer["FallbackWarning", currentCulture]
-            </div>
-        }
+<div class="container mt-4">
+    @if (ViewBag.ShowTranslationUnavailable == true)
+    {
+        <div class="alert alert-warning alert-dismissible fade show my-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>@SharedLocalizer["Blog_PostNotAvailableTitle"]</strong> 
+            @SharedLocalizer["Blog_PostNotAvailableMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-        <div class="mb-4">
-            <a asp-action="Index" asp-controller="BlogPosts" asp-route-culture="@currentCulture" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> @Localizer["BackToList"]
-            </a>
+    @if (isFallback)
+    {
+        <div class="alert alert-info py-2 shadow-sm my-3">
+            <i class="fas fa-info-circle me-2"></i>
+            @SharedLocalizer["FallbackWarning", currentCulture]
+        </div>
+    }
+
+    <div class="mb-4">
+        <a asp-action="Index" asp-controller="BlogPosts" asp-route-culture="@currentCulture" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> @SharedLocalizer["BackToList"]
+        </a>
+    </div>
+
+    @if (t != null)
+    {
+        <h1 class="mb-3 fw-bold display-5">@t.Title</h1>
+        
+        <div class="text-muted mb-4 small d-flex align-items-center">
+            <i class="far fa-calendar-alt me-2"></i>
+            @Model.CreatedAt.ToString("D", new System.Globalization.CultureInfo(currentCulture))
+            <span class="mx-2">|</span>
+            <i class="far fa-clock me-2"></i> @SharedLocalizer["ReadingTime", "5 min"]
         </div>
 
-       @if (t != null)
-{
-    <h1 class="mb-3 fw-bold display-5">@t.Title</h1>
-    
-    <div class="text-muted mb-4 small d-flex align-items-center">
-        <i class="far fa-calendar-alt me-2"></i>
-        @Model.CreatedAt.ToString("D", new System.Globalization.CultureInfo(currentCulture))
-        <span class="mx-2">|</span>
-        <i class="far fa-clock me-2"></i> @Localizer["ReadingTime", "5 min"] @* Exemplo de chave de tradução *@
-    </div>
+        <div class="mb-5">
+            <img src="@ViewBag.FinalImagePath" class="img-fluid rounded-4 shadow-sm w-100" 
+                 style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
+        </div>
 
-    <div class="mb-5">
-        <img src="@ViewBag.FinalImagePath" class="img-fluid rounded-4 shadow-sm w-100" 
-             style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
-    </div>
+        <div class="post-content mb-5">
+            @Html.Raw(t.Content)
+        </div>
+    }
 
-    @* Conteúdo do Post com espaçamento melhorado *@
-    <div class="post-content mb-5">
-        @Html.Raw(t.Content)
-    </div>
-}
-
-@* Bloco do Autor Refinado *@
-<section class="author-card p-4 bg-light rounded-4 border-0 shadow-sm my-5">
-    <div class="d-flex align-items-center">
-        @if (Model.Author != null)
-        {
-            <img src="@(string.IsNullOrEmpty(Model.Author.ProfileImageUrl) ? "/img/default-avatar.png" : Model.Author.ProfileImageUrl)" 
-                 class="rounded-circle me-4 shadow-sm" 
-                 style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #fff;" 
-                 alt="@Model.Author.DisplayName">
-            
-            <div class="flex-grow-1">
-                <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@Localizer["WrittenBy"]</span>
-                <h5 class="mb-1 fw-bold">@Model.Author.DisplayName</h5>
+    @* Bloco do Autor Limpo e Dinâmico *@
+    <section class="author-card p-4 bg-light rounded-4 border-0 shadow-sm my-5">
+        <div class="d-flex align-items-center">
+            @if (Model.Author != null)
+            {
+                <img src="@(string.IsNullOrEmpty(Model.Author.ProfileImageUrl) ? "/img/default-avatar.png" : Model.Author.ProfileImageUrl)" 
+                     class="rounded-circle me-4 shadow-sm" 
+                     style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #fff;" 
+                     alt="@Model.Author.DisplayName">
                 
-                @if (!string.IsNullOrEmpty(Model.Author.Bio))
-                {
-                    <p class="text-muted small mb-2 italic">"@Model.Author.Bio"</p>
-                }
+                <div class="flex-grow-1">
+                    <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@SharedLocalizer["WrittenBy"]</span>
+                    <h5 class="mb-1 fw-bold">@Model.Author.DisplayName</h5>
+                    
+                    @if (!string.IsNullOrEmpty(authorBioToDisplay))
+                    {
+                        <p class="text-muted small mb-2 italic">"@authorBioToDisplay"</p>
+                    }
 
-                @* Ícones de Redes Sociais Dinâmicos *@
-                <div class="d-flex gap-3 mt-2">
-                    @if (!string.IsNullOrEmpty(Model.Author.LinkedInUrl)) {
-                        <a href="@Model.Author.LinkedInUrl" target="_blank" class="text-secondary"><i class="fab fa-linkedin fa-lg"></i></a>
-                    }
-                    @if (!string.IsNullOrEmpty(Model.Author.TwitterUrl)) {
-                        <a href="@Model.Author.TwitterUrl" target="_blank" class="text-secondary"><i class="fab fa-x-twitter fa-lg"></i></a>
-                    }
-                    @if (!string.IsNullOrEmpty(Model.Author.GitHubUrl)) {
-                        <a href="@Model.Author.GitHubUrl" target="_blank" class="text-secondary"><i class="fab fa-github fa-lg"></i></a>
-                    }
+                    <div class="d-flex gap-3 mt-2">
+                        @if (!string.IsNullOrEmpty(Model.Author.LinkedInUrl)) {
+                            <a href="@Model.Author.LinkedInUrl" target="_blank" class="text-secondary"><i class="fab fa-linkedin fa-lg"></i></a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Author.TwitterUrl)) {
+                            <a href="@Model.Author.TwitterUrl" target="_blank" class="text-secondary"><i class="fab fa-x-twitter fa-lg"></i></a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Author.GitHubUrl)) {
+                            <a href="@Model.Author.GitHubUrl" target="_blank" class="text-secondary"><i class="fab fa-github fa-lg"></i></a>
+                        }
+                    </div>
                 </div>
-            </div>
-        }
-        else
-        {
-            <div class="py-2">
-                <i class="fas fa-user-edit me-2 text-primary"></i> 
-                <span class="fw-bold">Equipe MasterStack</span>
-            </div>
-        }
-    </div>
-</section>
+            }
+            else
+            {
+                <div class="py-2">
+                    <i class="fas fa-user-edit me-2 text-primary"></i> 
+                    <span class="fw-bold">Equipe MasterStack</span>
+                </div>
+            }
+        </div>
+    </section>
+</div>
 
 @section Styles {
     <style>
-        /* Melhora a legibilidade do texto vindo do banco */
         .post-content {
             line-height: 1.8;
             color: #2d3436;
@@ -150,21 +174,4 @@
         .author-card { transition: transform 0.2s; }
         .author-card:hover { transform: translateY(-3px); }
     </style>
-}
-   
-
-@section Head {
-    @* Meta Tags dinâmicas para Redes Sociais *@
-    <meta name="description" content="@ViewData["MetaDescription"]" />
-    <meta property="og:title" content="@ViewData["Title"]" />
-    <meta property="og:image" content="@ViewData["MetaImage"]" />
-    <meta property="og:url" content="@ViewData["CanonicalUrl"]" />
-    <meta name="twitter:card" content="summary_large_image" />
-
-    @* Tags hreflang para o Google entender as versões *@
-    @foreach (var alt in Model.Translations)
-    {
-        <link rel="alternate" hreflang="@alt.Culture.ToLower()"
-              href="@Url.Action("Details", "BlogPosts", new { culture = alt.Culture, slug = alt.Slug }, request.Scheme)" />
-    }
 }

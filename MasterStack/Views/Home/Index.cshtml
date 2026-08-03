@@ -1,87 +1,129 @@
-﻿@using MasterStack
+﻿@model MasterStack.ViewModels.HomeViewModel
+@using MasterStack
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = Localizer["HeroTitle"];
+    ViewData["Title"] = Localizer["Home_MetaTitle"];
 }
 
-<header class="py-5 bg-dark text-white">
+<!-- HERO SECTION (SEO: h1 principal com palavras-chave fortes) -->
+<header class="py-5 bg-dark text-white position-relative overflow-hidden">
     <div class="container px-5">
         <div class="row gx-5 align-items-center justify-content-center">
             <div class="col-lg-8 col-xl-7 col-xxl-6">
                 <div class="my-5 text-center text-xl-start">
-                    <h1 class="display-5 fw-bolder text-white mb-2">@Localizer["HeroTitle"]</h1>
-                    <p class="lead fw-normal text-white-50 mb-4">@Localizer["HeroSubtitle"]</p>
+                    <h1 class="display-5 fw-bolder text-white mb-3">@Localizer["Hero_Title"]</h1>
+                    <p class="lead fw-normal text-white-50 mb-4">@Localizer["Hero_Subtitle"]</p>
                     <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
-                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="#features">@Localizer["LearnMore"]</a>
-                        <a class="btn btn-outline-light btn-lg px-4" href="/Tutorials">@Localizer["GetStarted"]</a>
+                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="#latest-posts">@Localizer["Hero_Btn_ReadNow"]</a>
+                        <a class="btn btn-outline-light btn-lg px-4" href="/Categories">@Localizer["Hero_Btn_Categories"]</a>
                     </div>
                 </div>
             </div>
             <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center">
-                <img class="img-fluid rounded-3 my-5 shadow-lg" src="~/img/home/hero-fullstack.png" alt="MasterStack Hero" />
+                <!-- Ícones flutuantes ou uma arte conceitual que una código e games -->
+                <img class="img-fluid rounded-3 my-5 shadow-lg" src="~/img/home/hero-universe.png" alt="@Localizer["Hero_Img_Alt"]" />
             </div>
         </div>
     </div>
 </header>
 
-<section class="py-5 bg-light" id="features">
-    <div class="container px-5 my-5">
-        <div class="row gx-5">
-
-            <div class="col-lg-4 mb-5">
-                <div class="card h-100 shadow border-0 p-4">
-                    <div class="card-body text-center">
-                        <div class="feature bg-primary bg-gradient text-white rounded-circle mb-4 d-inline-flex align-items-center justify-content-center"
-                             style="width: 80px; height: 80px;">
-                            <i class="bi bi-globe fs-1"></i>
-                        </div>
-
-                        <h2 class="h4 fw-bolder">Web Development</h2>
-                        <p class="text-muted">@Localizer["WebDesc"]</p>
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 mb-5">
-                <div class="card h-100 shadow border-0 p-4">
-                    <div class="card-body text-center">
-                        <div class="feature bg-primary bg-gradient text-white rounded-circle mb-4 d-inline-flex align-items-center justify-content-center"
-                             style="width: 80px; height: 80px;">
-                            <i class="bi bi-phone fs-2"></i>
-                        </div>
-                        <h2 class="h4 fw-bolder">Mobile Edge</h2>
-                        <p class="text-muted">@Localizer["MobileDesc"]</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 mb-5">
-                <div class="card h-100 shadow border-0 p-4">
-                    <div class="card-body text-center">
-                        <div class="feature bg-primary bg-gradient text-white rounded-circle mb-4 d-inline-flex align-items-center justify-content-center"
-                             style="width: 80px; height: 80px;">
-                            <i class="bi bi-cpu fs-2"></i>
-                        </div>
-                        <h2 class="h4 fw-bolder">Hardware & IoT</h2>
-                        <p class="text-muted">@Localizer["HardwareDesc"]</p>
-                    </div>
-                </div>
-            </div>
-
+<!-- CATEGORIES QUICK ACCESS (SEO: Links internos contextualizados) -->
+<section class="py-4 bg-light border-bottom">
+    <div class="container px-5">
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <span class="fw-bold align-self-center me-2 text-muted">@Localizer["Nav_Topics"]:</span>
+            <a href="/Category/programming" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-code-slash me-1"></i> @Localizer["Cat_Programming"]</a>
+            <a href="/Category/games" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-controller me-1"></i> @Localizer["Cat_Games"]</a>
+            <a href="/Category/tech" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-cpu me-1"></i> @Localizer["Cat_Tech"]</a>
         </div>
     </div>
 </section>
 
-<section class="py-5 bg-light">
+<!-- LATEST POSTS SECTION (SEO: Conteúdo dinâmico atualizado frequentemente) -->
+<section class="py-5" id="latest-posts">
     <div class="container px-5 my-5">
-        <div class="row gx-5 align-items-center">
-            <div class="col-lg-6">
-                <img class="img-fluid rounded mb-5 mb-lg-0 shadow" src="~/img/home/why-masterstack.png" alt="@Localizer["WhyMasterstackAlt"]" />
+        <div class="row gx-5 justify-content-center">
+            <div class="col-lg-8 col-xl-6">
+                <div class="text-center mb-5">
+                    <h2 class="fw-bolder">@Localizer["Feed_Title"]</h2>
+                    <p class="lead fw-normal text-muted mb-0">@Localizer["Feed_Subtitle"]</p>
+                </div>
             </div>
-            <div class="col-lg-6">
-                <h2 class="fw-bolder">@Localizer["WhyTitle"]</h2>
-                <p class="lead fw-normal text-muted mb-0">@Localizer["WhyText"]</p>
+        </div>
+        
+        <div class="row gx-5">
+            @if (Model.LatestPosts == null || !Model.LatestPosts.Any())
+            {
+                <div class="col-12 text-center text-muted py-5">
+                    <p>Nenhum artigo publicado ainda.</p>
+                </div>
+            }
+            else
+            {
+               @foreach (var post in Model.LatestPosts)
+                {
+                    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+
+                    // 1. Busca a tradução correspondente ao idioma da página atual
+                    var translation = post.Translations?.FirstOrDefault(t => t.Culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase)) 
+                                    ?? post.Translations?.FirstOrDefault();
+
+                    if (translation != null)
+                    {
+                        // 2. Resolve a imagem: Como a ImageUrl está no BlogPostTranslation, pegamos dela.
+                        var postImage = translation.ImageUrl ?? "/img/posts/placeholder-default.jpg";
+
+                        <div class="col-lg-4 mb-5">
+                            <div class="card h-100 shadow border-0 overflow-hidden post-card">
+                                <img class="card-img-top" src="@postImage" alt="@translation.Title" style="height: 200px; object-fit: cover;" />
+                                
+                                <div class="card-body p-4">
+                                    <div class="badge bg-primary bg-gradient rounded-pill mb-2">
+                                        @* Como 'Category' não está no translation, usamos o nome do idioma ou uma propriedade do pai *@
+                                        @translation.Culture.ToUpper()
+                                    </div>
+                                    
+                                    <a class="text-decoration-none link-dark stretched-link" 
+                                    asp-controller="StaticPages" 
+                                    asp-action="Page" 
+                                    asp-route-culture="@currentCulture" 
+                                    asp-route-slug="@translation.Slug">
+                                        <h3 class="h5 card-title mb-3 fw-bold">@translation.Title</h3>
+                                    </a>
+                                    
+                                    <p class="card-text mb-0 text-muted small">
+                                        @(translation.MetaDescription?.Length > 120 
+                                            ? translation.MetaDescription.Substring(0, 120) + "..." 
+                                            : translation.MetaDescription ?? "")
+                                    </p>
+                                </div>
+                                
+                                <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
+                                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                                        <span class="fw-bold">MasterStack</span>
+                                        <span>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+</section>
+
+<!-- NEWSLETTER / CALL TO ACTION (Fidelização de leitores) -->
+<section class="py-5 bg-primary bg-gradient text-white">
+    <div class="container px-5 my-5 text-center">
+        <h2 class="fw-bolder">@Localizer["Newsletter_Title"]</h2>
+        <p class="lead fw-normal text-white-50 mb-4">@Localizer["Newsletter_Subtitle"]</p>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group mb-2">
+                    <input class="form-control" type="text" placeholder="@Localizer["Newsletter_Placeholder"]" aria-label="Email..." />
+                    <button class="btn btn-outline-light" type="button">@Localizer["Newsletter_Btn"]</button>
+                </div>
             </div>
         </div>
     </div>

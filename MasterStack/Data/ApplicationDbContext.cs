@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MasterStack.Data
 {
@@ -22,10 +23,32 @@ namespace MasterStack.Data
 
         // O DbSet de AuthorProfile FOI REMOVIDO daqui (Opção 2)
 
+        public DbSet<UserTranslation> UserTranslations { get; set; }
+
+        public DbSet<Company> Companies { get; set; }
+
+        public DbSet<JobPosting> JobPostings { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // MANTENHA ESTA LINHA SEMPRE NO TOPO (Configura as tabelas do Identity)
             base.OnModelCreating(modelBuilder);
+
+            // Força todas as propriedades DateTime a serem tratadas como UTC no Postgres
+            var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
+                v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                    {
+                        property.SetValueConverter(dateTimeConverter);
+                    }
+                }
+            }
 
             // 1. Configuração de Chaves para Idiomas
             modelBuilder.Entity<Language>().HasKey(l => l.Culture);
@@ -56,7 +79,7 @@ namespace MasterStack.Data
                 .OnDelete(DeleteBehavior.Restrict); 
                 // Restrict: Se deletar o autor, o post não some automaticamente (segurança)
 
-//slug unico de cada página
+            //slug unico de cada página
                 modelBuilder.Entity<StaticPage>()
                 .HasIndex(p => p.Slug)
                 .IsUnique();

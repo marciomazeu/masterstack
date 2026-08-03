@@ -361,5 +361,29 @@ namespace MasterStack {
                 return ResourceManager.GetString("EmailChangeDisabled", resourceCulture);
             }
         }
+
+        public static string Blog_PostNotAvailableTitle {
+            get {
+                return ResourceManager.GetString("Blog_PostNotAvailableTitle", resourceCulture);
+            }
+        }
+
+        public static string Blog_PostNotAvailableMessage {
+            get {
+                return ResourceManager.GetString("Blog_PostNotAvailableMessage", resourceCulture);
+            }
+        }
+
+       public static string Profile_Bio { get { return ResourceManager.GetString("Profile_Bio", resourceCulture); } }
+public static string Profile_Bio_PT { get { return ResourceManager.GetString("Profile_Bio_PT", resourceCulture); } }
+public static string Profile_Bio_EN { get { return ResourceManager.GetString("Profile_Bio_EN", resourceCulture); } }
+public static string Profile_Bio_FR { get { return ResourceManager.GetString("Profile_Bio_FR", resourceCulture); } }
+public static string Profile_Author_Translations { get { return ResourceManager.GetString("Profile_Author_Translations", resourceCulture); } }
+public static string ChangePhoto { get { return ResourceManager.GetString("ChangePhoto", resourceCulture); } }
+public static string PublicInformation { get { return ResourceManager.GetString("PublicInformation", resourceCulture); } }
+
+public static string SaveProfile { get { return ResourceManager.GetString("SaveProfile", resourceCulture); } }
+public static string SuccessTitle { get { return ResourceManager.GetString("SuccessTitle", resourceCulture); } }
+public static string ErrorFormMessage { get { return ResourceManager.GetString("ErrorFormMessage", resourceCulture); } }
     }
 }

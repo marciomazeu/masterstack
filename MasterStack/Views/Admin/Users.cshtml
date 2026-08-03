@@ -19,24 +19,29 @@
     @* Barra de Filtros e Pesquisa *@
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
-            <form method="get" asp-action="Users" asp-route-culture="@culture" class="row g-3">
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" name="searchTerm" class="form-control border-start-0" 
-                               placeholder=@Localizer["EmailOrName"] value="@ViewBag.SearchTerm">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <select name="roleFilter" class="form-select">
-                        <option value="">@Localizer["Roles"]</option>
-                        @* Aqui poderá iterar sobre as roles futuramente *@
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">@Localizer["Filter"]</button>
-                </div>
-            </form>
+            <form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control" placeholder="@Localizer["EmailOrName"]">
+    </div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">@Localizer["Status"]</option>
+            <option value="active">@Localizer["Active"]</option>
+            <option value="locked">@Localizer["Locked"]</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="roleFilter" class="form-select">
+            <option value="">@Localizer["Roles"]</option>
+            @foreach (var role in ViewBag.AllRoles) {
+                <option value="@role">@role</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-secondary w-100">@Localizer["Filter"]</button>
+    </div>
+</form>
         </div>
     </div>
 

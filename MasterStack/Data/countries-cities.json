@@ -1,0 +1,167 @@
+[
+  {
+    "name": "Brasil",
+    "iso2": "BR",
+    "cities": ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Brasília", "Curitiba", "Porto Alegre", "Salvador", "Fortaleza", "Recife", "Manaus", "Florianópolis", "Campinas", "Goiânia", "Belém", "Vitória"]
+  },
+  {
+    "name": "United States",
+    "iso2": "US",
+    "cities": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose", "Austin", "Miami", "San Francisco", "Seattle", "Boston", "Washington, D.C."]
+  },
+  {
+    "name": "Canada",
+    "iso2": "CA",
+    "cities": ["Toronto", "Montreal", "Vancouver", "Calgary", "Edmonton", "Ottawa", "Quebec City", "Winnipeg", "Hamilton", "Kitchener"]
+  },
+  {
+    "name": "Portugal",
+    "iso2": "PT",
+    "cities": ["Lisboa", "Porto", "Vila Nova de Gaia", "Amadora", "Braga", "Funchal", "Coimbra", "Setúbal", "Aveiro", "Faro"]
+  },
+  {
+    "name": "Angola",
+    "iso2": "AO",
+    "cities": ["Luanda", "Cabinda", "Huambo", "Lubango", "Benguela", "Malanje", "Lobito"]
+  },
+  {
+    "name": "Moçambique",
+    "iso2": "MZ",
+    "cities": ["Maputo", "Matola", "Beira", "Nampula", "Chimoio", "Nacala"]
+  },
+  {
+    "name": "Argentina",
+    "iso2": "AR",
+    "cities": ["Buenos Aires", "Córdoba", "Rosario", "Mendoza", "La Plata", "San Miguel de Tucumán", "Mar del Plata", "Salta"]
+  },
+  {
+    "name": "France",
+    "iso2": "FR",
+    "cities": ["Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes", "Montpellier", "Strasbourg", "Bordeaux", "Lille"]
+  },
+  {
+    "name": "Germany",
+    "iso2": "DE",
+    "cities": ["Berlin", "Hamburg", "Munich", "Cologne", "Frankfurt", "Stuttgart", "Düsseldorf", "Leipzig", "Dortmund", "Essen"]
+  },
+  {
+    "name": "United Kingdom",
+    "iso2": "GB",
+    "cities": ["London", "Birmingham", "Glasgow", "Manchester", "Liverpool", "Edinburgh", "Bristol", "Leeds", "Belfast", "Cardiff"]
+  },
+  {
+    "name": "Spain",
+    "iso2": "ES",
+    "cities": ["Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma", "Bilbao", "Alicante"]
+  },
+  {
+    "name": "Italy",
+    "iso2": "IT",
+    "cities": ["Rome", "Milan", "Naples", "Turin", "Palermo", "Genoa", "Bologna", "Florence", "Bari", "Catania", "Venice"]
+  },
+  {
+    "name": "Japan",
+    "iso2": "JP",
+    "cities": ["Tokyo", "Yokohama", "Osaka", "Nagoya", "Sapporo", "Kobe", "Kyoto", "Fukuoka", "Kawasaki", "Hiroshima"]
+  },
+  {
+    "name": "Australia",
+    "iso2": "AU",
+    "cities": ["Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide", "Gold Coast", "Canberra", "Newcastle"]
+  },
+  {
+    "name": "Mexico",
+    "iso2": "MX",
+    "cities": ["Mexico City", "Guadalajara", "Monterrey", "Puebla", "Tijuana", "León", "Juárez", "Cancún"]
+  },
+  {
+    "name": "Chile",
+    "iso2": "CL",
+    "cities": ["Santiago", "Valparaíso", "Concepción", "La Serena", "Antofagasta", "Temuco"]
+  },
+  {
+    "name": "Colombia",
+    "iso2": "CO",
+    "cities": ["Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena", "Cúcuta", "Bucaramanga"]
+  },
+  {
+    "name": "Uruguay",
+    "iso2": "UY",
+    "cities": ["Montevideo", "Salto", "Ciudad de la Costa", "Maldonado", "Rivera", "Punta del Este"]
+  },
+  {
+    "name": "Paraguay",
+    "iso2": "PY",
+    "cities": ["Asunción", "Ciudad del Este", "San Lorenzo", "Luque", "Capiatá", "Encarnación"]
+  },
+  {
+    "name": "Peru",
+    "iso2": "PE",
+    "cities": ["Lima", "Arequipa", "Trujillo", "Chiclayo", "Piura", "Cusco"]
+  },
+  {
+    "name": "China",
+    "iso2": "CN",
+    "cities": ["Shanghai", "Beijing", "Guangzhou", "Shenzhen", "Chengdu", "Chongqing", "Tianjin", "Wuhan", "Xi'an", "Hangzhou"]
+  },
+  {
+    "name": "India",
+    "iso2": "IN",
+    "cities": ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur"]
+  },
+  {
+    "name": "South Korea",
+    "iso2": "KR",
+    "cities": ["Seoul", "Busan", "Incheon", "Daegu", "Daejeon", "Gwangju", "Suwon"]
+  },
+  {
+    "name": "Netherlands",
+    "iso2": "NL",
+    "cities": ["Amsterdam", "Rotterdam", "The Hague", "Utrecht", "Eindhoven", "Groningen", "Tilburg"]
+  },
+  {
+    "name": "Switzerland",
+    "iso2": "CH",
+    "cities": ["Zurich", "Geneva", "Basel", "Lausanne", "Bern", "Winterthur", "Lucerne"]
+  },
+  {
+    "name": "Belgium",
+    "iso2": "BE",
+    "cities": ["Brussels", "Antwerp", "Ghent", "Charleroi", "Liège", "Bruges"]
+  },
+  {
+    "name": "Ireland",
+    "iso2": "IE",
+    "cities": ["Dublin", "Cork", "Limerick", "Galway", "Waterford"]
+  },
+  {
+    "name": "Sweden",
+    "iso2": "SE",
+    "cities": ["Stockholm", "Gothenburg", "Malmö", "Uppsala", "Västerås"]
+  },
+  {
+    "name": "Norway",
+    "iso2": "NO",
+    "cities": ["Oslo", "Bergen", "Trondheim", "Stavanger", "Drammen"]
+  },
+  {
+    "name": "Denmark",
+    "iso2": "DK",
+    "cities": ["Copenhagen", "Aarhus", "Odense", "Aalborg"]
+  },
+  {
+    "name": "Finland",
+    "iso2": "FI",
+    "cities": ["Helsinki", "Espoo", "Tampere", "Vantaa", "Oulu"]
+  },
+  {
+    "name": "South Africa",
+    "iso2": "ZA",
+    "cities": ["Johannesburg", "Cape Town", "Durban", "Pretoria", "Gqeberha", "Bloemfontein"]
+  },
+  {
+    "name": "United Arab Emirates",
+    "iso2": "AE",
+    "cities": ["Dubai", "Abu Dhabi", "Sharjah", "Al Ain", "Ajman"]
+  }
+]

@@ -1,17 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using MasterStack.Models;
 using MasterStack.Data;
 using Microsoft.Extensions.Localization;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using MasterStack.ViewModels;
+using Microsoft.AspNetCore.Http;          // Para IFormFile (imagens)
+using Microsoft.AspNetCore.Hosting;      // Para IWebHostEnvironment
+using System.IO;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text.Encodings.Web;
 
 namespace MasterStack.Controllers
 {
-    [Route("{culture}/Account")]
-    [Route("Account")]
+    [Route("{culture}/[controller]/[action]")]
     public class AccountController : Controller
     {
        private readonly SignInManager<ApplicationUser> _signInManager;
@@ -20,19 +25,25 @@ namespace MasterStack.Controllers
     private readonly IEmailSender _emailSender;
 
     private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly ApplicationDbContext _context;
 
     public AccountController(
         SignInManager<ApplicationUser> signInManager, 
         UserManager<ApplicationUser> userManager,
         IEmailSender emailSender, 
         IStringLocalizer<SharedResource> localizer,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment webHostEnvironment,
+        ApplicationDbContext context)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _localizer = localizer;
         _emailSender = emailSender;
         _configuration = configuration;
+        _webHostEnvironment = webHostEnvironment;
+        _context = context;
     }
 
     [HttpGet("Login")]
@@ -50,39 +61,114 @@ namespace MasterStack.Controllers
 [HttpPost("Login")]
 public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
 {
-    // MUDANÇA: lockoutOnFailure alterado para 'true'
+    // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
+    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+    // 1. Executa a tentativa de login (lockoutOnFailure ativado)
     var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: true);
+
+    // 🔒 INTERCOPTAÇÃO DO 2FA: Se o usuário ativou o 2FA, ele cai aqui!
+    if (result.RequiresTwoFactor)
+    {
+        // Redirecionamos para a tela de digitação do código do celular
+        // Passamos a cultura para manter o idioma na próxima tela
+        return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
+    }
 
     if (result.Succeeded)
     {
         var user = await _userManager.FindByNameAsync(username);
-        
+        if (user == null) 
+        {
+            ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+            return View();
+        }
+
         // Se for Admin ou Autor, manda para o Dashboard
         if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
         {
-            return RedirectToAction("Dashboard", "Admin", new { culture = culture });
+            return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
         }
 
         // Se for User (Leitor), manda para o Perfil dele
-        return RedirectToAction("Profile", "Admin", new { culture = culture });
+        return RedirectToAction("Profile", "Account", new { culture = currentCulture });
     }
 
-    // NOVA LÓGICA: Verifica se a falha foi por causa de um bloqueio
     if (result.IsLockedOut)
     {
-        // Certifique-se de ter essa chave "AccountLocked" no seu arquivo de tradução
         ViewBag.Error = _localizer["AccountLocked"].Value; 
         return View();
     }
 
-    // Se falhar por senha errada ou usuário inexistente
     ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
     return View();
 }
 
+// 1. GET do Login com 2FA
+[HttpGet("LoginWith2FA")]
+[AllowAnonymous]
+public async Task<IActionResult> LoginWith2FA([FromRoute] string culture, string returnUrl = null)
+{
+    var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+    if (user == null)
+    {
+        return RedirectToAction("Login", "Account", new { culture = culture });
+    }
+
+    ViewData["ReturnUrl"] = returnUrl;
+    ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+    return View();
+}
+
+// 2. POST do Login com 2FA
+[HttpPost("LoginWith2FA")]
+[AllowAnonymous]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [FromRoute] string culture, string returnUrl = null)
+{
+    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+    var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+    if (user == null) return RedirectToAction("Login", "Account", new { culture = currentCulture });
+
+    if (!ModelState.IsValid)
+    {
+        ViewData["ReturnUrl"] = returnUrl;
+        ViewData["CurrentCulture"] = currentCulture;
+        return View(model);
+    }
+
+    // 🔥 O Identity valida o código vindo do ViewModel
+    var cleanCode = model.TwoFactorCode.Replace(" ", "").Replace("-", "");
+
+    var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(cleanCode, isPersistent: model.RememberMe, rememberClient: false);
+
+    if (result.Succeeded)
+    {
+        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+        {
+            return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+        }
+
+        return RedirectToAction("Profile", "Account", new { culture = currentCulture });
+    }
+
+    if (result.IsLockedOut)
+    {
+        ViewBag.Error = _localizer["AccountLocked"].Value;
+        return View(model);
+    }
+
+    ModelState.AddModelError(string.Empty, "Código inválido. Verifique o seu aplicativo autenticador.");
+    ViewData["ReturnUrl"] = returnUrl;
+    ViewData["CurrentCulture"] = currentCulture;
+    return View(model);
+}
+
    // Mude para HttpPost por segurança, mas se o seu link for um <a> simples, use HttpGet
        [HttpPost] // O Identity exige POST para evitar deslogamentos acidentais via links
-[HttpPost("Logout")] // <--- CORREÇÃO AQUI: Apenas "Logout", pois o prefixo já vem da classe
+[HttpPost] // <--- CORREÇÃO AQUI: Apenas "Logout", pois o prefixo já vem da classe
     public async Task<IActionResult> Logout(string culture)
     {
         await _signInManager.SignOutAsync();
@@ -176,6 +262,10 @@ public async Task<IActionResult> Register(string email, string password, string 
 
     return View();
 }
+
+        
+        
+
 
     [HttpGet("ConfirmEmail")]
     public async Task<IActionResult> ConfirmEmail(string userId, string token, string culture)
@@ -374,5 +464,122 @@ await _emailSender.SendEmailAsync(user.Email!, subject, body);
             // Esta Action apenas exibe a View informando que a senha foi alterada.
             return View();
         }
+
+       [HttpGet("/{culture}/Account/EnableTwoFactor")]
+public async Task<IActionResult> EnableTwoFactor([FromRoute] string culture)
+{
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return Challenge();
+
+    var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+    if (string.IsNullOrEmpty(unformattedKey))
+    {
+        await _userManager.ResetAuthenticatorKeyAsync(user);
+        unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+    }
+
+    string appName = "MasterStack";
+    string encodedEmail = UrlEncoder.Default.Encode(user.Email ?? "");
+    string authenticatorUri = $"otpauth://totp/{UrlEncoder.Default.Encode(appName)}:{encodedEmail}?secret={unformattedKey}&issuer={appName}&digits=6";
+
+    var model = new EnableTwoFactorViewModel
+    {
+        SharedKey = unformattedKey!,
+        AuthenticatorUri = authenticatorUri
+    };
+
+    ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+    return View(model);
+}
+
+[HttpPost("/{culture}/Account/EnableTwoFactor")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> EnableTwoFactor(EnableTwoFactorViewModel model, [FromRoute] string culture)
+{
+    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+    
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return Challenge();
+
+    // Se o formulário veio inválido do HTML, vamos descobrir o motivo aqui
+    if (!ModelState.IsValid) 
+    {
+        var erros = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+        return Content($"Erro de validação do formulário: {erros}");
+    }
+
+    var cleanCode = model.VerificationCode.Replace(" ", "").Replace("-", "");
+
+    // Valida o token contra o banco
+    var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+        user, 
+        _userManager.Options.Tokens.AuthenticatorTokenProvider, 
+        cleanCode
+    );
+
+    if (!isValid)
+    {
+        // SE O CÓDIGO FOR REJEITADO, VAI PARAR AQUI:
+        return Content("O ASP.NET Identity rejeitou o código do seu celular. Motivos: Relógio do computador/celular dessincronizado ou a chave SharedKey mudou entre o GET e o POST.");
+    }
+
+    var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
+    
+    if (result.Succeeded)
+{
+    await _context.SaveChangesAsync();
+    await _signInManager.RefreshSignInAsync(user);
+    
+    TempData["Success"] = "Autenticação em dois fatores ativada com sucesso!";
+
+    // 💡 Redirecionamento Inteligente baseado na Role do Usuário:
+    if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+    {
+        // Se for Admin ou Autor, manda para o Dashboard do Admin
+        return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+    }
+
+    // Se for um usuário comum, manda de volta para o Perfil dele
+    return RedirectToAction("Profile", "Account", new { culture = currentCulture });
+}
+
+    return Content($"Erro do Identity ao salvar: {result.Errors.FirstOrDefault()?.Description}");
+}
+
+[HttpPost]
+[Route("[action]")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> VerifyTwoFactor(string verificationCode)
+{
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return Challenge();
+
+    var cleanCode = verificationCode.Replace(" ", "").Replace("-", "");
+
+    var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+        user, 
+        _userManager.Options.Tokens.AuthenticatorTokenProvider, 
+        cleanCode
+    );
+
+    if (!isValid)
+    {
+        ModelState.AddModelError(string.Empty, "Código inválido.");
+        return View(); // Retorna a view mostrando o erro
+    }
+
+    // 🔥 ISSO AQUI PRECISA RODAR E SUBIR PRO BANCO:
+    var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
+    
+    if (result.Succeeded)
+    {
+        // Força a atualização dos cookies do usuário logado para reconhecer o 2FA ativo
+        await _signInManager.RefreshSignInAsync(user);
+        return RedirectToAction("Dashboard", "Admin");
+    }
+
+    ModelState.AddModelError(string.Empty, "Erro ao ativar o 2FA no banco de dados.");
+    return View();
+}
     }
 }

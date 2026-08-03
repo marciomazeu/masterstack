@@ -54,5 +54,6 @@ namespace MasterStack.Models
 
         [Display(Name = "Publicado")]
         public bool IsPublished { get; set; } = false; // Por padrão, nasce como rascunho
+        public bool IsDeleted { get; set; } = false;
     }
 }
