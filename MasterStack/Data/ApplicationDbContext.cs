@@ -28,6 +28,7 @@ namespace MasterStack.Data
         public DbSet<Company> Companies { get; set; }
 
         public DbSet<JobPosting> JobPostings { get; set; }
+        public DbSet<AffiliateProduct> AffiliateProducts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
