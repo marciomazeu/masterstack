@@ -71,6 +71,7 @@ builder.Services.AddResponseCompression(options => {
     options.EnableForHttps = true;
 });
 builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
+builder.Services.AddHostedService<AffiliateExpirationService>();
 var app = builder.Build();
 
 // --- 6. PIPELINE DE EXECUÇÃO ---
