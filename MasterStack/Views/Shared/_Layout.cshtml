@@ -168,6 +168,14 @@
                                 <i class="fas fa-users-cog me-2"></i> @Localizer["Menu_ManageUsers"]
                             </a>
                         </li>
+                        <li >
+                            <a class="dropdown-item text-danger"
+                            asp-controller="Affiliate" 
+                            asp-action="Index" 
+                            asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name">
+                                <i class="fas fa-tags me-1"></i> Produtos de Afiliados
+                            </a>
+                        </li>
                     }
                     <li><hr class="dropdown-divider"></li>
                 }

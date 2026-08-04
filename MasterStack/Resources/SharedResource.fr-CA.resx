@@ -1177,4 +1177,232 @@
     <value>Échec de connexion lors de la recherche sur OpenStreetMap.</value>
     <comment/>
   </data>
+  <data name="Profile_PageTitle" xml:space="preserve">
+    <value>Profil de l'utilisateur</value>
+    <comment/>
+  </data>
+  <data name="Profile_NotFoundTitle" xml:space="preserve">
+    <value>Profil non trouvé</value>
+    <comment/>
+  </data>
+  <data name="Profile_NotFoundDesc" xml:space="preserve">
+    <value>Vous n'avez pas encore rempli vos informations d'auteur.</value>
+    <comment/>
+  </data>
+  <data name="Profile_CreateNowBtn" xml:space="preserve">
+    <value>Créer le profil maintenant</value>
+    <comment/>
+  </data>
+  <data name="Profile_ChangePhotoBtn" xml:space="preserve">
+    <value>Changer de photo</value>
+    <comment/>
+  </data>
+  <data name="Profile_PublicInfoHeading" xml:space="preserve">
+    <value>Informations publiques</value>
+    <comment/>
+  </data>
+  <data name="Profile_DisplayNameLabel" xml:space="preserve">
+    <value>Nom d'affichage</value>
+    <comment/>
+  </data>
+  <data name="Profile_DisplayNamePlaceholder" xml:space="preserve">
+    <value>Comment souhaitez-vous être appelé ?</value>
+    <comment/>
+  </data>
+  <data name="Profile_BioLabel" xml:space="preserve">
+    <value>Biographie</value>
+    <comment/>
+  </data>
+  <data name="Profile_BioPTLabel" xml:space="preserve">
+    <value>Biographie (Portugais)</value>
+    <comment/>
+  </data>
+  <data name="Profile_AuthorTranslationsTitle" xml:space="preserve">
+    <value>Traductions de la biographie</value>
+    <comment/>
+  </data>
+  <data name="Profile_BioENLabel" xml:space="preserve">
+    <value>Biographie (Anglais)</value>
+    <comment/>
+  </data>
+  <data name="Profile_BioFRLabel" xml:space="preserve">
+    <value>Biographie (Français)</value>
+    <comment/>
+  </data>
+  <data name="Profile_SaveBtn" xml:space="preserve">
+    <value>Enregistrer le profil</value>
+    <comment/>
+  </data>
+  <data name="Profile_SecurityHeader" xml:space="preserve">
+    <value>Sécurité du compte</value>
+    <comment/>
+  </data>
+  <data name="Profile_2FADescription" xml:space="preserve">
+    <value>L'authentification à deux facteurs (2FA) ajoute une couche de sécurité supplémentaire à votre compte en exigeant un code depuis votre téléphone lors de la connexion.</value>
+    <comment/>
+  </data>
+  <data name="Profile_StatusLabel" xml:space="preserve">
+    <value>Statut</value>
+    <comment/>
+  </data>
+  <data name="Profile_2FAActiveText" xml:space="preserve">
+    <value>Votre compte est protégé par l'authentification à deux facteurs.</value>
+    <comment/>
+  </data>
+  <data name="Profile_Enable2FABtn" xml:space="preserve">
+    <value>Activer la protection 2FA</value>
+    <comment/>
+  </data>
+  <data name="Profile_SuccessTitle" xml:space="preserve">
+    <value>Succès !</value>
+    <comment/>
+  </data>
+  <data name="Profile_ErrorTitle" xml:space="preserve">
+    <value>Ops...</value>
+    <comment/>
+  </data>
+  <data name="Profile_ErrorFormMessage" xml:space="preserve">
+    <value>Veuillez vérifier les erreurs dans le formulaire.</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_PageTitle" xml:space="preserve">
+    <value>Produits d'affiliation</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_NewProductBtn" xml:space="preserve">
+    <value>Nouveau produit</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ColCode" xml:space="preserve">
+    <value>Code / Slug</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ColPlatform" xml:space="preserve">
+    <value>Plateforme</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ColTitle" xml:space="preserve">
+    <value>Titre (EN)</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ColExpiration" xml:space="preserve">
+    <value>Expiration</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ColStatus" xml:space="preserve">
+    <value>Statut</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ColActions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_NoExpiration" xml:space="preserve">
+    <value>Sans expiration</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_StatusExpired" xml:space="preserve">
+    <value>Inactif / Expiré</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_StatusActive" xml:space="preserve">
+    <value>Actif</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_EditRenewBtn" xml:space="preserve">
+    <value>Modifier / Renouveler</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_NoProductsFound" xml:space="preserve">
+    <value>Aucun produit d'affiliation trouvé.</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_CardViewDeal" xml:space="preserve">
+    <value>Voir l'offre sur {0}</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_CreateTitle" xml:space="preserve">
+    <value>Créer un produit d'affiliation</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_EditTitle" xml:space="preserve">
+    <value>Modifier le produit d'affiliation</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_BackBtn" xml:space="preserve">
+    <value>Retour</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ProductCodeLabel" xml:space="preserve">
+    <value>Code / Slug interne</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ProductCodeHelp" xml:space="preserve">
+    <value>Utilisé dans le shortcode :</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_NetworkLabel" xml:space="preserve">
+    <value>Plateforme</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_CategoryLabel" xml:space="preserve">
+    <value>Catégorie</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_PriceLabel" xml:space="preserve">
+    <value>Prix (Optionnel)</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_CurrencyLabel" xml:space="preserve">
+    <value>Devise</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ExpirationDateLabel" xml:space="preserve">
+    <value>Date d'expiration</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ExpirationDateHelp" xml:space="preserve">
+    <value>Laissez vide pour aucune expiration.</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_ImageUrlLabel" xml:space="preserve">
+    <value>URL de l'image du produit</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_LocalizedSectionTitle" xml:space="preserve">
+    <value>Liens et contenus localisés (i18n)</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_EnglishSection" xml:space="preserve">
+    <value>Anglais</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_PortugueseSection" xml:space="preserve">
+    <value>Portugais</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_FrenchSection" xml:space="preserve">
+    <value>Français</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_TitleLabel" xml:space="preserve">
+    <value>Titre</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_TargetUrlLabel" xml:space="preserve">
+    <value>Lien d'affiliation</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_DescriptionLabel" xml:space="preserve">
+    <value>Description</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_SaveBtn" xml:space="preserve">
+    <value>Enregistrer le produit</value>
+    <comment/>
+  </data>
+  <data name="Affiliate_UpdateBtn" xml:space="preserve">
+    <value>Mettre à jour le produit</value>
+    <comment/>
+  </data>
 </root>

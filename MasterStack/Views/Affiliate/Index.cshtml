@@ -1,14 +1,16 @@
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
 @model IEnumerable<MasterStack.Models.AffiliateProduct>
 
 @{
-    ViewData["Title"] = "Gerenciar Afiliados";
+    ViewData["Title"] = Localizer["Affiliate_PageTitle"];
 }
 
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="fas fa-tags text-primary me-2"></i>Produtos de Afiliados</h2>
+        <h2><i class="fas fa-tags text-primary me-2"></i>@Localizer["Affiliate_PageTitle"]</h2>
         <a asp-action="Create" class="btn btn-primary fw-bold">
-            <i class="fas fa-plus me-1"></i> Novo Produto
+            <i class="fas fa-plus me-1"></i> @Localizer["Affiliate_NewProductBtn"]
         </a>
     </div>
 
@@ -26,12 +28,12 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
-                            <th>Código / Slug</th>
-                            <th>Plataforma</th>
-                            <th>Título (EN)</th>
-                            <th>Expiração</th>
-                            <th>Status</th>
-                            <th class="text-end">Ações</th>
+                            <th>@Localizer["Affiliate_ColCode"]</th>
+                            <th>@Localizer["Affiliate_ColPlatform"]</th>
+                            <th>@Localizer["Affiliate_ColTitle"]</th>
+                            <th>@Localizer["Affiliate_ColExpiration"]</th>
+                            <th>@Localizer["Affiliate_ColStatus"]</th>
+                            <th class="text-end">@Localizer["Affiliate_ColActions"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,21 +45,21 @@
                                 <td><span class="badge bg-secondary">@item.Network</span></td>
                                 <td>@item.Title_EN</td>
                                 <td>
-                                    @(item.ExpirationDate.HasValue ? item.ExpirationDate.Value.ToString("dd/MM/yyyy") : "Sem expiração")
+                                    @(item.ExpirationDate.HasValue ? item.ExpirationDate.Value.ToString("dd/MM/yyyy") : Localizer["Affiliate_NoExpiration"].Value)
                                 </td>
                                 <td>
                                     @if (!item.IsActive || isExpired)
                                     {
-                                        <span class="badge bg-danger">Inativo / Expirado</span>
+                                        <span class="badge bg-danger">@Localizer["Affiliate_StatusExpired"]</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success">Ativo</span>
+                                        <span class="badge bg-success">@Localizer["Affiliate_StatusActive"]</span>
                                     }
                                 </td>
                                 <td class="text-end">
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i> Editar / Renovar
+                                        <i class="fas fa-edit"></i> @Localizer["Affiliate_EditRenewBtn"]
                                     </a>
                                 </td>
                             </tr>
@@ -65,7 +67,7 @@
                         @if (!Model.Any())
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">Nenhum produto de afiliado cadastrado.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">@Localizer["Affiliate_NoProductsFound"]</td>
                             </tr>
                         }
                     </tbody>

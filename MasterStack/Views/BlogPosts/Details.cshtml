@@ -13,7 +13,7 @@
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     bool isFallback = ViewBag.TranslationWarning ?? false;
     var imageFileName = "/uploads/default-post.jpg";
-    var parsedContent = await AffiliateRenderService.ParseAffiliateShortcodesAsync(Model.Content, currentCulture);
+    var parsedContent = await AffiliateRenderService.ParseAffiliateShortcodesAsync(t.Content, currentCulture);
 
     if (t != null)
     {
