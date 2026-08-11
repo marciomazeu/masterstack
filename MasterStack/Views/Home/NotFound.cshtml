@@ -1,10 +1,11 @@
 ﻿@using Microsoft.Extensions.Localization
 @inject IStringLocalizer<SharedResource> Localizer
 @model IEnumerable<MasterStack.Models.BlogPostTranslation>
+
 @{
     ViewData["Title"] = Localizer["NotFound_Title"];
     Layout = "_Layout";
-    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+    var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 }
 
 <style>
@@ -34,9 +35,9 @@
         transition: transform 0.3s;
     }
 
-        .card-error:hover {
-            transform: translateY(-5px);
-        }
+    .card-error:hover {
+        transform: translateY(-5px);
+    }
 
     .btn-rounded {
         border-radius: 50px;
@@ -64,11 +65,12 @@
         </div>
 
         <div class="col-lg-6 d-none d-lg-block">
-            @* Use url absoluta para a imagem para evitar erro de path *@
-            <img src="/404.svg" alt="@Localizer["NotFound_Title"]" class="error-illustration">
+            <img src="~/404.svg" alt="@Localizer["NotFound_Title"]" class="error-illustration">
         </div>
     </div>
 </div>
+
+<hr class="my-5 opacity-0">
 
 <div class="container mb-5">
     <h3 class="text-center mb-4 fw-bold">@Localizer["SuggestedPosts_Title"]</h3>
@@ -80,12 +82,20 @@
             {
                 <div class="col-md-4">
                     <div class="card card-error shadow-sm h-100 border-0">
-                        <img src="@(string.IsNullOrEmpty(post.ImageUrl) ? "/uploads/blog/default-post.jpg" : post.ImageUrl)"
+                        <img src="@(string.IsNullOrEmpty(post.ImageUrl) ? "/img/default-post.webp" : post.ImageUrl)"
                              class="card-img-top rounded-top"
                              style="height: 180px; object-fit: cover;"
                              alt="@post.Title">
                         <div class="card-body">
+                            <span class="badge bg-primary mb-2">@post.Culture.ToUpper()</span>
                             <h5 class="card-title fw-bold text-dark">@post.Title</h5>
+                            <p class="card-text text-muted small">
+                                @{
+                                    var resumo = post.Content ?? "";
+                                    resumo = System.Text.RegularExpressions.Regex.Replace(resumo, "<.*?>", string.Empty);
+                                }
+                                @(resumo.Length > 100 ? resumo.Substring(0, 100) + "..." : resumo)
+                            </p>
                         </div>
                         <div class="card-footer bg-transparent border-0 pb-3">
                             <a asp-controller="BlogPosts" asp-action="Details"
@@ -98,6 +108,12 @@
                     </div>
                 </div>
             }
+        }
+        else
+        {
+            <div class="col-12 text-center py-4">
+                <p class="text-muted italic">@Localizer["NoPostsFound"]</p>
+            </div>
         }
     </div>
 </div>

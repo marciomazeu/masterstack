@@ -2,14 +2,38 @@
 @using Microsoft.AspNetCore.Mvc.Localization
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.AspNetCore.Diagnostics
 @inject IStringLocalizer<SharedResource> Localizer
 @using MasterStack.Data
 @inject ApplicationDbContext _context
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
-  
-    // 1. Pega a cultura da rota (ex: pt-BR, en-US) ou usa pt-BR como padrão
-    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+    // 1. Resgata a cultura de forma robusta (via Feature -> RouteData -> CultureInfo)
+    var requestCultureFeature = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCultureFeature?.RequestCulture.Culture.Name;
+
+    if (string.IsNullOrEmpty(currentCulture))
+    {
+        currentCulture = ViewContext.RouteData.Values["culture"]?.ToString();
+    }
+
+    // Se ainda for nula (caso de rota 404 sem prefixo na reexecução), verifica se veio de uma URL de erro
+    if (string.IsNullOrEmpty(currentCulture))
+    {
+        var reExecuteFeature = Context.Features.Get<IStatusCodeReExecuteFeature>();
+        if (reExecuteFeature != null)
+        {
+            var segments = reExecuteFeature.OriginalPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length > 0 && new[] { "pt-BR", "en-US", "fr-CA" }.Contains(segments[0]))
+            {
+                currentCulture = segments[0];
+            }
+        }
+    }
+
+    // Fallback final para a thread atual
+    currentCulture ??= System.Globalization.CultureInfo.CurrentCulture.Name;
 
     // 2. Captura dados da rota para os links do menu
     var routeData = ViewContext.RouteData.Values;
@@ -17,15 +41,14 @@
     var currentAction = routeData["action"]?.ToString();
     var currentId = routeData["id"]?.ToString();
 
-    // 3. Busca a lista de idiomas (Síncrono para evitar erros de renderização no Layout)
+    // 3. Busca a lista de idiomas
     var dbLanguages = _context.Languages.ToList();
 
-    // 4. Busca o idioma atual. Se não achar a cultura exata, pega o primeiro da lista.
-    // Isso evita o erro de "Null Reference" que você teve antes.
-    var currentLang = dbLanguages.FirstOrDefault(l => l.Culture == currentCulture) 
+    // 4. Busca o idioma atual comparando com o currentCulture validado
+    var currentLang = dbLanguages.FirstOrDefault(l => l.Culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase)) 
                       ?? dbLanguages.FirstOrDefault(); 
     
-// Captura o slug atual da rota
+    // Captura o slug atual da rota
     var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString();
 }
 
@@ -184,6 +207,11 @@
                         <i class="fas fa-user-edit me-2"></i> @Localizer["Menu_Profile"]
                     </a>
                 </li>
+                <li >
+                    <a class="dropdown-item" asp-controller="Resume" asp-action="Index" asp-route-culture="@currentCulture">
+                       <i class="bi bi-person-vcard me-1"></i> @Localizer["Menu_Resume"]
+                    </a>
+                </li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <form asp-controller="Account" asp-action="Logout" asp-route-culture="@currentCulture" method="post" class="p-0">
@@ -254,15 +282,83 @@
                             <li class="list-inline-item">
                                     <a href="#" class="btn-floating btn-sm text-white" aria-label="LinkedIn" style="font-size: 23px;"><i class="fab fa-linkedin"></i></a>
                             </li>
-                            <li class="list-inline-item">
+                            @* <li class="list-inline-item">
                                     <a href="#" class="btn-floating btn-sm text-white" aria-label="Github" style="font-size: 23px;"><i class="fab fa-github"></i></a>
-                            </li>
+                            </li> *@
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
     </footer>
+
+    <partial name="_CookieConsentPartial" />
+
+   @if (User.Identity?.IsAuthenticated == true)
+{
+    <!-- Modal de Sessão Expirada (Trilingüe: PT / FR / EN) -->
+    <div class="modal fade" id="inactivityModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="inactivityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-warning text-dark border-0">
+                    <h5 class="modal-title font-weight-bold" id="inactivityModalLabel">
+                        <i class="bi bi-clock-history me-2"></i>Sessão Expirada / Session Expirée / Session Expired
+                    </h5>
+                </div>
+                <div class="modal-body py-4 text-center fs-6">
+                    <p class="mb-2">Sua sessão expirou por inatividade (15 minutos).</p>
+                    <p class="mb-2 text-muted small">Votre session a expiré en raison d'une inactivité (15 minutes).</p>
+                    <p class="mb-0 text-muted small">Your session has expired due to inactivity (15 minutes).</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="redirectToLogout()">
+                        Entrar Novamente / Se reconnecter / Log In Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Tempo limite do JS: 14 minutos e 30 segundos (870.000 ms)
+            const timeoutInMs = (14 * 60 + 30) * 1000; 
+            let inactivityTimer;
+            let isModalShown = false;
+
+            function resetTimer() {
+                if (isModalShown) return;
+                clearTimeout(inactivityTimer);
+                inactivityTimer = setTimeout(showInactivityModal, timeoutInMs);
+            }
+
+            function showInactivityModal() {
+                isModalShown = true;
+                const modalElement = document.getElementById('inactivityModal');
+                
+                if (modalElement && typeof bootstrap !== 'undefined') {
+                    const bsModal = new bootstrap.Modal(modalElement);
+                    bsModal.show();
+                } else {
+                    redirectToLogout();
+                }
+            }
+
+            const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+            activityEvents.forEach(event => {
+                window.addEventListener(event, resetTimer, { passive: true });
+            });
+
+            resetTimer();
+        });
+
+        function redirectToLogout() {
+            const currentCulture = document.documentElement.lang || 'pt-BR';
+            window.location.href = `/${currentCulture}/Account/Logout`;
+        }
+    </script>
+}
+    
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
