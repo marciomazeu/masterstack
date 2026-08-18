@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using MasterStack.Services.JobProviders;
+using MasterStack.Services.Providers;
 
 // --- CONFIGURAÇÃO INICIAL DO LOGGING (SERILOG) ---
 Log.Logger = new LoggerConfiguration()
@@ -46,7 +47,6 @@ try
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
         
-        // Ajustes de Segurança de Cookie
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
@@ -57,37 +57,27 @@ try
     // --- 3. LOCALIZAÇÃO (CONFIGURAÇÃO) ---
     builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
-var supportedCultures = new[] {
-    new CultureInfo("pt-BR"),
-    new CultureInfo("en-US"),
-    new CultureInfo("fr-CA")
-};
+    var supportedCultures = new[] {
+        new CultureInfo("pt-BR"),
+        new CultureInfo("en-US"),
+        new CultureInfo("fr-CA")
+    };
 
-builder.Services.Configure<RequestLocalizationOptions>(options => {
-    options.DefaultRequestCulture = new RequestCulture("fr-CA");
-    options.SupportedCultures = supportedCultures;
-    options.SupportedUICultures = supportedCultures;
+    builder.Services.Configure<RequestLocalizationOptions>(options => {
+        options.DefaultRequestCulture = new RequestCulture("fr-CA");
+        options.SupportedCultures = supportedCultures;
+        options.SupportedUICultures = supportedCultures;
 
-    // Limpa os provedores padrão para garantir a prioridade correta
-    options.RequestCultureProviders.Clear();
-
-    // 1º Rota (A maior prioridade: deve estar na posição 0)
-    options.RequestCultureProviders.Add(new RouteDataRequestCultureProvider());
-
-    // 2º Cookie
-    options.RequestCultureProviders.Add(new CookieRequestCultureProvider());
-
-    // 3º QueryString (?culture=fr-CA)
-    options.RequestCultureProviders.Add(new QueryStringRequestCultureProvider());
-
-    // 4º Header Accept-Language do navegador
-    options.RequestCultureProviders.Add(new AcceptLanguageHeaderRequestCultureProvider());
-});
+        options.RequestCultureProviders.Clear();
+        options.RequestCultureProviders.Add(new RouteDataRequestCultureProvider());
+        options.RequestCultureProviders.Add(new CookieRequestCultureProvider());
+        options.RequestCultureProviders.Add(new QueryStringRequestCultureProvider());
+        options.RequestCultureProviders.Add(new AcceptLanguageHeaderRequestCultureProvider());
+    });
 
     // --- 4. MVC E RAZOR ---
     builder.Services.AddControllersWithViews(options => {
         options.Filters.Add(typeof(CultureFilter));
-        // Exige o Anti-Forgery Token automaticamente em requisições de alteração (POST, PUT, DELETE)
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
@@ -96,6 +86,8 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     builder.Services.AddRazorPages();
 
     // --- 5. SERVIÇOS EXTRAS E INJEÇÃO DE DEPENDÊNCIA ---
+    builder.Services.AddMemoryCache(); // CORREÇÃO: Registrado no container DI ANTES do builder.Build()
+
     builder.Services.AddScoped<GeminiAiService>();
     builder.Services.AddScoped<ILocationService, LocationService>();
     builder.Services.AddTransient<IEmailSender, EmailSender>();
@@ -104,25 +96,55 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     builder.Services.AddResponseCompression(options => {
         options.EnableForHttps = true;
     });
+
     builder.Services.Configure<CookiePolicyOptions>(options =>
     {
-        // Exige consentimento explícito para cookies não essenciais
         options.CheckConsentNeeded = context => context != null;
         options.MinimumSameSitePolicy = SameSiteMode.Lax;
     });
 
+    // --- REGISTRO CORRETO DO JSEARCHJOBPROVIDER ---
+   builder.Services.AddHttpClient<JSearchJobProvider>(client =>
+{
+    client.BaseAddress = new Uri("https://jsearch.p.rapidapi.com/");
+
+    var apiKey = builder.Configuration["RapidAPI:Key"];
+
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        Log.Warning("A chave RapidAPI:Key não foi encontrada nas configurações!");
+    }
+    else
+    {
+        client.DefaultRequestHeaders.TryAddWithoutValidation("x-rapidapi-key", apiKey);
+    }
+
+    client.DefaultRequestHeaders.TryAddWithoutValidation("x-rapidapi-host", "jsearch.p.rapidapi.com");
+});
+    // Injeta o HttpClient tipado para o JSearchJobProvider
+    builder.Services.AddHttpClient<IJobProvider, JSearchJobProvider>(client =>
+    {
+        client.BaseAddress = new Uri("https://jsearch.p.rapidapi.com/");
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
+    // Registra o HttpClient para o Remotive
+    builder.Services.AddHttpClient<RemotiveJobProvider>();
+    // Registra como IJobProvider
+    builder.Services.AddScoped<IJobProvider, RemotiveJobProvider>();
+    // Registra a interface resolvendo através da classe concreta do HttpClient
+    builder.Services.AddTransient<IJobProvider>(sp => sp.GetRequiredService<JSearchJobProvider>());
+
     builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
-    builder.Services.AddHttpClient<IJobProvider, JSearchJobProvider>();
+
     builder.Services.AddHostedService<AffiliateExpirationService>();
+    builder.Services.AddHostedService<JobCleanupBackgroundService>();
     builder.Services.AddScoped<IAffiliateRenderService, AffiliateRenderService>();
-    // Registra o serviço agregador
     builder.Services.AddScoped<JobAggregatorService>();
 
+    // --- CONSTRUÇÃO DO APP ---
     var app = builder.Build();
 
     // --- 6. PIPELINE DE EXECUÇÃO ---
-
-    // Registra métricas de requisicões HTTP nos logs
     app.UseSerilogRequestLogging();
 
     if (app.Environment.IsDevelopment()) 
@@ -141,6 +163,18 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
         });
     }
 
+    // Ignora chamadas automáticas de DevTools do Chrome para não poluir os logs com 404
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/.well-known"))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        await next();
+    });
+
     // Security Headers para Produção
     app.Use(async (context, next) =>
     {
@@ -151,16 +185,13 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
         await next();
     });
 
-    // Aplica a localização configurada
     var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
     app.UseRequestLocalization(localizationOptions);
 
-    // Middleware para garantir que acessos na raiz "/" recebam a cultura padrão
     app.Use(async (context, next) =>
     {
         var path = context.Request.Path.Value;
 
-        // Se acessar a raiz sem nada, redireciona para a cultura padrão (fr-CA)
         if (string.IsNullOrEmpty(path) || path == "/")
         {
             context.Response.Redirect("/fr-CA");
@@ -175,45 +206,16 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     app.UseStaticFiles();
     app.UseCookiePolicy();
 
-    // 1. O Roteamento DEVE vir primeiro para reconhecer os segmentos da URL ({culture})
     app.UseRouting();
 
-    // 2. A Localização DEVE vir logo após o UseRouting
     var locOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>();
     app.UseRequestLocalization(locOptions.Value);
 
-    // 3. O Tratador de Status 404 DEVE vir após o Roteamento e Localização estarem ativos
     app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
-// app.UseStatusCodePages(async statusCodeContext =>
-// {
-//     var response = statusCodeContext.HttpContext.Response;
-//     if (response.StatusCode == 404)
-//     {
-//         var request = statusCodeContext.HttpContext.Request;
-//         var path = request.Path.Value ?? "";
-//         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-//         string culture = "fr-CA"; // Cultura padrão de fallback
-//         var supported = new[] { "pt-BR", "en-US", "fr-CA" };
-
-//         if (segments.Length > 0 && supported.Contains(segments[0]))
-//         {
-//             culture = segments[0];
-//         }
-
-//         // Modifica o path e a query diretamente no request context da reexecução
-//         request.Path = $"/Home/NotFound/{response.StatusCode}";
-//         request.QueryString = new QueryString($"?culture={culture}");
-
-//         // Reexecuta o pipeline chamando o middleware seguinte do tratador
-//         await statusCodeContext.Next(statusCodeContext.HttpContext);
-//     }
-// });
 
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // Mapeia o logout via GET para deslogar o usuário e redirecionar para a Login
     app.MapGet("/{culture}/Account/Logout", async (string culture, SignInManager<ApplicationUser> signInManager) =>
     {
         await signInManager.SignOutAsync();
@@ -260,7 +262,6 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
 }
 catch (Microsoft.Extensions.Hosting.HostAbortedException)
 {
-    // Ignora a exceção disparada pelas ferramentas do Entity Framework / dotnet-ef
     throw;
 }
 catch (Exception ex)
@@ -278,7 +279,6 @@ async Task SeedLanguagesAndRoles(IServiceProvider services)
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // 1. Seed de Idiomas
     var seedLanguages = new List<Language>
     {
         new Language { Culture = "pt-BR", Name = "Português", FlagClass = "fi-br", IsActive = true },
@@ -295,7 +295,6 @@ async Task SeedLanguagesAndRoles(IServiceProvider services)
     }
     await context.SaveChangesAsync();
 
-    // 2. Seed de Roles
     string[] roles = { "Admin", "Author", "User" };
     foreach (var role in roles)
     {
@@ -305,8 +304,7 @@ async Task SeedLanguagesAndRoles(IServiceProvider services)
         }
     }
 
-    // 3. Seed Apenas do Admin Principal (Com senha inicial forte)
-    string adminEmail = "seu-email-real@dominio.com"; // <-- COLOQUE SEU EMAIL REAL AQUI
+    string adminEmail = "seu-email-real@dominio.com";
     
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
@@ -318,7 +316,6 @@ async Task SeedLanguagesAndRoles(IServiceProvider services)
             EmailConfirmed = true 
         };
         
-        // Use uma senha temporária forte antes de subir o código
         var result = await userManager.CreateAsync(adminUser, "SenhaProvisoria#2026!Secured");
         if (result.Succeeded) 
         {

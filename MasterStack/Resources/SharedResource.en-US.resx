@@ -1042,7 +1042,7 @@
     <comment/>
   </data>
   <data name="SearchJobsBtn" xml:space="preserve">
-    <value>Search Tech Jobs (Adzuna + Jooble)</value>
+    <value>Search Jobs</value>
     <comment/>
   </data>
   <data name="TabJobs" xml:space="preserve">
@@ -1178,7 +1178,7 @@
     <comment/>
   </data>
   <data name="Profile_PageTitle" xml:space="preserve">
-    <value>User Profile</value>
+    <value>My Profile</value>
     <comment/>
   </data>
   <data name="Profile_NotFoundTitle" xml:space="preserve">
@@ -1206,7 +1206,7 @@
     <comment/>
   </data>
   <data name="Profile_DisplayNamePlaceholder" xml:space="preserve">
-    <value>How do you want to be called?</value>
+    <value>Your name or nickname</value>
     <comment/>
   </data>
   <data name="Profile_BioLabel" xml:space="preserve">
@@ -1230,7 +1230,7 @@
     <comment/>
   </data>
   <data name="Profile_SaveBtn" xml:space="preserve">
-    <value>Save Profile</value>
+    <value>Save Changes</value>
     <comment/>
   </data>
   <data name="Profile_SecurityHeader" xml:space="preserve">
@@ -1403,6 +1403,450 @@
   </data>
   <data name="Affiliate_UpdateBtn" xml:space="preserve">
     <value>Update Product</value>
+    <comment/>
+  </data>
+  <data name="Cookie_CookieMessage" xml:space="preserve">
+    <value>We use cookies to personalize your experience, match you with relevant tech jobs, and analyze site traffic in accordance with our </value>
+    <comment/>
+  </data>
+  <data name="Cookie_PrivacyPolicyLink" xml:space="preserve">
+    <value>Privacy Policy</value>
+    <comment/>
+  </data>
+  <data name="Cookie_AcceptAll" xml:space="preserve">
+    <value>Accept all</value>
+    <comment/>
+  </data>
+  <data name="Cookie_RejectAll" xml:space="preserve">
+    <value>Reject all</value>
+    <comment/>
+  </data>
+  <data name="Cookie_Manage" xml:space="preserve">
+    <value>Manage cookies</value>
+    <comment/>
+  </data>
+  <data name="Home_Hero_Btn_Jobs" xml:space="preserve">
+    <value>Tech Jobs</value>
+    <comment/>
+  </data>
+  <data name="Home_Cat_Jobs" xml:space="preserve">
+    <value>Job Openings</value>
+    <comment/>
+  </data>
+  <data name="Home_Cat_Courses" xml:space="preserve">
+    <value>Courses</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Section_Title" xml:space="preserve">
+    <value>Featured Tech Jobs</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Section_Subtitle" xml:space="preserve">
+    <value>Software engineering, infrastructure and product opportunities in Canada and remote.</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_ViewAll" xml:space="preserve">
+    <value>View all jobs</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Apply" xml:space="preserve">
+    <value>View Job</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Empty" xml:space="preserve">
+    <value>No job openings available at the moment.</value>
+    <comment/>
+  </data>
+  <data name="Home_Feed_Empty" xml:space="preserve">
+    <value>No articles published yet.</value>
+    <comment/>
+  </data>
+  <data name="Home_Newsletter_Consent_Text" xml:space="preserve">
+    <value>I agree to receive job updates and articles in accordance with the</value>
+    <comment/>
+  </data>
+  <data name="Home_Privacy_Officer_Label" xml:space="preserve">
+    <value>Privacy Officer (Law 25)</value>
+    <comment/>
+  </data>
+  <data name="Home_TermsOfServiceLink" xml:space="preserve">
+    <value>Terms of Service</value>
+    <comment/>
+  </data>
+  <data name="Home_Manage_Cookies" xml:space="preserve">
+    <value>Manage Cookies</value>
+    <comment/>
+  </data>
+  <data name="Home_Job_Type_FullTime_Remote" xml:space="preserve">
+    <value>Remote / Full-time</value>
+    <comment/>
+  </data>
+  <data name="Home_Job_Company_Confidential" xml:space="preserve">
+    <value>Confidential Company</value>
+    <comment/>
+  </data>
+  <data name="Home_Job_Location_Remote" xml:space="preserve">
+    <value>Remote</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_PoweredBy" xml:space="preserve">
+    <value>Jobs powered by</value>
+    <comment/>
+  </data>
+  <data name="Profile_DefaultUser" xml:space="preserve">
+    <value>User</value>
+    <comment/>
+  </data>
+  <data name="Profile_LocationActive" xml:space="preserve">
+    <value>Active Location ({0})</value>
+    <comment/>
+  </data>
+  <data name="Profile_ViewJobsAndCompaniesBtn" xml:space="preserve">
+    <value>View Nearby Companies</value>
+    <comment/>
+  </data>
+  <data name="Profile_SecurityHeading" xml:space="preserve">
+    <value>🛡️ Account Security</value>
+    <comment/>
+  </data>
+  <data name="Profile_TwoFactorActive" xml:space="preserve">
+    <value>2FA Enabled</value>
+    <comment/>
+  </data>
+  <data name="Profile_TwoFactorDisabled" xml:space="preserve">
+    <value>2FA Disabled</value>
+    <comment/>
+  </data>
+  <data name="Profile_EnableTwoFactorBtn" xml:space="preserve">
+    <value>Enable Two-Factor Authentication</value>
+    <comment/>
+  </data>
+  <data name="Profile_PersonalInfoSection" xml:space="preserve">
+    <value>Personal Information</value>
+    <comment/>
+  </data>
+  <data name="Profile_LocationSection" xml:space="preserve">
+    <value>Location for Nearby Companies</value>
+    <comment/>
+  </data>
+  <data name="Profile_LocationDescription" xml:space="preserve">
+    <value>Used to identify tech companies in your region.</value>
+    <comment/>
+  </data>
+  <data name="Profile_CountryLabel" xml:space="preserve">
+    <value>Country</value>
+    <comment/>
+  </data>
+  <data name="Profile_SelectCountry" xml:space="preserve">
+    <value>-- Select Country --</value>
+    <comment/>
+  </data>
+  <data name="Profile_CityLabel" xml:space="preserve">
+    <value>City</value>
+    <comment/>
+  </data>
+  <data name="Profile_SelectCountryFirst" xml:space="preserve">
+    <value>-- Select Country First --</value>
+    <comment/>
+  </data>
+  <data name="Profile_SelectCity" xml:space="preserve">
+    <value>-- Select City --</value>
+    <comment/>
+  </data>
+  <data name="Profile_LoadingCities" xml:space="preserve">
+    <value>Loading cities...</value>
+    <comment/>
+  </data>
+  <data name="Profile_NoCitiesFound" xml:space="preserve">
+    <value>No cities found</value>
+    <comment/>
+  </data>
+  <data name="Profile_ErrorLoadingCities" xml:space="preserve">
+    <value>Error loading cities</value>
+    <comment/>
+  </data>
+  <data name="Profile_CustomCityLabel" xml:space="preserve">
+    <value>Enter your city name</value>
+    <comment/>
+  </data>
+  <data name="Profile_CustomCityPlaceholder" xml:space="preserve">
+    <value>Ex: Campinas, Laval, Québec City</value>
+    <comment/>
+  </data>
+  <data name="Profile_StateOrRegionLabel" xml:space="preserve">
+    <value>State / Province / Region</value>
+    <comment/>
+  </data>
+  <data name="Profile_StateOrRegionPlaceholder" xml:space="preserve">
+    <value>Ex: SP, QC, CA</value>
+    <comment/>
+  </data>
+  <data name="Profile_PostalCodeLabel" xml:space="preserve">
+    <value>Postal Code / Zipcode</value>
+    <comment/>
+  </data>
+  <data name="Profile_PostalCodePlaceholder" xml:space="preserve">
+    <value>Postal Code / Zipcode</value>
+    <comment/>
+  </data>
+  <data name="Profile_StreetAddressLabel" xml:space="preserve">
+    <value>Address (Street and number)</value>
+    <comment/>
+  </data>
+  <data name="Profile_StreetAddressPlaceholder" xml:space="preserve">
+    <value>Ex: 1000 Main St</value>
+    <comment/>
+  </data>
+  <data name="Profile_SocialSection" xml:space="preserve">
+    <value>Social Networks</value>
+    <comment/>
+  </data>
+  <data name="Profile_LinkedInPlaceholder" xml:space="preserve">
+    <value>[https://linkedin.com/in/your-profile](https://linkedin.com/in/your-profile)</value>
+    <comment/>
+  </data>
+  <data name="Profile_GitHubPlaceholder" xml:space="preserve">
+    <value>[https://github.com/your-username](https://github.com/your-username)</value>
+    <comment/>
+  </data>
+  <data name="Profile_TwitterPlaceholder" xml:space="preserve">
+    <value>[https://x.com/your-username](https://x.com/your-username)</value>
+    <comment/>
+  </data>
+  <data name="Profile_InstagramPlaceholder" xml:space="preserve">
+    <value>[https://instagram.com/your-username](https://instagram.com/your-username)</value>
+    <comment/>
+  </data>
+  <data name="Profile_FacebookPlaceholder" xml:space="preserve">
+    <value>[https://facebook.com/your-profile](https://facebook.com/your-profile)</value>
+    <comment/>
+  </data>
+  <data name="Resume_ManageTitle" xml:space="preserve">
+    <value>Manage Resume</value>
+    <comment/>
+  </data>
+  <data name="Resume_ExportPdf" xml:space="preserve">
+    <value>Export as PDF</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfAutoFillTitle" xml:space="preserve">
+    <value>Automatic Fill via PDF</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfAutoFillDesc" xml:space="preserve">
+    <value>Upload your PDF resume to automatically fill the Professional Summary and Skills.</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfAutoFillNote" xml:space="preserve">
+    <value>Experience and education sections can be manually adjusted below.</value>
+    <comment/>
+  </data>
+  <data name="Resume_ImportFromPdf" xml:space="preserve">
+    <value>Import from PDF</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionSummary" xml:space="preserve">
+    <value>Professional Summary</value>
+    <comment/>
+  </data>
+  <data name="Resume_SummaryPlaceholder" xml:space="preserve">
+    <value>Briefly describe your background and career goals...</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionSkills" xml:space="preserve">
+    <value>Skills</value>
+    <comment/>
+  </data>
+  <data name="Resume_SkillsPlaceholder" xml:space="preserve">
+    <value>Ex: C#, ASP.NET Core, PostgreSQL, Bootstrap</value>
+    <comment/>
+  </data>
+  <data name="Resume_SkillsHelpText" xml:space="preserve">
+    <value>Separate each skill with a comma.</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionExperience" xml:space="preserve">
+    <value>Professional Experience</value>
+    <comment/>
+  </data>
+  <data name="Resume_AddExperience" xml:space="preserve">
+    <value>+ Add Experience</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelCompany" xml:space="preserve">
+    <value>Company</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelRole" xml:space="preserve">
+    <value>Job Title</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelStartDate" xml:space="preserve">
+    <value>Start Date</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelEndDate" xml:space="preserve">
+    <value>End Date (leave blank if current)</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelEndDateShort" xml:space="preserve">
+    <value>End Date</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelDescription" xml:space="preserve">
+    <value>Job Description</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionEducation" xml:space="preserve">
+    <value>Education</value>
+    <comment/>
+  </data>
+  <data name="Resume_AddEducation" xml:space="preserve">
+    <value>+ Add Education</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelInstitution" xml:space="preserve">
+    <value>Institution</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelDegree" xml:space="preserve">
+    <value>Degree / Program</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelCompletionDate" xml:space="preserve">
+    <value>Completion Date</value>
+    <comment/>
+  </data>
+  <data name="Resume_BtnSave" xml:space="preserve">
+    <value>Save Resume</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsSelectPdfFirst" xml:space="preserve">
+    <value>Please select a PDF file first.</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsImportSuccess" xml:space="preserve">
+    <value>PDF data imported successfully! Please review before saving.</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsImportError" xml:space="preserve">
+    <value>Failed to process the PDF file.</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsUploadError" xml:space="preserve">
+    <value>An error occurred while uploading the file.</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfDefaultFileName" xml:space="preserve">
+    <value>Resume_User</value>
+    <comment/>
+  </data>
+  <data name="Resume_SaveSuccess" xml:space="preserve">
+    <value>Resume updated successfully!</value>
+    <comment/>
+  </data>
+  <data name="Resume_NotFound" xml:space="preserve">
+    <value>Resume not found.</value>
+    <comment/>
+  </data>
+  <data name="Resume_DefaultYourName" xml:space="preserve">
+    <value>Your Name</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionSummary" xml:space="preserve">
+    <value>Professional Summary</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionSkills" xml:space="preserve">
+    <value>Skills &amp; Technologies</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionExperience" xml:space="preserve">
+    <value>Professional Experience</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionEducation" xml:space="preserve">
+    <value>Education</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfPresent" xml:space="preserve">
+    <value>Present</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfPage" xml:space="preserve">
+    <value>Page</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfOf" xml:space="preserve">
+    <value>of</value>
+    <comment/>
+  </data>
+  <data name="Menu_Resume" xml:space="preserve">
+    <value>Resume</value>
+    <comment/>
+  </data>
+  <data name="Osm_SessionExpired" xml:space="preserve">
+    <value>Session expired.</value>
+    <comment/>
+  </data>
+  <data name="Osm_InvalidCoordinatesOrUser" xml:space="preserve">
+    <value>Invalid coordinates or user not authenticated.</value>
+    <comment/>
+  </data>
+  <data name="Osm_ServerUnstable" xml:space="preserve">
+    <value>he OpenStreetMap server is currently unstable. Please try again in a few seconds.</value>
+    <comment/>
+  </data>
+  <data name="Osm_UnnamedCompany" xml:space="preserve">
+    <value>Unnamed company</value>
+    <comment/>
+  </data>
+  <data name="Osm_Office" xml:space="preserve">
+    <value>Office</value>
+    <comment/>
+  </data>
+  <data name="Osm_ErrorProcessingMapData" xml:space="preserve">
+    <value>Erro ao processar a resposta dos servidores do mapa.</value>
+    <comment/>
+  </data>
+  <data name="Enterprises_ProfileLocationRequired" xml:space="preserve">
+    <value>Please enter your city and country in your profile to view the map and companies in your region.</value>
+    <comment/>
+  </data>
+  <data name="CompaniesNearby_ProfileLocationRequired" xml:space="preserve">
+    <value>Please enter your postal code or city in your profile to search for nearby companies.</value>
+    <comment/>
+  </data>
+  <data name="FetchJobs_CountryCityRequired" xml:space="preserve">
+    <value>Please enter your country and city in your profile to search for jobs in your area.</value>
+    <comment/>
+  </data>
+  <data name="FetchJobs_NoJobsFound" xml:space="preserve">
+    <value>No jobs were found for your region from the consulted providers at this time.</value>
+    <comment/>
+  </data>
+  <data name="FetchJobs_PartialJobsFound" xml:space="preserve">
+    <value>Search complete! Some jobs were found, but one or more providers returned no results.</value>
+    <comment/>
+  </data>
+  <data name="Preferences_SaveSuccess" xml:space="preserve">
+    <value>Search preferences saved successfully!</value>
+    <comment/>
+  </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>User not authenticated.</value>
+    <comment/>
+  </data>
+  <data name="Job_Untitled" xml:space="preserve">
+    <value>Untitled</value>
+    <comment/>
+  </data>
+  <data name="Job_CompanyNotSpecified" xml:space="preserve">
+    <value>Company not specified</value>
+    <comment/>
+  </data>
+  <data name="Job_UndefinedRegion" xml:space="preserve">
+    <value>Undefined Region</value>
     <comment/>
   </data>
 </root>

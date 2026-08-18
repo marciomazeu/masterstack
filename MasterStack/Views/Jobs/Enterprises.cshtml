@@ -64,7 +64,7 @@
             <i class="bi bi-sliders"></i> @string.Format(Localizer["RadiusLabel"].Value, searchRadius)
         </button>
 
-        <a asp-action="FetchTechJobsNearby" asp-controller="User" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+        <a asp-action="FetchTechJobsNearby" asp-controller="Jobs" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
             <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
         </a>
     </div>
@@ -103,13 +103,21 @@
                             <div class="card border border-light-subtle shadow-sm mb-3 item-card job-card">
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-start mb-1">
-                                        @if (job.Location.Contains("[Adzuna]"))
+                                       @if (job.Location.Contains("[Adzuna]"))
                                         {
                                             <span class="badge bg-warning text-dark me-1">Adzuna</span>
                                         }
                                         else if (job.Location.Contains("[Jooble]"))
                                         {
-                                            <span class="badge bg-purple text-white me-1" style="background-color: #6f42c1;">Jooble</span>
+                                            <span class="badge text-white me-1" style="background-color: #6f42c1;">Jooble</span>
+                                        }
+                                        else if (job.Location.Contains("[JSearch]"))
+                                        {
+                                            <span class="badge text-white me-1" style="background-color: #e0278d;">JSearch</span>
+                                        }
+                                        else if (job.SourceProvider == "Remotive" || job.Location.Contains("[Remotive]"))
+                                        {
+                                            <span class="badge text-white me-1" style="background-color: #11999e;">Remotive</span>
                                         }
                                         <h6 class="fw-bold mb-0 text-primary">@job.Title</h6>
                                         <span class="badge @(job.IsExactLocation ? "bg-success-subtle text-success border border-success-subtle" : "bg-warning-subtle text-warning border border-warning-subtle")">
@@ -143,19 +151,26 @@
                             <div class="list-group list-group-flush">
                                 @foreach (var company in Model.Companies)
                                 {
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    var companyLat = company.Latitude.ToString(CultureInfo.InvariantCulture);
+                                    var companyLng = company.Longitude.ToString(CultureInfo.InvariantCulture);
+
+                                    <div class="list-group-item list-group-item-action company-item d-flex justify-content-between align-items-center" 
+                                        style="cursor: pointer;"
+                                        onclick="focusCompanyOnMap('@companyLat', '@companyLng')">
                                         <div>
                                             <h6 class="mb-1 fw-bold">@company.Name</h6>
-                                            <small class="text-muted"><i class="bi bi-geo-alt"></i> @company.City (@company.DistanceInKm km)</small>
+                                            <small class="text-muted"><i class="bi bi-geo-alt"></i> @company.City</small>
                                         </div>
-                                        <span class="badge bg-light text-dark border">@company.DistanceInKm km</span>
+                                        <span class="badge bg-light text-dark border">
+                                            @company.DistanceInKm.ToString("0.0") km
+                                        </span>
                                     </div>
                                 }
                             </div>
                         }
                         else
                         {
-                            <!-- ⚠️ MENSAGEM DE AVISO QUANDO NÃO HÁ EMPRESAS CADASTRADAS -->
+                            <!-- MENSAGEM DE AVISO QUANDO NÃO HÁ EMPRESAS CADASTRADAS -->
                             <div class="alert alert-warning text-center my-3 p-4 border-warning">
                                 <i class="bi bi-building-exclamation text-warning display-5 mb-2 d-block"></i>
                                 <h6 class="fw-bold text-dark mb-1">@Localizer["NoCompaniesTitle"]</h6>
@@ -190,7 +205,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>@Localizer["ModalTitle"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form asp-action="UpdateSearchPreferences" asp-controller="User" method="post">
+            <form asp-action="UpdatePreferences" asp-controller="Jobs" method="post">
                 <div class="modal-body py-3">
                     <p class="small text-muted mb-3">@Localizer["ModalSubtitle"]</p>
                     
@@ -452,7 +467,7 @@
 
         try {
             const culture = document.documentElement.lang || 'pt-BR';
-            const response = await fetch(`/${culture}/User/FetchNearbyCompaniesFromOSM`);
+            const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`);
 
             if (!response.ok) {
                 const errorText = await response.text();

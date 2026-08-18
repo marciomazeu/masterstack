@@ -46,6 +46,7 @@ namespace MasterStack.Controllers
         _context = context;
     }
 
+    [HttpGet("")]
     [HttpGet("Login")]
     public IActionResult Login(string culture, string returnUrl = null)
     {
@@ -58,7 +59,9 @@ namespace MasterStack.Controllers
         return View();
     }
 
-[HttpPost("Login")]
+    [HttpPost("")]
+    [HttpPost("Login")]
+    [ValidateAntiForgeryToken]
 public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
 {
     // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
@@ -151,7 +154,7 @@ public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [From
             return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
         }
 
-        return RedirectToAction("Profile", "Account", new { culture = currentCulture });
+        return RedirectToAction("Profile", "User", new { culture = currentCulture });
     }
 
     if (result.IsLockedOut)
@@ -167,8 +170,8 @@ public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [From
 }
 
    // Mude para HttpPost por segurança, mas se o seu link for um <a> simples, use HttpGet
-       [HttpPost] // O Identity exige POST para evitar deslogamentos acidentais via links
-[HttpPost] // <--- CORREÇÃO AQUI: Apenas "Logout", pois o prefixo já vem da classe
+    [HttpGet("Logout")]
+    [HttpPost("Logout")] // <--- CORREÇÃO AQUI: Apenas "Logout", pois o prefixo já vem da classe
     public async Task<IActionResult> Logout(string culture)
     {
         await _signInManager.SignOutAsync();

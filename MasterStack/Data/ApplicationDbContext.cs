@@ -29,6 +29,10 @@ namespace MasterStack.Data
 
         public DbSet<JobPosting> JobPostings { get; set; }
         public DbSet<AffiliateProduct> AffiliateProducts { get; set; }
+        public DbSet<Resume> Resumes { get; set; }
+        public DbSet<ResumeExperience> ResumeExperiences { get; set; }
+        public DbSet<ResumeEducation> ResumeEducations { get; set; }
+        public DbSet<ResumeSkill> ResumeSkills { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -81,9 +85,27 @@ namespace MasterStack.Data
                 // Restrict: Se deletar o autor, o post não some automaticamente (segurança)
 
             //slug unico de cada página
-                modelBuilder.Entity<StaticPage>()
+            modelBuilder.Entity<StaticPage>()
                 .HasIndex(p => p.Slug)
                 .IsUnique();
-        }
+
+            modelBuilder.Entity<Resume>()
+                .HasMany(r => r.Experiences)
+                .WithOne(e => e.Resume)
+                .HasForeignKey(e => e.ResumeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Resume>()
+                .HasMany(r => r.Educations)
+                .WithOne(e => e.Resume)
+                .HasForeignKey(e => e.ResumeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Resume>()
+                .HasMany(r => r.Skills)
+                .WithOne(s => s.Resume)
+                .HasForeignKey(s => s.ResumeId)
+                .OnDelete(DeleteBehavior.Cascade);
+                }
     }
 }

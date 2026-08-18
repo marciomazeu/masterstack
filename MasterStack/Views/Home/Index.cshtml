@@ -1,11 +1,13 @@
 ﻿@model MasterStack.ViewModels.HomeViewModel
+@using Microsoft.Extensions.Localization
 @using MasterStack
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<SharedResource> Localizer
+@inject IStringLocalizer<SharedResource> Localizer
 @{
     ViewData["Title"] = Localizer["Home_MetaTitle"];
+    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
 }
 
-<!-- HERO SECTION (SEO: h1 principal com palavras-chave fortes) -->
+<!-- HERO SECTION: Agora inclui Vagas em TI + Cursos + Conteúdo -->
 <header class="py-5 bg-dark text-white position-relative overflow-hidden">
     <div class="container px-5">
         <div class="row gx-5 align-items-center justify-content-center">
@@ -14,32 +16,118 @@
                     <h1 class="display-5 fw-bolder text-white mb-3">@Localizer["Hero_Title"]</h1>
                     <p class="lead fw-normal text-white-50 mb-4">@Localizer["Hero_Subtitle"]</p>
                     <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
-                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="#latest-posts">@Localizer["Hero_Btn_ReadNow"]</a>
-                        <a class="btn btn-outline-light btn-lg px-4" href="/Categories">@Localizer["Hero_Btn_Categories"]</a>
+                        <!-- CTA Principal: Ir para Vagas -->
+                        <a class="btn btn-primary btn-lg px-4 me-sm-3 fw-bold" href="/@currentCulture/Jobs">
+                            <i class="bi bi-briefcase-fill me-2"></i>@Localizer["Home_Hero_Btn_Jobs"]
+                        </a>
+                        <!-- CTA Secundário: Cursos ou Blog -->
+                        <a class="btn btn-outline-light btn-lg px-4" href="#latest-posts">
+                            <i class="bi bi-book-fill me-2"></i>@Localizer["Hero_Btn_ReadNow"]
+                        </a>
                     </div>
                 </div>
             </div>
             <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center">
-                <!-- Ícones flutuantes ou uma arte conceitual que una código e games -->
                 <img class="img-fluid rounded-3 my-5 shadow-lg" src="~/img/home/hero-universe.png" alt="@Localizer["Hero_Img_Alt"]" />
             </div>
         </div>
     </div>
 </header>
 
-<!-- CATEGORIES QUICK ACCESS (SEO: Links internos contextualizados) -->
+<!-- QUICK ACCESS TOPICS (Navegação contextual) -->
 <section class="py-4 bg-light border-bottom">
     <div class="container px-5">
         <div class="d-flex flex-wrap justify-content-center gap-2">
             <span class="fw-bold align-self-center me-2 text-muted">@Localizer["Nav_Topics"]:</span>
-            <a href="/Category/programming" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-code-slash me-1"></i> @Localizer["Cat_Programming"]</a>
-            <a href="/Category/games" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-controller me-1"></i> @Localizer["Cat_Games"]</a>
-            <a href="/Category/tech" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-cpu me-1"></i> @Localizer["Cat_Tech"]</a>
+            @* <a href="/@currentCulture/Jobs" class="btn btn-sm btn-primary rounded-pill px-3"><i class="bi bi-briefcase me-1"></i> @Localizer["Home_Cat_Jobs"]</a>
+            <a href="/@currentCulture/Courses" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-mortarboard me-1"></i> @Localizer["Home_Cat_Courses"]</a>
+            <a href="/@currentCulture/Category/programming" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-code-slash me-1"></i> @Localizer["Cat_Programming"]</a>
+            <a href="/@currentCulture/Category/games" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-controller me-1"></i> @Localizer["Cat_Games"]</a>
+            <a href="/@currentCulture/Category/tech" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-cpu me-1"></i> @Localizer["Cat_Tech"]</a> *@
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "CSS" })" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        #CSS
+            </a>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "C#" })" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                #C#
+            </a>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "ASP.NET" })" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                #ASP.NET
+            </a>
         </div>
     </div>
 </section>
 
-<!-- LATEST POSTS SECTION (SEO: Conteúdo dinâmico atualizado frequentemente) -->
+<!-- SEÇÃO DE VAGAS EM DESTAQUE (Nova funcionalidade de Negócio) -->
+<!-- SEÇÃO DE VAGAS EM DESTAQUE -->
+<section class="py-5 bg-white border-bottom" id="featured-jobs">
+    <div class="container px-5 my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bolder mb-0">@Localizer["Home_Jobs_Section_Title"]</h2>
+                <p class="text-muted small mb-0">@Localizer["Home_Jobs_Section_Subtitle"]</p>
+            </div>
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <!-- Se estiver LOGADO: vai para a lista de vagas -->
+                <a href="/@currentCulture/Jobs" class="btn btn-outline-primary btn-sm rounded-pill">
+                    @Localizer["Home_Jobs_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            }
+            else
+            {
+                <!-- Se estiver DESLOGADO: vai para o Login com retorno para as vagas -->
+                <a href="/@currentCulture/Account/Login?returnUrl=/@currentCulture/Jobs" class="btn btn-outline-primary btn-sm rounded-pill">
+                    @Localizer["Home_Jobs_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            }
+        </div>
+
+        <div class="row g-4">
+            @if (Model.FeaturedJobs != null && Model.FeaturedJobs.Any())
+            {
+                @foreach (var job in Model.FeaturedJobs)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0 hover-shadow transition">
+                            <div class="card-body p-4 d-flex flex-column">
+                                <div class="d-flex align-items-center justify-content-between mb-3 gap-2">
+                                    <!-- Só renderiza o Badge se houver texto -->
+                                    @if (!string.IsNullOrWhiteSpace(job.JobType))
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-2 py-1 fs-7">
+                                            @Localizer[@job.JobType]
+                                        </span>
+                                    }
+                                    <!-- text-truncate evita que cidades com nomes longos quebrem a linha -->
+                                    <small class="text-muted text-truncate" title="@job.Location">
+                                        <i class="bi bi-geo-alt me-1"></i>@job.Location
+                                    </small>
+                                </div>
+
+                                <h3 class="h5 card-title fw-bold mb-2">@job.Title</h3>
+                                <p class="text-muted small mb-3">@job.CompanyName</p>
+                            </div>
+                            
+                            <div class="card-footer p-4 pt-0 bg-transparent border-top-0 d-flex justify-content-between align-items-center">
+                                <small class="text-muted">@job.PostedDate.ToString("dd/MM/yyyy")</small>
+                                <a href="/@currentCulture/Jobs/Details/@job.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                                    @Localizer["Home_Jobs_Apply"]
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Atribuição da API de Vagas (Requisito Legal) -->
+        <div class="text-end mt-3">
+            <small class="text-muted">@Localizer["Home_Jobs_PoweredBy"] <a href="https://www.adzuna.com" target="_blank" rel="nofollow noreferrer" class="text-decoration-none">Adzuna</a></small>
+        </div>
+    </div>
+</section>
+
+<!-- LATEST POSTS / CURSOS SECTION -->
 <section class="py-5" id="latest-posts">
     <div class="container px-5 my-5">
         <div class="row gx-5 justify-content-center">
@@ -55,22 +143,18 @@
             @if (Model.LatestPosts == null || !Model.LatestPosts.Any())
             {
                 <div class="col-12 text-center text-muted py-5">
-                    <p>Nenhum artigo publicado ainda.</p>
+                    <p>@Localizer["Home_Feed_Empty"]</p>
                 </div>
             }
             else
             {
-               @foreach (var post in Model.LatestPosts)
+                @foreach (var post in Model.LatestPosts)
                 {
-                    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
-
-                    // 1. Busca a tradução correspondente ao idioma da página atual
                     var translation = post.Translations?.FirstOrDefault(t => t.Culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase)) 
                                     ?? post.Translations?.FirstOrDefault();
 
                     if (translation != null)
                     {
-                        // 2. Resolve a imagem: Como a ImageUrl está no BlogPostTranslation, pegamos dela.
                         var postImage = translation.ImageUrl ?? "/img/posts/placeholder-default.jpg";
 
                         <div class="col-lg-4 mb-5">
@@ -79,15 +163,10 @@
                                 
                                 <div class="card-body p-4">
                                     <div class="badge bg-primary bg-gradient rounded-pill mb-2">
-                                        @* Como 'Category' não está no translation, usamos o nome do idioma ou uma propriedade do pai *@
                                         @translation.Culture.ToUpper()
                                     </div>
                                     
-                                    <a class="text-decoration-none link-dark stretched-link" 
-                                    asp-controller="StaticPages" 
-                                    asp-action="Page" 
-                                    asp-route-culture="@currentCulture" 
-                                    asp-route-slug="@translation.Slug">
+                                    <a href="@Url.Action("Details", "BlogPosts", new { culture = currentCulture, slug = translation.Slug })" class="text-decoration-none">
                                         <h3 class="h5 card-title mb-3 fw-bold">@translation.Title</h3>
                                     </a>
                                     
@@ -113,17 +192,30 @@
     </div>
 </section>
 
-<!-- NEWSLETTER / CALL TO ACTION (Fidelização de leitores) -->
+<!-- NEWSLETTER / OPT-IN COM CONFORMIDADE LEGAL (Lei 25 / CASL) -->
 <section class="py-5 bg-primary bg-gradient text-white">
     <div class="container px-5 my-5 text-center">
         <h2 class="fw-bolder">@Localizer["Newsletter_Title"]</h2>
         <p class="lead fw-normal text-white-50 mb-4">@Localizer["Newsletter_Subtitle"]</p>
+        
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="input-group mb-2">
-                    <input class="form-control" type="text" placeholder="@Localizer["Newsletter_Placeholder"]" aria-label="Email..." />
-                    <button class="btn btn-outline-light" type="button">@Localizer["Newsletter_Btn"]</button>
-                </div>
+                <form asp-controller="Home" asp-action="SubscribeNewsletter" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="input-group mb-2">
+                        <input class="form-control" type="email" name="email" required placeholder="@Localizer["Newsletter_Placeholder"]" aria-label="Email..." />
+                        <button class="btn btn-dark font-weight-bold" type="submit">@Localizer["Newsletter_Btn"]</button>
+                    </div>
+                    
+                    <!-- Checkbox de Consentimento Obrigatório para Leis de Privacidade -->
+                    <div class="form-check text-start mt-2">
+                        <input class="form-check-input" type="checkbox" name="consent" id="newsletterConsent" required>
+                        <label class="form-check-input-label text-white-50 small" for="newsletterConsent">
+                            @Localizer["Home_Newsletter_Consent_Text"] 
+                            <a asp-controller="Home" asp-action="Privacy" class="text-white text-decoration-underline">@Localizer["Home_Privacy_Officer_Label"]</a>.
+                        </label>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

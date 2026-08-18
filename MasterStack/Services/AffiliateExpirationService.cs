@@ -24,7 +24,9 @@ namespace MasterStack.Services
         {
             _logger.LogInformation("Serviço de Verificação de Links de Afiliados Iniciado.");
 
-            while (!stoppingToken.IsCancellationRequested)
+            try
+            {
+                 while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
@@ -59,6 +61,16 @@ namespace MasterStack.Services
                 // Aguarda 24 horas até a próxima verificação
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
+            }catch (OperationCanceledException)
+    {
+        // Exceção esperada ao desligar o servidor/aplicação.
+        // Apenas capture e ignore para não derrubar a aplicação.
+    }
+    catch (Exception ex)
+    {
+        // Registre outros erros inesperados para análise sem derrubar o host
+        _logger.LogError(ex, "Erro no serviço de verificação de links de afiliados.");
+    }
         }
     }
 }

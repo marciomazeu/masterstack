@@ -5,6 +5,7 @@
 
 @{
     ViewData["Title"] = Localizer["Profile_PageTitle"];
+    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? CultureInfo.CurrentCulture.Name;
 }
 
 @if (Model == null)
@@ -21,7 +22,8 @@ else
 {
     <div class="container py-5">
         <div class="row">
-            <div class="col-lg-4">
+            <!-- Coluna da Foto de Perfil -->
+            <div class="col-lg-4 mb-4">
                 <div class="card shadow-sm text-center p-4">
                     <div class="mb-3">
                         <img id="profilePreview" src="@(Model.CurrentImageUrl ?? "/img/default-avatar.png")" 
@@ -33,12 +35,20 @@ else
                 </div>
             </div>
 
+            <!-- Coluna dos Dados de Perfil e Configurações -->
             <div class="col-lg-8">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white fw-bold">@Localizer["Profile_PublicInfoHeading"]: @Model.DisplayName</div>
+                    <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                        <span>@Localizer["Profile_PublicInfoHeading"]: @Model.DisplayName</span>
+                        <!-- 🔗 Link direto para a página de Empresas/Vagas ajustado com {culture} -->
+                        <a href="@Url.Action("Enterprises", "Jobs", new { culture = currentCulture })" 
+                        class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-briefcase me-1"></i> @Localizer["Profile_ViewJobsAndCompaniesBtn"]
+                        </a>
+                    </div>
                     <div class="card-body">
                        <form asp-action="UpdateProfile" 
-                            asp-route-culture="@ViewContext.RouteData.Values["culture"]" 
+                            asp-route-culture="@currentCulture" 
                             method="post" 
                             enctype="multipart/form-data">
                             
@@ -46,19 +56,22 @@ else
                             @Html.AntiForgeryToken()
                             <input type="file" id="fileInput" name="NewImage" class="d-none" onchange="previewImage(this)">
                             
+                            <!-- Nome de Exibição -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">@Localizer["Profile_DisplayNameLabel"]</label>
                                 <input asp-for="DisplayName" class="form-control" placeholder="@Localizer["Profile_DisplayNamePlaceholder"]">
                                 <span asp-validation-for="DisplayName" class="text-danger small"></span>
                             </div>
 
+                            <!-- Biografia Principal -->
                             <div class="mb-3">
-                                <label class="form-label">
+                                <label class="form-label fw-bold">
                                     @(Model.IsAuthorOrAdmin ? Localizer["Profile_BioPTLabel"] : Localizer["Profile_BioLabel"])
                                 </label>
                                 <textarea asp-for="Bio" class="form-control" rows="3"></textarea>
                             </div>
 
+                            <!-- Traduções da Bio (Para Admins/Autores) -->
                             @if (Model.IsAuthorOrAdmin)
                             {
                                 <div class="card bg-dark text-light p-3 mb-3 border-secondary">
@@ -78,6 +91,53 @@ else
                                 </div>
                             }
 
+                            <!-- 📍 Seção de Localização e Preferências de Busca de Vagas -->
+                            <div class="card bg-light p-3 mb-3 border">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="fw-bold text-primary mb-0">
+                                        <i class="fas fa-map-marker-alt me-2"></i>@Localizer["Profile_LocationAndPreferences"]
+                                    </h6>
+                                    <!-- 🔗 Botão de acesso rápido para Empresas e Vagas -->
+                                   <a href="@Url.Action("Enterprises", "Jobs", new { culture = currentCulture })" 
+                                    class="btn btn-sm btn-primary">
+                                        <i class="fas fa-search-location me-1"></i> @Localizer["Profile_GoToJobsPageBtn"]
+                                    </a>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small fw-bold">@Localizer["Profile_CountryLabel"]</label>
+                                        <select asp-for="CountryCode" id="countrySelect" class="form-select form-select-sm" onchange="loadCities(this.value)">
+                                            <option value="">@Localizer["Profile_SelectCountry"]</option>
+                                            <option value="br">Brasil</option>
+                                            <option value="ca">Canadá</option>
+                                            <option value="us">Estados Unidos</option>
+                                            <option value="es">Espanha</option>
+                                            <option value="pt">Portugal</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small fw-bold">@Localizer["Profile_CityLabel"]</label>
+                                        <select asp-for="City" id="citySelect" class="form-select form-select-sm">
+                                            <option value="">@Localizer["Profile_SelectCity"]</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small fw-bold">@Localizer["Profile_PreferredJobTitleLabel"]</label>
+                                        <input asp-for="PreferredJobTitle" class="form-control form-control-sm" placeholder="ex: Fullstack Developer">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small fw-bold">@Localizer["Profile_SearchRadiusLabel"] (KM)</label>
+                                        <input asp-for="SearchRadiusKm" type="number" class="form-control form-control-sm" min="5" max="500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Redes Sociais -->
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label class="small fw-bold">LinkedIn</label>
@@ -101,6 +161,7 @@ else
                             <button type="submit" class="btn btn-primary px-4">@Localizer["Profile_SaveBtn"]</button>
                         </form>
 
+                        <!-- Card de Segurança (2FA) -->
                         <div class="card mt-4 border-0 shadow-sm">
                             <div class="card-header bg-dark text-white fw-bold">
                                 🛡️ @Localizer["Profile_SecurityHeader"]
@@ -121,13 +182,14 @@ else
                                 {
                                     <a asp-action="EnableTwoFactor" 
                                        asp-controller="Account" 
-                                       asp-route-culture="@CultureInfo.CurrentCulture.Name" 
+                                       asp-route-culture="@currentCulture" 
                                        class="btn btn-primary fw-bold">
                                         <i class="fas fa-shield-alt me-2"></i> @Localizer["Profile_Enable2FABtn"]
                                     </a>
                                 }
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -147,7 +209,45 @@ else
         }
     }
 
+    async function loadCities(countryCode) {
+        var citySelect = document.getElementById('citySelect');
+        citySelect.innerHTML = '<option value="">Carregando...</option>';
+
+        if (!countryCode) {
+            citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
+            return;
+        }
+
+        try {
+            var culture = '@currentCulture';
+            var response = await fetch(`/${culture}/Jobs/GetCities/${countryCode}`);
+            if (response.ok) {
+                var cities = await response.json();
+                citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
+                cities.forEach(function(city) {
+                    var option = document.createElement('option');
+                    option.value = city;
+                    option.text = city;
+                    if ('@Model?.City' === city) {
+                        option.selected = true;
+                    }
+                    citySelect.appendChild(option);
+                });
+            } else {
+                citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
+            }
+        } catch (error) {
+            console.error('Erro ao buscar cidades:', error);
+            citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+        var initialCountry = '@Model?.CountryCode';
+        if (initialCountry) {
+            loadCities(initialCountry);
+        }
+
         var successMsg = '@Html.Raw(TempData["Success"])';
         
         if (successMsg && successMsg.trim() !== "") {

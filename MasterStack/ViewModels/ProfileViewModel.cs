@@ -61,5 +61,11 @@ namespace MasterStack.ViewModels
 
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        [Display(Name = "Cargo Preferido")]
+        public string? PreferredJobTitle { get; set; }
+
+        [Display(Name = "Raio de Busca (KM)")]
+        [Range(1, 500, ErrorMessage = "Informe um raio válido entre 1 e 500 KM.")]
+        public int SearchRadiusKm { get; set; } = 50;
     }
 }

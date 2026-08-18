@@ -1046,7 +1046,7 @@
     <comment/>
   </data>
   <data name="SearchJobsBtn" xml:space="preserve">
-    <value>Buscar Vagas de TI (Adzuna + Jooble)</value>
+    <value>Buscar Vagas</value>
     <comment/>
   </data>
   <data name="TabJobs" xml:space="preserve">
@@ -1182,7 +1182,7 @@
     <comment/>
   </data>
   <data name="Profile_PageTitle" xml:space="preserve">
-    <value>Perfil do Usuário</value>
+    <value>Meu Perfil</value>
     <comment/>
   </data>
   <data name="Profile_NotFoundTitle" xml:space="preserve">
@@ -1210,7 +1210,7 @@
     <comment/>
   </data>
   <data name="Profile_DisplayNamePlaceholder" xml:space="preserve">
-    <value>Como você quer ser chamado?</value>
+    <value>Seu nome ou apelido</value>
     <comment/>
   </data>
   <data name="Profile_BioLabel" xml:space="preserve">
@@ -1234,7 +1234,7 @@
     <comment/>
   </data>
   <data name="Profile_SaveBtn" xml:space="preserve">
-    <value>Salvar Perfil</value>
+    <value>Salvar Alterações</value>
     <comment/>
   </data>
   <data name="Profile_SecurityHeader" xml:space="preserve">
@@ -1407,6 +1407,450 @@
   </data>
   <data name="Affiliate_UpdateBtn" xml:space="preserve">
     <value>Atualizar Produto</value>
+    <comment/>
+  </data>
+  <data name="Cookie_CookieMessage" xml:space="preserve">
+    <value>Utilizamos cookies para personalizar sua experiência, recomendar vagas de TI relevantes e analisar nosso tráfego, de acordo com a nossa </value>
+    <comment/>
+  </data>
+  <data name="Cookie_PrivacyPolicyLink" xml:space="preserve">
+    <value>Política de Privacidade</value>
+    <comment/>
+  </data>
+  <data name="Cookie_AcceptAll" xml:space="preserve">
+    <value>Aceitar todos</value>
+    <comment/>
+  </data>
+  <data name="Cookie_RejectAll" xml:space="preserve">
+    <value>Rejeitar todos</value>
+    <comment/>
+  </data>
+  <data name="Cookie_Manage" xml:space="preserve">
+    <value>Gerenciar cookies</value>
+    <comment/>
+  </data>
+  <data name="Home_Hero_Btn_Jobs" xml:space="preserve">
+    <value>Vagas em TI</value>
+    <comment/>
+  </data>
+  <data name="Home_Cat_Jobs" xml:space="preserve">
+    <value>Vagas de Emprego</value>
+    <comment/>
+  </data>
+  <data name="Home_Cat_Courses" xml:space="preserve">
+    <value>Cursos</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Section_Title" xml:space="preserve">
+    <value>Vagas de Tecnologia em Destaque</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Section_Subtitle" xml:space="preserve">
+    <value>Oportunidades em desenvolvimento, infraestrutura e produto no Canadá e globais.</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_ViewAll" xml:space="preserve">
+    <value>Ver todas as vagas</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Apply" xml:space="preserve">
+    <value>Ver Vaga</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_Empty" xml:space="preserve">
+    <value>Nenhuma vaga cadastrada no momento.</value>
+    <comment/>
+  </data>
+  <data name="Home_Feed_Empty" xml:space="preserve">
+    <value>Nenhum artigo publicado ainda.</value>
+    <comment/>
+  </data>
+  <data name="Home_Newsletter_Consent_Text" xml:space="preserve">
+    <value>Aceito receber atualizações de vagas e artigos de acordo com a</value>
+    <comment/>
+  </data>
+  <data name="Home_Privacy_Officer_Label" xml:space="preserve">
+    <value>Responsável pela Proteção de Dados (Lei 25)</value>
+    <comment/>
+  </data>
+  <data name="Home_TermsOfServiceLink" xml:space="preserve">
+    <value>Termos de Uso</value>
+    <comment/>
+  </data>
+  <data name="Home_Manage_Cookies" xml:space="preserve">
+    <value>Gerenciar Cookies</value>
+    <comment/>
+  </data>
+  <data name="Home_Job_Type_FullTime_Remote" xml:space="preserve">
+    <value>Remoto / Tempo Integral</value>
+    <comment/>
+  </data>
+  <data name="Home_Job_Company_Confidential" xml:space="preserve">
+    <value>Empresa Confidencial</value>
+    <comment/>
+  </data>
+  <data name="Home_Job_Location_Remote" xml:space="preserve">
+    <value>Remoto</value>
+    <comment/>
+  </data>
+  <data name="Home_Jobs_PoweredBy" xml:space="preserve">
+    <value>Vagas fornecidas por</value>
+    <comment/>
+  </data>
+  <data name="Profile_DefaultUser" xml:space="preserve">
+    <value>Usuário</value>
+    <comment/>
+  </data>
+  <data name="Profile_LocationActive" xml:space="preserve">
+    <value>Localização Ativa ({0})</value>
+    <comment/>
+  </data>
+  <data name="Profile_ViewJobsAndCompaniesBtn" xml:space="preserve">
+    <value>Ver Empresas Próximas</value>
+    <comment/>
+  </data>
+  <data name="Profile_SecurityHeading" xml:space="preserve">
+    <value>🛡️ Segurança da Conta</value>
+    <comment/>
+  </data>
+  <data name="Profile_TwoFactorActive" xml:space="preserve">
+    <value>2FA Ativo</value>
+    <comment/>
+  </data>
+  <data name="Profile_TwoFactorDisabled" xml:space="preserve">
+    <value>2FA Desativado</value>
+    <comment/>
+  </data>
+  <data name="Profile_EnableTwoFactorBtn" xml:space="preserve">
+    <value>Ativar Proteção de 2 Fatores</value>
+    <comment/>
+  </data>
+  <data name="Profile_PersonalInfoSection" xml:space="preserve">
+    <value>Informações Pessoais</value>
+    <comment/>
+  </data>
+  <data name="Profile_LocationSection" xml:space="preserve">
+    <value>Localização para Empresas Próximas</value>
+    <comment/>
+  </data>
+  <data name="Profile_LocationDescription" xml:space="preserve">
+    <value>Usado para identificar empresas de tecnologia na sua região.</value>
+    <comment/>
+  </data>
+  <data name="Profile_CountryLabel" xml:space="preserve">
+    <value>País</value>
+    <comment/>
+  </data>
+  <data name="Profile_SelectCountry" xml:space="preserve">
+    <value>-- Selecione o País --</value>
+    <comment/>
+  </data>
+  <data name="Profile_CityLabel" xml:space="preserve">
+    <value>Cidade</value>
+    <comment/>
+  </data>
+  <data name="Profile_SelectCountryFirst" xml:space="preserve">
+    <value>-- Selecione primeiro o País --</value>
+    <comment/>
+  </data>
+  <data name="Profile_SelectCity" xml:space="preserve">
+    <value>-- Selecione a Cidade --</value>
+    <comment/>
+  </data>
+  <data name="Profile_LoadingCities" xml:space="preserve">
+    <value>Carregando cidades...</value>
+    <comment/>
+  </data>
+  <data name="Profile_NoCitiesFound" xml:space="preserve">
+    <value>Nenhuma cidade encontrada</value>
+    <comment/>
+  </data>
+  <data name="Profile_ErrorLoadingCities" xml:space="preserve">
+    <value>Erro ao carregar cidades</value>
+    <comment/>
+  </data>
+  <data name="Profile_CustomCityLabel" xml:space="preserve">
+    <value>Digite o nome da sua cidade</value>
+    <comment/>
+  </data>
+  <data name="Profile_CustomCityPlaceholder" xml:space="preserve">
+    <value>Ex: Campinas, Laval, Québec City</value>
+    <comment/>
+  </data>
+  <data name="Profile_StateOrRegionLabel" xml:space="preserve">
+    <value>Estado / Província / Região</value>
+    <comment/>
+  </data>
+  <data name="Profile_StateOrRegionPlaceholder" xml:space="preserve">
+    <value>Ex: SP, QC, CA</value>
+    <comment/>
+  </data>
+  <data name="Profile_PostalCodeLabel" xml:space="preserve">
+    <value>Código Postal / CEP / Zipcode</value>
+    <comment/>
+  </data>
+  <data name="Profile_PostalCodePlaceholder" xml:space="preserve">
+    <value>Código Postal / CEP</value>
+    <comment/>
+  </data>
+  <data name="Profile_StreetAddressLabel" xml:space="preserve">
+    <value>Endereço (Rua / Avenida e número)</value>
+    <comment/>
+  </data>
+  <data name="Profile_StreetAddressPlaceholder" xml:space="preserve">
+    <value>Ex: Av. Paulista, 1000</value>
+    <comment/>
+  </data>
+  <data name="Profile_SocialSection" xml:space="preserve">
+    <value>Redes Sociais</value>
+    <comment/>
+  </data>
+  <data name="Profile_LinkedInPlaceholder" xml:space="preserve">
+    <value>[https://linkedin.com/in/seu-perfil](https://linkedin.com/in/seu-perfil)</value>
+    <comment/>
+  </data>
+  <data name="Profile_GitHubPlaceholder" xml:space="preserve">
+    <value>[https://github.com/seu-usuario](https://github.com/seu-usuario)</value>
+    <comment/>
+  </data>
+  <data name="Profile_TwitterPlaceholder" xml:space="preserve">
+    <value>[https://x.com/seu-usuario](https://x.com/seu-usuario)</value>
+    <comment/>
+  </data>
+  <data name="Profile_InstagramPlaceholder" xml:space="preserve">
+    <value>[https://instagram.com/seu-usuario](https://instagram.com/seu-usuario)</value>
+    <comment/>
+  </data>
+  <data name="Profile_FacebookPlaceholder" xml:space="preserve">
+    <value>[https://facebook.com/seu-perfil](https://facebook.com/seu-perfil)</value>
+    <comment/>
+  </data>
+  <data name="Resume_ManageTitle" xml:space="preserve">
+    <value>Gerenciar Currículo</value>
+    <comment/>
+  </data>
+  <data name="Resume_ExportPdf" xml:space="preserve">
+    <value>Exportar em PDF</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfAutoFillTitle" xml:space="preserve">
+    <value>Preenchimento Automático via PDF</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfAutoFillDesc" xml:space="preserve">
+    <value>Envie seu currículo em PDF para preenchimento automático do Resumo Profissional e Habilidades.</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfAutoFillNote" xml:space="preserve">
+    <value>As seções de experiência e formação podem ser ajustadas manualmente abaixo.</value>
+    <comment/>
+  </data>
+  <data name="Resume_ImportFromPdf" xml:space="preserve">
+    <value>Importar do PDF</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionSummary" xml:space="preserve">
+    <value>Resumo Profissional</value>
+    <comment/>
+  </data>
+  <data name="Resume_SummaryPlaceholder" xml:space="preserve">
+    <value>Descreva brevemente sua trajetória e objetivos...</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionSkills" xml:space="preserve">
+    <value>Habilidades</value>
+    <comment/>
+  </data>
+  <data name="Resume_SkillsPlaceholder" xml:space="preserve">
+    <value>Ex: C#, ASP.NET Core, PostgreSQL, Bootstrap</value>
+    <comment/>
+  </data>
+  <data name="Resume_SkillsHelpText" xml:space="preserve">
+    <value>Separe cada habilidade com uma vírgula.</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionExperience" xml:space="preserve">
+    <value>Experiências Profissionais</value>
+    <comment/>
+  </data>
+  <data name="Resume_AddExperience" xml:space="preserve">
+    <value>+ Adicionar Experiência</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelCompany" xml:space="preserve">
+    <value>Empresa</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelRole" xml:space="preserve">
+    <value>Cargo</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelStartDate" xml:space="preserve">
+    <value>Data de Início</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelEndDate" xml:space="preserve">
+    <value>Data de Término (deixe em branco se for o atual)</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelEndDateShort" xml:space="preserve">
+    <value>Data de Término</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelDescription" xml:space="preserve">
+    <value>Descrição das atividades</value>
+    <comment/>
+  </data>
+  <data name="Resume_SectionEducation" xml:space="preserve">
+    <value>Formação Acadêmica</value>
+    <comment/>
+  </data>
+  <data name="Resume_AddEducation" xml:space="preserve">
+    <value>+ Adicionar Formação</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelInstitution" xml:space="preserve">
+    <value>Instituição</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelDegree" xml:space="preserve">
+    <value>Grau / Curso</value>
+    <comment/>
+  </data>
+  <data name="Resume_LabelCompletionDate" xml:space="preserve">
+    <value>Data de Conclusão</value>
+    <comment/>
+  </data>
+  <data name="Resume_BtnSave" xml:space="preserve">
+    <value>Salvar Currículo</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsSelectPdfFirst" xml:space="preserve">
+    <value>Por favor, selecione um arquivo PDF primeiro.</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsImportSuccess" xml:space="preserve">
+    <value>Dados do PDF importados com sucesso! Revise as informações antes de salvar.</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsImportError" xml:space="preserve">
+    <value>Falha ao processar o arquivo PDF.</value>
+    <comment/>
+  </data>
+  <data name="Resume_JsUploadError" xml:space="preserve">
+    <value>Ocorreu um erro ao enviar o arquivo.</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfDefaultFileName" xml:space="preserve">
+    <value>CV_Usuario</value>
+    <comment/>
+  </data>
+  <data name="Resume_SaveSuccess" xml:space="preserve">
+    <value>Currículo atualizado com sucesso!</value>
+    <comment/>
+  </data>
+  <data name="Resume_NotFound" xml:space="preserve">
+    <value>Currículo não cadastrado.</value>
+    <comment/>
+  </data>
+  <data name="Resume_DefaultYourName" xml:space="preserve">
+    <value>Seu Nome</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionSummary" xml:space="preserve">
+    <value>Perfil Profissional</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionSkills" xml:space="preserve">
+    <value>Habilidades &amp; Tecnologias</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionExperience" xml:space="preserve">
+    <value>Experiência Profissional</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfSectionEducation" xml:space="preserve">
+    <value>Formação Acadêmica</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfPresent" xml:space="preserve">
+    <value>Presente</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfPage" xml:space="preserve">
+    <value>Página</value>
+    <comment/>
+  </data>
+  <data name="Resume_PdfOf" xml:space="preserve">
+    <value>de</value>
+    <comment/>
+  </data>
+  <data name="Menu_Resume" xml:space="preserve">
+    <value>Currículo</value>
+    <comment/>
+  </data>
+  <data name="Osm_SessionExpired" xml:space="preserve">
+    <value>Sessão expirada.</value>
+    <comment/>
+  </data>
+  <data name="Osm_InvalidCoordinatesOrUser" xml:space="preserve">
+    <value>Coordenadas inválidas ou usuário não autenticado.</value>
+    <comment/>
+  </data>
+  <data name="Osm_ServerUnstable" xml:space="preserve">
+    <value>O servidor de mapas do OpenStreetMap está instável no momento. Tente novamente em alguns segundos.</value>
+    <comment/>
+  </data>
+  <data name="Osm_UnnamedCompany" xml:space="preserve">
+    <value>Empresa sem nome registrado</value>
+    <comment/>
+  </data>
+  <data name="Osm_Office" xml:space="preserve">
+    <value>Escritório</value>
+    <comment/>
+  </data>
+  <data name="Osm_ErrorProcessingMapData" xml:space="preserve">
+    <value>Erro ao processar a resposta dos servidores do mapa.</value>
+    <comment/>
+  </data>
+  <data name="Enterprises_ProfileLocationRequired" xml:space="preserve">
+    <value>Cadastre sua cidade e país no perfil para visualizar o mapa e empresas da sua região.</value>
+    <comment/>
+  </data>
+  <data name="CompaniesNearby_ProfileLocationRequired" xml:space="preserve">
+    <value>Cadastre seu CEP ou Cidade no perfil para buscar empresas próximas.</value>
+    <comment/>
+  </data>
+  <data name="FetchJobs_CountryCityRequired" xml:space="preserve">
+    <value>Por favor, cadastre seu país e cidade no perfil para buscar vagas da sua região.</value>
+    <comment/>
+  </data>
+  <data name="FetchJobs_NoJobsFound" xml:space="preserve">
+    <value>Nenhuma vaga foi encontrada no momento para sua região nos provedores consultados.</value>
+    <comment/>
+  </data>
+  <data name="FetchJobs_PartialJobsFound" xml:space="preserve">
+    <value>Busca concluída! Algumas vagas foram encontradas, mas um ou mais provedores não retornaram resultados.</value>
+    <comment/>
+  </data>
+  <data name="Preferences_SaveSuccess" xml:space="preserve">
+    <value>Preferências de busca salvas com sucesso!</value>
+    <comment/>
+  </data>
+  <data name="UserNotAuthenticated" xml:space="preserve">
+    <value>Usuário não autenticado.</value>
+    <comment/>
+  </data>
+  <data name="Job_Untitled" xml:space="preserve">
+    <value>Sem título</value>
+    <comment/>
+  </data>
+  <data name="Job_CompanyNotSpecified" xml:space="preserve">
+    <value>Empresa não informada</value>
+    <comment/>
+  </data>
+  <data name="Job_UndefinedRegion" xml:space="preserve">
+    <value>Região Indefinida</value>
     <comment/>
   </data>
 </root>

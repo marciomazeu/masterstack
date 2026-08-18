@@ -23,7 +23,7 @@ namespace MasterStack.Models
         public double? Longitude { get; set; }
         // 🟢 NOVOS CAMPOS DE PREFERÊNCIA DO USUÁRIO
         public int SearchRadiusKm { get; set; } = 25; // Padrão: 25 km
-        public string PreferredJobTitle { get; set; } = "developer"; // Padrão: "developer"
+        public string? PreferredJobTitle { get; set; } = "developer"; // Padrão: "developer"
 
         // 📝 Propriedade de navegação para os Posts (Resolve o erro no ApplicationDbContext)
         public virtual ICollection<BlogPost> BlogPosts { get; set; } = new List<BlogPost>();

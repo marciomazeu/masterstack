@@ -1,0 +1,349 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+@model MasterStack.ViewModels.ResumeFormViewModel
+
+@{
+    ViewData["Title"] = Localizer["Resume_ManageTitle"];
+    var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+}
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>@Localizer["Resume_ManageTitle"]</h2>
+        <div>
+            @if (Model.ResumeId > 0)
+            {
+                <a href="@Url.Action("ExportPdf", "Resume", new { culture = currentCulture })" class="btn btn-outline-danger me-2" target="_blank">
+                    <i class="bi bi-file-earmark-pdf"></i> @Localizer["Resume_ExportPdf"]
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Abas para Seleção do Idioma do Currículo -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link @(currentCulture == "pt-BR" ? "active fw-bold" : "")" 
+               asp-controller="Resume" asp-action="Index" asp-route-culture="pt-BR">
+                <span class="fi fi-br me-1"></span> Português
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(currentCulture == "en-US" ? "active fw-bold" : "")" 
+               asp-controller="Resume" asp-action="Index" asp-route-culture="en-US">
+                <span class="fi fi-us me-1"></span> English
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(currentCulture == "fr-CA" ? "active fw-bold" : "")" 
+               asp-controller="Resume" asp-action="Index" asp-route-culture="fr-CA">
+                <span class="fi fi-ca me-1"></span> Français
+            </a>
+        </li>
+    </ul>
+
+    <!-- Mensagens de Alerta -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Seção de Importação de PDF -->
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">@Localizer["Resume_PdfAutoFillTitle"]</h5>
+            <span class="badge bg-light text-dark">Beta</span>
+        </div>
+        <div class="card-body">
+            <p class="card-text text-muted mb-2">
+                @Html.Raw(Localizer["Resume_PdfAutoFillDesc"].Value)
+            </p>
+            <small class="text-secondary d-block mb-3">
+                <i class="bi bi-info-circle me-1"></i> @Localizer["Resume_PdfAutoFillNote"]
+            </small>
+            
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <input type="file" id="pdfFileInput" accept=".pdf" class="form-control" />
+                </div>
+                <div class="col-md-4 mt-2 mt-md-0">
+                    <button type="button" id="btnImportPdf" class="btn btn-info text-white w-100">
+                        <span id="importSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        @Localizer["Resume_ImportFromPdf"]
+                    </button>
+                </div>
+            </div>
+            <div id="importFeedback" class="mt-2 text-danger small"></div>
+        </div>
+    </div>
+
+    <!-- Formulário Principal -->
+    <form asp-controller="Resume" asp-action="Save" asp-route-culture="@currentCulture" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ResumeId" />
+       
+
+        <!-- Resumo Profissional -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">@Localizer["Resume_SectionSummary"]</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="Summary" class="form-label"></label>
+                    <textarea asp-for="Summary" class="form-control" rows="4" placeholder="@Localizer["Resume_SummaryPlaceholder"]"></textarea>
+                    <span asp-validation-for="Summary" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Habilidades -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">@Localizer["Resume_SectionSkills"]</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="SkillsCsv" class="form-label"></label>
+                    <input asp-for="SkillsCsv" class="form-control" placeholder="@Localizer["Resume_SkillsPlaceholder"]" />
+                    <span asp-validation-for="SkillsCsv" class="text-danger"></span>
+                    <small class="form-text text-muted">@Localizer["Resume_SkillsHelpText"]</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experiências Profissionais -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">@Localizer["Resume_SectionExperience"]</h5>
+                <button type="button" id="btnAddExperience" class="btn btn-sm btn-outline-primary">@Localizer["Resume_AddExperience"]</button>
+            </div>
+            <div class="card-body" id="experienceList">
+                @for (int i = 0; i < Model.Experiences.Count; i++)
+                {
+                    <div class="experience-item border p-3 rounded mb-3 position-relative">
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelCompany"]</label>
+                                <input name="Experiences[@i].Company" value="@Model.Experiences[i].Company" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelRole"]</label>
+                                <input name="Experiences[@i].Role" value="@Model.Experiences[i].Role" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <input type="date" name="Experiences[@i].StartDate" value="@Model.Experiences[i].StartDate.ToString("yyyy-MM-dd")" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelEndDate"]</label>
+                                <input type="date" name="Experiences[@i].EndDate" value="@(Model.Experiences[i].EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">@Localizer["Resume_LabelDescription"]</label>
+                                <textarea name="Experiences[@i].Description" class="form-control" rows="2">@Model.Experiences[i].Description</textarea>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Formação Acadêmica -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">@Localizer["Resume_SectionEducation"]</h5>
+                <button type="button" id="btnAddEducation" class="btn btn-sm btn-outline-primary">@Localizer["Resume_AddEducation"]</button>
+            </div>
+            <div class="card-body" id="educationList">
+                @for (int i = 0; i < Model.Educations.Count; i++)
+                {
+                    <div class="education-item border p-3 rounded mb-3 position-relative">
+                        <input type="hidden" name="Educations[@i].Culture" value="@Model.Culture" />
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelInstitution"]</label>
+                                <input name="Educations[@i].Institution" value="@Model.Educations[i].Institution" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelDegree"]</label>
+                                <input name="Educations[@i].Degree" value="@Model.Educations[i].Degree" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <input type="date" name="Educations[@i].StartDate" value="@Model.Educations[i].StartDate.ToString("yyyy-MM-dd")" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelCompletionDate"]</label>
+                                <input type="date" name="Educations[@i].EndDate" value="@(Model.Educations[i].EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Botão Salvar -->
+        <div class="d-flex justify-content-end mb-5">
+            <button type="submit" class="btn btn-success btn-lg px-4">
+                <i class="bi bi-check-circle me-1"></i> @Localizer["Resume_BtnSave"]
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            
+            // 1. Remover item de Experiência/Formação e reindexar
+            document.addEventListener("click", function (e) {
+                if (e.target && e.target.classList.contains("btn-remove-item")) {
+                    const item = e.target.closest(".experience-item, .education-item");
+                    if (item.classList.contains("experience-item")) {
+                        item.remove();
+                        reindexItems("experienceList", "Experiences");
+                    } else if (item.classList.contains("education-item")) {
+                        item.remove();
+                        reindexItems("educationList", "Education");
+                    }
+                }
+            });
+
+            // 2. Adicionar nova Experiência
+            document.getElementById("btnAddExperience").addEventListener("click", function () {
+                const list = document.getElementById("experienceList");
+                const index = list.children.length;
+                const template = `
+                    <div class="experience-item border p-3 rounded mb-3 position-relative">
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelCompany"]</label>
+                                <input name="Experiences[${index}].Company" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelRole"]</label>
+                                <input name="Experiences[${index}].Role" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <input type="date" name="Experiences[${index}].StartDate" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelEndDate"]</label>
+                                <input type="date" name="Experiences[${index}].EndDate" class="form-control" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">@Localizer["Resume_LabelDescription"]</label>
+                                <textarea name="Experiences[${index}].Description" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>`;
+                list.insertAdjacentHTML("beforeend", template);
+            });
+
+            // 3. Adicionar nova Formação
+            document.getElementById("btnAddEducation").addEventListener("click", function () {
+                const list = document.getElementById("educationList");
+                const index = list.children.length;
+                const template = `
+                    <div class="education-item border p-3 rounded mb-3 position-relative">
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelInstitution"]</label>
+                                <input name="Educations[${index}].Institution" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelDegree"]</label>
+                                <input name="Educations[${index}].Degree" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <input type="date" name="Educations[${index}].StartDate" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localizer["Resume_LabelCompletionDate"]</label>
+                                <input type="date" name="Educations[${index}].EndDate" class="form-control" />
+                            </div>
+                        </div>
+                    </div>`;
+                list.insertAdjacentHTML("beforeend", template);
+            });
+
+            // Auxiliar para reindexar os nomes dos inputs após remoções
+            function reindexItems(containerId, propertyName) {
+                const container = document.getElementById(containerId);
+                const items = container.children;
+                for (let i = 0; i < items.length; i++) {
+                    const inputs = items[i].querySelectorAll("input, textarea");
+                    inputs.forEach(input => {
+                        const name = input.getAttribute("name");
+                        if (name) {
+                            input.setAttribute("name", name.replace(new RegExp(`${propertyName}\\[\\d+\\\]`), `${propertyName}[${i}]`));
+                        }
+                    });
+                }
+            }
+
+            // 4. Importação de PDF via AJAX
+            document.getElementById("btnImportPdf").addEventListener("click", async function () {
+                const fileInput = document.getElementById("pdfFileInput");
+                const feedback = document.getElementById("importFeedback");
+                const spinner = document.getElementById("importSpinner");
+
+                feedback.innerText = "";
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    feedback.innerText = "@Localizer["Resume_JsSelectPdfFirst"]";
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("pdfFile", fileInput.files[0]);
+
+                const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenElement ? tokenElement.value : "";
+
+                spinner.classList.remove("d-none");
+                this.disabled = true;
+
+                try {
+                    const response = await fetch('@Url.Action("ImportPdf", "Resume", new { culture = currentCulture })', {
+                        method: "POST",
+                        headers: {
+                            "RequestVerificationToken": token
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        if (result.data.summary) {
+                            document.getElementById("Summary").value = result.data.summary;
+                        }
+                        if (result.data.skillsCsv) {
+                            document.getElementById("SkillsCsv").value = result.data.skillsCsv;
+                        }
+                        alert("@Localizer["Resume_JsImportSuccess"]");
+                    } else {
+                        feedback.innerText = result.message || "@Localizer["Resume_JsImportError"]";
+                    }
+                } catch (error) {
+                    feedback.innerText = "@Localizer["Resume_JsUploadError"]";
+                } finally {
+                    spinner.classList.add("d-none");
+                    this.disabled = false;
+                }
+            });
+        });
+    </script>
+}

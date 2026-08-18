@@ -11,5 +11,7 @@ namespace MasterStack.ViewModels
 
         // Uma lista forte contendo os posts que vierem do banco
         public List<BlogPost> LatestPosts { get; set; } = new List<BlogPost>();
+        // Nova propriedade para as vagas em destaque
+        public IEnumerable<JobItemViewModel> FeaturedJobs { get; set; } = new List<JobItemViewModel>();
     }
 }

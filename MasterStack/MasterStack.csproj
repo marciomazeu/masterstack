@@ -9,8 +9,8 @@
   </PropertyGroup>
 
 <ItemGroup>
-  <PackageReference Include="HtmlSanitizer" Version="8.1.870" />
-  <PackageReference Include="MailKit" Version="4.15.1" />
+  <PackageReference Include="HtmlSanitizer" Version="9.1.982" />
+  <PackageReference Include="MailKit" Version="4.17.0" />
   
   <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.13" />
   <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.13" />
@@ -28,8 +28,17 @@
   </PackageReference>
   
   <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+  
+  <PackageReference Include="QuestPDF" Version="2026.7.2" />
+  
+  <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+  
+  <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+  
+  <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   <PackageReference Include="SkiaSharp" Version="2.88.9" />
   <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.9" />
+  <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
 </ItemGroup>
 
 	<ItemGroup>

@@ -1,0 +1,56 @@
+@using Microsoft.AspNetCore.Http.Features
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+
+@{
+    var consentFeature = Context.Features.Get<ITrackingConsentFeature>();
+    var showBanner = !consentFeature?.CanTrack ?? false;
+    var cookieString = consentFeature?.CreateConsentCookie();
+}
+
+@if (showBanner)
+{
+    <div id="cookieConsent" class="alert alert-dark alert-dismissible fade show fixed-bottom mb-0 rounded-0 shadow-lg border-top border-primary" role="alert" style="z-index: 9999; background-color: #1e293b; color: #f8fafc;">
+        <div class="container py-2 d-flex flex-column flex-lg-row align-items-center justify-content-between gap-3">
+            <div class="text-start fs-6">
+                @Localizer["Cookie_CookieMessage"]
+                <a asp-controller="Home" asp-action="Privacy" class="text-decoration-underline text-info font-weight-bold">
+                    @Localizer["Cookie_PrivacyPolicyLink"]
+                </a>.
+            </div>
+            
+            <div class="d-flex flex-wrap gap-2 shrink-0">
+                <!-- Botão Aceitar Todos -->
+                <button type="button" class="btn btn-success btn-sm px-3 font-weight-bold" data-cookie-string="@cookieString" onclick="acceptCookies(this)">
+                    @Localizer["Cookie_AcceptAll"]
+                </button>
+
+                <!-- Botão Rejeitar (Lei 25 Quebec / LGPD) -->
+                <button type="button" class="btn btn-outline-light btn-sm px-3" onclick="dismissBanner()">
+                    @Localizer["Cookie_RejectAll"]
+                </button>
+
+                <!-- Botão Gerenciar / Política -->
+                <a asp-controller="Home" asp-action="Privacy" class="btn btn-outline-info btn-sm px-3">
+                    @Localizer["Cookie_Manage"]
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function acceptCookies(button) {
+            document.cookie = button.dataset.cookieString;
+            dismissBanner();
+        }
+
+        function dismissBanner() {
+            var cookieContainer = document.getElementById('cookieConsent');
+            if (cookieContainer) {
+                cookieContainer.classList.remove('show');
+                cookieContainer.remove();
+            }
+        }
+    </script>
+}
