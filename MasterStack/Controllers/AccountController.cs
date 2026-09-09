@@ -48,7 +48,6 @@ namespace MasterStack.Controllers
     }
 
     [HttpGet]
-    [HttpGet("Login")]
     public IActionResult Login(string culture, string returnUrl = null)
     {
         // 1. Prioriza a cultura da URL, se não houver, usa a do sistema
