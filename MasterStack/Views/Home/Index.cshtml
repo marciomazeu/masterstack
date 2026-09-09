@@ -20,11 +20,7 @@
                     <p class="lead fw-normal text-white-50 mb-4">@Localizer["Hero_Subtitle"]</p>
                     
                     <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-lg-start mb-4">
-                        <a class="btn btn-primary btn-lg px-4 me-sm-2 fw-bold rounded-pill shadow" 
-                            asp-controller="Account" 
-                            asp-action="Login" 
-                            asp-route-culture="@Context.Request.RouteValues["culture"]" 
-                            class="btn btn-primary">
+                        <a class="btn btn-primary btn-lg px-4 me-sm-2 fw-bold rounded-pill shadow" href="/@currentCulture/Jobs">
                             <i class="bi bi-briefcase-fill me-2"></i>@Localizer["Home_Hero_Btn_Jobs"]
                         </a>
                         <a class="btn btn-outline-light btn-lg px-4 rounded-pill" href="#about-activities">
