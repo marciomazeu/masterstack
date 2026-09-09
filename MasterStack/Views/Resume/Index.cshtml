@@ -82,10 +82,9 @@
     </div>
 
     <!-- Formulário Principal -->
-    <form asp-controller="Resume" asp-action="Save" asp-route-culture="@currentCulture" method="post">
+    <form asp-controller="Resume" asp-action="Save" asp-route-culture="@currentCulture" method="post" id="resumeForm">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="ResumeId" />
-       
 
         <!-- Resumo Profissional -->
         <div class="card mb-4">
@@ -94,9 +93,12 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label asp-for="Summary" class="form-label"></label>
-                    <textarea asp-for="Summary" class="form-control" rows="4" placeholder="@Localizer["Resume_SummaryPlaceholder"]"></textarea>
-                    <span asp-validation-for="Summary" class="text-danger"></span>
+                    <label asp-for="Summary" class="form-label fw-bold">@Localizer["Resume_SummaryLabel"]</label>
+                    <div id="quill-summary-editor" style="height: 180px; background: white;" class="quill-editor-container rounded-bottom">
+                        @Html.Raw(Model?.Summary ?? string.Empty)
+                    </div>
+                    <input type="hidden" asp-for="Summary" id="quill-summary-content" />
+                    <span asp-validation-for="Summary" class="text-danger small"></span>
                 </div>
             </div>
         </div>
@@ -108,7 +110,7 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label asp-for="SkillsCsv" class="form-label"></label>
+                    <label asp-for="SkillsCsv" class="form-label fw-bold">@Localizer["Resume_SkillsLabel"]</label>
                     <input asp-for="SkillsCsv" class="form-control" placeholder="@Localizer["Resume_SkillsPlaceholder"]" />
                     <span asp-validation-for="SkillsCsv" class="text-danger"></span>
                     <small class="form-text text-muted">@Localizer["Resume_SkillsHelpText"]</small>
@@ -125,28 +127,31 @@
             <div class="card-body" id="experienceList">
                 @for (int i = 0; i < Model.Experiences.Count; i++)
                 {
-                    <div class="experience-item border p-3 rounded mb-3 position-relative">
+                    <div class="experience-item border p-3 rounded mb-3 position-relative bg-light">
                         <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelCompany"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelCompany"]</label>
                                 <input name="Experiences[@i].Company" value="@Model.Experiences[i].Company" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelRole"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelRole"]</label>
                                 <input name="Experiences[@i].Role" value="@Model.Experiences[i].Role" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelStartDate"]</label>
                                 <input type="date" name="Experiences[@i].StartDate" value="@Model.Experiences[i].StartDate.ToString("yyyy-MM-dd")" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelEndDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelEndDate"]</label>
                                 <input type="date" name="Experiences[@i].EndDate" value="@(Model.Experiences[i].EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
                             </div>
                             <div class="col-12">
-                                <label class="form-label">@Localizer["Resume_LabelDescription"]</label>
-                                <textarea name="Experiences[@i].Description" class="form-control" rows="2">@Model.Experiences[i].Description</textarea>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelDescription"]</label>
+                                <div id="exp-quill-@i" class="exp-quill-editor bg-white" style="height: 150px;">
+                                    @Html.Raw(Model.Experiences[i].Description ?? string.Empty)
+                                </div>
+                                <input type="hidden" name="Experiences[@i].Description" class="exp-quill-hidden" value="@Model.Experiences[i].Description" />
                             </div>
                         </div>
                     </div>
@@ -163,24 +168,24 @@
             <div class="card-body" id="educationList">
                 @for (int i = 0; i < Model.Educations.Count; i++)
                 {
-                    <div class="education-item border p-3 rounded mb-3 position-relative">
+                    <div class="education-item border p-3 rounded mb-3 position-relative bg-light">
                         <input type="hidden" name="Educations[@i].Culture" value="@Model.Culture" />
                         <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelInstitution"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelInstitution"]</label>
                                 <input name="Educations[@i].Institution" value="@Model.Educations[i].Institution" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelDegree"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelDegree"]</label>
                                 <input name="Educations[@i].Degree" value="@Model.Educations[i].Degree" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelStartDate"]</label>
                                 <input type="date" name="Educations[@i].StartDate" value="@Model.Educations[i].StartDate.ToString("yyyy-MM-dd")" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelCompletionDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelCompletionDate"]</label>
                                 <input type="date" name="Educations[@i].EndDate" value="@(Model.Educations[i].EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
                             </div>
                         </div>
@@ -199,78 +204,152 @@
 </div>
 
 @section Scripts {
+    <!-- ESTILOS E SCRIPTS DO QUILL.JS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            
-            // 1. Remover item de Experiência/Formação e reindexar
+            // Configuração comum de barra de ferramentas do Quill
+            const quillToolbarOptions = [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'clean']
+            ];
+
+            // Map para guardar instâncias ativas do Quill para cada container
+            const quillInstances = new Map();
+
+            // 1. Inicializar Quill no Resumo Profissional
+            const summaryEditorEl = document.getElementById('quill-summary-editor');
+            if (summaryEditorEl) {
+                const summaryQuill = new Quill(summaryEditorEl, {
+                    theme: 'snow',
+                    placeholder: '@Html.Raw(Localizer["Resume_SummaryPlaceholder"].Value)',
+                    modules: { toolbar: quillToolbarOptions }
+                });
+                quillInstances.set(summaryEditorEl, summaryQuill);
+            }
+
+            // Função para inicializar Quill em um container específico
+            function initQuillOnElement(containerEl, placeholderText) {
+                if (quillInstances.has(containerEl)) return quillInstances.get(containerEl);
+                
+                const qInstance = new Quill(containerEl, {
+                    theme: 'snow',
+                    placeholder: placeholderText || '@Html.Raw(Localizer["Resume_ExpDescPlaceholder"].Value)',
+                    modules: { toolbar: quillToolbarOptions }
+                });
+                quillInstances.set(containerEl, qInstance);
+                return qInstance;
+            }
+
+            // 2. Inicializar Quill nos itens de Experiência existentes
+            document.querySelectorAll('.exp-quill-editor').forEach(el => {
+                initQuillOnElement(el);
+            });
+
+            // Sincronizar Quill com inputs ocultos ao enviar o formulário
+            document.getElementById("resumeForm").addEventListener("submit", function () {
+                // Sincronizar Resumo
+                if (summaryEditorEl && quillInstances.has(summaryEditorEl)) {
+                    document.getElementById("quill-summary-content").value = quillInstances.get(summaryEditorEl).root.innerHTML;
+                }
+
+                // Sincronizar todas as Experiências
+                document.querySelectorAll('.experience-item').forEach(item => {
+                    const editorEl = item.querySelector('.exp-quill-editor');
+                    const hiddenInput = item.querySelector('.exp-quill-hidden');
+                    if (editorEl && hiddenInput && quillInstances.has(editorEl)) {
+                        hiddenInput.value = quillInstances.get(editorEl).root.innerHTML;
+                    }
+                });
+            });
+
+            // 3. Remover item de Experiência/Formação e reindexar
             document.addEventListener("click", function (e) {
                 if (e.target && e.target.classList.contains("btn-remove-item")) {
                     const item = e.target.closest(".experience-item, .education-item");
                     if (item.classList.contains("experience-item")) {
+                        const editorEl = item.querySelector('.exp-quill-editor');
+                        if (editorEl && quillInstances.has(editorEl)) {
+                            quillInstances.delete(editorEl);
+                        }
                         item.remove();
                         reindexItems("experienceList", "Experiences");
                     } else if (item.classList.contains("education-item")) {
                         item.remove();
-                        reindexItems("educationList", "Education");
+                        reindexItems("educationList", "Educations");
                     }
                 }
             });
 
-            // 2. Adicionar nova Experiência
+            // 4. Adicionar nova Experiência
             document.getElementById("btnAddExperience").addEventListener("click", function () {
                 const list = document.getElementById("experienceList");
                 const index = list.children.length;
+                const newEditorId = `exp-quill-new-${Date.now()}`;
+                
                 const template = `
-                    <div class="experience-item border p-3 rounded mb-3 position-relative">
+                    <div class="experience-item border p-3 rounded mb-3 position-relative bg-light">
                         <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelCompany"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelCompany"]</label>
                                 <input name="Experiences[${index}].Company" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelRole"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelRole"]</label>
                                 <input name="Experiences[${index}].Role" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelStartDate"]</label>
                                 <input type="date" name="Experiences[${index}].StartDate" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelEndDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelEndDate"]</label>
                                 <input type="date" name="Experiences[${index}].EndDate" class="form-control" />
                             </div>
                             <div class="col-12">
-                                <label class="form-label">@Localizer["Resume_LabelDescription"]</label>
-                                <textarea name="Experiences[${index}].Description" class="form-control" rows="2"></textarea>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelDescription"]</label>
+                                <div id="${newEditorId}" class="exp-quill-editor bg-white" style="height: 150px;"></div>
+                                <input type="hidden" name="Experiences[${index}].Description" class="exp-quill-hidden" />
                             </div>
                         </div>
                     </div>`;
+                
                 list.insertAdjacentHTML("beforeend", template);
+                
+                // Inicializa o Quill no novo item recém-adicionado
+                const createdEditorEl = document.getElementById(newEditorId);
+                if (createdEditorEl) {
+                    initQuillOnElement(createdEditorEl);
+                }
             });
 
-            // 3. Adicionar nova Formação
+            // 5. Adicionar nova Formação
             document.getElementById("btnAddEducation").addEventListener("click", function () {
                 const list = document.getElementById("educationList");
                 const index = list.children.length;
                 const template = `
-                    <div class="education-item border p-3 rounded mb-3 position-relative">
+                    <div class="education-item border p-3 rounded mb-3 position-relative bg-light">
                         <button type="button" class="btn-close position-absolute top-0 end-0 m-2 btn-remove-item" aria-label="Remover"></button>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelInstitution"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelInstitution"]</label>
                                 <input name="Educations[${index}].Institution" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelDegree"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelDegree"]</label>
                                 <input name="Educations[${index}].Degree" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelStartDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelStartDate"]</label>
                                 <input type="date" name="Educations[${index}].StartDate" class="form-control" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">@Localizer["Resume_LabelCompletionDate"]</label>
+                                <label class="form-label fw-bold">@Localizer["Resume_LabelCompletionDate"]</label>
                                 <input type="date" name="Educations[${index}].EndDate" class="form-control" />
                             </div>
                         </div>
@@ -293,7 +372,7 @@
                 }
             }
 
-            // 4. Importação de PDF via AJAX
+            // 6. Importação de PDF via AJAX
             document.getElementById("btnImportPdf").addEventListener("click", async function () {
                 const fileInput = document.getElementById("pdfFileInput");
                 const feedback = document.getElementById("importFeedback");
@@ -327,8 +406,8 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        if (result.data.summary) {
-                            document.getElementById("Summary").value = result.data.summary;
+                        if (result.data.summary && summaryEditorEl && quillInstances.has(summaryEditorEl)) {
+                            quillInstances.get(summaryEditorEl).root.innerHTML = result.data.summary;
                         }
                         if (result.data.skillsCsv) {
                             document.getElementById("SkillsCsv").value = result.data.skillsCsv;

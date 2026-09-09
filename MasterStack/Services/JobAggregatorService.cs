@@ -4,6 +4,7 @@ using MasterStack.ViewModels;
 using Serilog;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using MasterStack.Models;
 
 namespace MasterStack.Services
 {

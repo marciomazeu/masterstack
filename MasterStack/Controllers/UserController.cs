@@ -70,7 +70,7 @@ namespace MasterStack.Controllers
         // 1. GET: Exibir Perfil
         // ==========================================
         [HttpGet("Profile")]
-        [Authorize(Roles = "Admin,User,Author")]
+        [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> Profile([FromRoute] string culture)
         {
             var userId = _userManager.GetUserId(User);

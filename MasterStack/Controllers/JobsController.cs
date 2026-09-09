@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using MasterStack.Data;
 using MasterStack.DTOs;
@@ -9,6 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 
 namespace MasterStack.Controllers
@@ -47,14 +52,35 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/Jobs
-        [HttpGet]
+       [HttpGet]
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var jobs = await _context.JobPostings
-                .Where(j => j.UserId == user.Id)
+            // 1. Iniciamos a consulta incluindo os candidatos associados
+            var query = _context.JobPostings
+                .Include(j => j.Applications)
+                .AsQueryable();
+
+            // 2. Regras de visualização por perfil/role:
+            if (User.IsInRole("Admin"))
+            {
+                // Admin: Vê TODAS as vagas do sistema (ativas, inativas e de qualquer recrutador)
+            }
+            else if (User.IsInRole("Recruiter"))
+            {
+                // Recrutador: Vê TODAS as vagas DELE (tanto as ativas quanto as pausadas)
+                query = query.Where(j => j.RecruiterId == user.Id);
+            }
+            else
+            {
+                // Candidato / Visitante: Vê apenas as vagas ATIVAS
+                query = query.Where(j => j.IsActive);
+            }
+
+            // 3. Executamos a busca usando a variável 'query' montada acima
+            var jobs = await query
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync();
 
@@ -62,76 +88,156 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/Jobs/Details/5
-        [HttpGet("Details/{id:int}")]
+        [HttpGet("Details/{id}")]
         public async Task<IActionResult> Details(int id)
         {
-            var job = await _context.JobPostings.FirstOrDefaultAsync(j => j.Id == id);
-            if (job == null) return NotFound();
+           var job = await _context.JobPostings
+        .FirstOrDefaultAsync(j => j.Id == id);
 
-            return View(job);
+    if (job == null)
+    {
+        TempData["Warning"] = "Vaga não encontrada ou já encerrada.";
+        return RedirectToAction("Enterprises");
+    }
+
+    // Se for vaga de API/Parceiro, redireciona para o link externo
+    if (!string.IsNullOrEmpty(job.RedirectUrl))
+    {
+        return Redirect(job.RedirectUrl);
+    }
+
+    // Retorna a view de detalhes localizada na pasta Recruiter
+    return View("~/Views/Recruiter/Details.cshtml", job);
         }
 
         // GET: /{culture}/Jobs/Enterprises
-        [HttpGet("Enterprises")]
-        public async Task<IActionResult> Enterprises()
+        [AllowAnonymous]
+[HttpGet("Enterprises")]
+public async Task<IActionResult> Enterprises(string culture, [FromQuery] string? searchTerm)
+{
+    var user = await _userManager.GetUserAsync(User);
+    
+    // 1. Geolocalização e busca de Empresas no raio
+    double userLat = user?.Latitude ?? 0;
+    double userLng = user?.Longitude ?? 0;
+    int radiusKm = (user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50;
+
+    if (user != null && (!user.Latitude.HasValue || !user.Longitude.HasValue))
+    {
+        TempData["Warning"] = _localizer["Enterprises_ProfileLocationRequired"].Value;
+    }
+    string[]? searchTokens = null;
+
+    if (!string.IsNullOrWhiteSpace(searchTerm))
+    {
+        // Divide "game developer" em ["game", "developer"]
+        searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    // Bounding box para filtro no SQL
+    double latDelta = radiusKm / 111.0;
+    double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
+
+    double minLat = userLat - latDelta;
+    double maxLat = userLat + latDelta;
+    double minLon = userLng - lonDelta;
+    double maxLon = userLng + lonDelta;
+
+    // Normaliza o termo de busca para comparação case-insensitive se informado
+    string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
+
+    // --- CONSULTA 1: EMPRESAS ---
+    var companiesQuery = _context.Companies
+        .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
+                    c.Latitude >= minLat && c.Latitude <= maxLat &&
+                    c.Longitude >= minLon && c.Longitude <= maxLon);
+                    
+
+    if (cleanSearch != null)
+    {
+        companiesQuery = companiesQuery.Where(c => 
+            c.Name.ToLower().Contains(cleanSearch) || 
+            (c.City != null && c.City.ToLower().Contains(cleanSearch)) ||
+            (c.Description != null && c.Description.ToLower().Contains(cleanSearch)));
+    }
+
+    var companiesFromDb = await _context.Companies
+    .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
+                c.Latitude >= minLat && c.Latitude <= maxLat &&
+                c.Longitude >= minLon && c.Longitude <= maxLon)
+    .ToListAsync();
+
+    var companiesList = companiesFromDb
+        .Select(c => new CompanyDistanceViewModel
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return NotFound();
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description,
+            City = c.City,
+            Latitude = c.Latitude!.Value,
+            Longitude = c.Longitude!.Value,
+            DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
+        })
+        .Where(c => c.DistanceInKm <= radiusKm)
+        .OrderBy(c => c.DistanceInKm)
+        .ToList();
 
-            if (!user.Latitude.HasValue || !user.Longitude.HasValue)
-            {
-                TempData["Warning"] = _localizer["Enterprises_ProfileLocationRequired"].Value;
-            }
+    // --- CONSULTA 2: VAGAS PRÓPRIAS ---
+    var localJobsQuery = _context.JobPostings
+        .Include(j => j.Company)
+        .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
 
-            double userLat = user.Latitude ?? 0;
-            double userLng = user.Longitude ?? 0;
-            int radiusKm = user.SearchRadiusKm > 0 ? user.SearchRadiusKm : 50;
+    if (cleanSearch != null)
+    {
+        localJobsQuery = localJobsQuery.Where(j => 
+            j.Title.ToLower().Contains(cleanSearch) || 
+            (j.CompanyName != null && j.CompanyName.ToLower().Contains(cleanSearch)) || 
+            (j.Location != null && j.Location.ToLower().Contains(cleanSearch)) ||
+            (j.Description != null && j.Description.ToLower().Contains(cleanSearch)));
+    }
 
-            // Bounding box simples para filtrar empresas no SQL antes de carregar na memória
-            double latDelta = radiusKm / 111.0;
-            double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
+    var localJobsList = await localJobsQuery
+        .OrderByDescending(j => j.CreatedAt)
+        .Take(50)
+        .ToListAsync();
 
-            double minLat = userLat - latDelta;
-            double maxLat = userLat + latDelta;
-            double minLon = userLng - lonDelta;
-            double maxLon = userLng + lonDelta;
+    // --- CONSULTA 3: VAGAS EXTERNAS / PARCEIROS ---
+    var externalJobsQuery = _context.JobPostings
+    .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
-            var companiesFromDb = await _context.Companies
-                .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
-                            c.Latitude >= minLat && c.Latitude <= maxLat &&
-                            c.Longitude >= minLon && c.Longitude <= maxLon)
-                .ToListAsync();
-
-            var companiesList = companiesFromDb
-                .Select(c => new CompanyDistanceViewModel
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Description = c.Description,
-                    City = c.City,
-                    Latitude = c.Latitude!.Value,
-                    Longitude = c.Longitude!.Value,
-                    DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
-                })
-                .Where(c => c.DistanceInKm <= radiusKm)
-                .OrderBy(c => c.DistanceInKm)
-                .ToList();
-
-            var jobsList = await _context.JobPostings
-                .Where(j => j.UserId == user.Id)
-                .OrderByDescending(j => j.CreatedAt)
-                .Take(50)
-                .ToListAsync();
-
-            var viewModel = new EnterprisesPageViewModel
-            {
-                User = user,
-                Companies = companiesList,
-                JobPostings = jobsList
-            };
-
-            return View(viewModel);
+    if (searchTokens != null && searchTokens.Length > 0)
+    {
+        foreach (var token in searchTokens)
+        {
+            string pattern = $"%{token}%";
+            
+            // Exige que CADA palavra digitada esteja em PELO MENOS UM dos campos do registro
+            externalJobsQuery = externalJobsQuery.Where(j =>
+                (j.Title != null && EF.Functions.Like(j.Title.ToLower(), pattern)) ||
+                (j.CompanyName != null && EF.Functions.Like(j.CompanyName.ToLower(), pattern)) ||
+                (j.Location != null && EF.Functions.Like(j.Location.ToLower(), pattern)) ||
+                (j.Description != null && EF.Functions.Like(j.Description.ToLower(), pattern))
+            );
         }
+    }
+
+    var externalJobsList = await externalJobsQuery
+        .OrderByDescending(j => j.CreatedAt)
+        .Take(50)
+        .ToListAsync();
+
+    // 4. Montagem limpa da ViewModel
+    var viewModel = new EnterprisesPageViewModel
+    {
+        User = user,
+        Companies = companiesList,
+        LocalJobs = localJobsList,
+        JobPosting = externalJobsList
+    };
+
+    return View(viewModel);
+}
+        
 
         // GET: /{culture}/Jobs/CompaniesNearby
         [HttpGet("CompaniesNearby")]
@@ -313,27 +419,28 @@ namespace MasterStack.Controllers
 
             var httpClient = _httpClientFactory.CreateClient();
 
-            // 1. Instanciar tasks
+            // 1. Instanciar tasks para busca em paralelo
             var adzunaTask = FetchAdzunaJobsAsync(httpClient, user, country, what, city, radiusKm);
             var joobleTask = FetchJoobleJobsAsync(httpClient, user, country, what, city, radiusKm);
 
             var jsearchFilter = new JobSearchFilter { Query = what, Location = city, Page = 1 };
             var jsearchTask = _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
 
-            // 2. Aguardar a resolução em paralelo
+            // 2. Aguardar a resolução das chamadas
             await Task.WhenAll(adzunaTask, joobleTask, jsearchTask);
 
             var adzunaJobs = adzunaTask.Result ?? new List<JobPosting>();
             var joobleJobs = joobleTask.Result ?? new List<JobPosting>();
             
-            // Tratamento seguro contra NULOS para o JSearch
             var jsearchRaw = jsearchTask.Result ?? new List<JobDto>();
             var jsearchJobs = jsearchRaw.Select(j => new JobPosting
             {
-                UserId = user.Id,
+                UserId = null,
+                IsInternal = false,
+                SourceProvider = "JSearch", // 👈 Defina o provedor correto
                 Title = j.Title,
                 CompanyName = j.Company,
-                Location = $"[JSearch] {j.Location}",
+                Location = j.Location,
                 RedirectUrl = j.Url,
                 Latitude = user.Latitude ?? 0,
                 Longitude = user.Longitude ?? 0,
@@ -341,13 +448,13 @@ namespace MasterStack.Controllers
                 CreatedAt = DateTime.UtcNow
             }).ToList();
 
-            // 3. Unificar listas
+            // 3. Unificar listas retornado das APIs
             var allJobs = new List<JobPosting>();
             allJobs.AddRange(adzunaJobs);
             allJobs.AddRange(joobleJobs);
             allJobs.AddRange(jsearchJobs);
 
-            // 4. Salvar no Banco
+            // 4. Salvar no Banco sem duplicatas de Link/Título
             if (allJobs.Any())
             {
                 var distinctJobs = allJobs
@@ -356,14 +463,16 @@ namespace MasterStack.Controllers
                     .Take(50)
                     .ToList();
 
-                var oldJobs = _context.JobPostings.Where(j => j.UserId == user.Id);
-                _context.JobPostings.RemoveRange(oldJobs);
+               // ✅ AGORA (Apaga APENAS as vagas antigas de APIs/Parceiros):
+                var oldExternalJobs = _context.JobPostings.Where(j => !j.IsInternal);
+                _context.JobPostings.RemoveRange(oldExternalJobs);
 
+                // Adiciona o novo lote retornado pelas APIs
                 await _context.JobPostings.AddRangeAsync(distinctJobs);
                 await _context.SaveChangesAsync();
             }
 
-            // 5. Feedback atualizado considerando os 3 provedores
+            // 5. Feedback sobre a disponibilidade dos provedores
             int totalProvidersFound = 0;
             if (adzunaJobs.Any()) totalProvidersFound++;
             if (joobleJobs.Any()) totalProvidersFound++;
@@ -381,8 +490,7 @@ namespace MasterStack.Controllers
             return RedirectToAction("Enterprises", new { culture });
         }
 
-        // POST: /{culture}/Jobs/UpdatePreferences 
-        // POST: /{culture}/Jobs/UpdateSearchPreferences (Suporta ambos os nomes para evitar 404)
+        // POST: /{culture}/Jobs/UpdatePreferences
         [HttpPost("UpdatePreferences")]
         [HttpPost("UpdateSearchPreferences")]
         [ValidateAntiForgeryToken]
@@ -440,7 +548,7 @@ namespace MasterStack.Controllers
                 {
                     var bytes = await localResponse.Content.ReadAsByteArrayAsync();
                     var json = System.Text.Encoding.UTF8.GetString(bytes);
-                    jobs.AddRange(ParseAdzunaJobs(json, user));
+                    jobs.AddRange(ParseAdzunaJobs(json, user, country));
                 }
 
                 var remoteResponse = await httpClient.GetAsync(remoteUrl);
@@ -448,7 +556,7 @@ namespace MasterStack.Controllers
                 {
                     var bytes = await remoteResponse.Content.ReadAsByteArrayAsync();
                     var json = System.Text.Encoding.UTF8.GetString(bytes);
-                    jobs.AddRange(ParseAdzunaJobs(json, user));
+                    jobs.AddRange(ParseAdzunaJobs(json, user, country));
                 }
             }
             catch (Exception ex)
@@ -508,10 +616,12 @@ namespace MasterStack.Controllers
 
                             jobs.Add(new JobPosting
                             {
-                                UserId = user.Id,
+                                UserId = null,
+                                IsInternal = false,
+                                SourceProvider = "Jooble", // 👈 Defina o provedor correto
                                 Title = title,
                                 CompanyName = company,
-                                Location = $"[Jooble] {location}",
+                                Location = location,
                                 RedirectUrl = link,
                                 Latitude = userLat,
                                 Longitude = userLng,
@@ -530,7 +640,7 @@ namespace MasterStack.Controllers
             return jobs;
         }
 
-        private List<JobPosting> ParseAdzunaJobs(string jsonString, ApplicationUser user)
+        private List<JobPosting> ParseAdzunaJobs(string jsonString, ApplicationUser user, string country)
         {
             var parsedJobs = new List<JobPosting>();
             using var doc = System.Text.Json.JsonDocument.Parse(jsonString);
@@ -547,9 +657,10 @@ namespace MasterStack.Controllers
 
                 foreach (var item in results.EnumerateArray())
                 {
+                    string jobId = item.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
                     string jobTitle = item.TryGetProperty("title", out var titleProp) ? titleProp.GetString() ?? fallbackTitle : fallbackTitle;
+                    
                     string companyName = fallbackCompany;
-
                     if (item.TryGetProperty("company", out var companyObj) && companyObj.TryGetProperty("display_name", out var compName))
                     {
                         companyName = compName.GetString() ?? companyName;
@@ -561,14 +672,22 @@ namespace MasterStack.Controllers
                         locationName = locName.GetString() ?? locationName;
                     }
 
+                    // GARANTIA DE LINK ÚNICO: Tenta o redirect_url retornado, senão monta com a URL do país + ID da vaga
                     string link = item.TryGetProperty("redirect_url", out var redProp) ? redProp.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(link) && !string.IsNullOrEmpty(jobId))
+                    {
+                        string domain = country.ToLower() == "ca" ? "ca" : "com";
+                        link = $"https://www.adzuna.{domain}/details/{jobId}";
+                    }
 
                     parsedJobs.Add(new JobPosting
                     {
-                        UserId = user.Id,
+                        UserId = null,
+                        IsInternal = false,
+                        SourceProvider = "Adzuna", // 👈 Defina o provedor correto
                         Title = jobTitle,
                         CompanyName = companyName,
-                        Location = $"[Adzuna] {locationName}",
+                        Location = locationName, // Pode remover o prefixo [Adzuna] da string se quiser
                         RedirectUrl = link,
                         Latitude = userLat,
                         Longitude = userLng,
@@ -581,6 +700,7 @@ namespace MasterStack.Controllers
             return parsedJobs;
         }
 
+        [AllowAnonymous]
         [HttpGet("Search")]
         public async Task<IActionResult> Search(string query, string location)
         {
@@ -593,8 +713,40 @@ namespace MasterStack.Controllers
 
             List<JobDto> jobs = await _jobAggregatorService.AggregateJobsAsync(filter);
 
-            return View(jobs);
+            return View("Enterprises",jobs);
         }
 
+        [HttpGet("MyApplications")]
+        [Authorize]
+        public async Task<IActionResult> MyApplications(string culture)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var applications = await _context.JobApplications
+                .Include(a => a.JobPosting)
+                .Where(a => a.CandidateId == user.Id)
+                .OrderByDescending(a => a.AppliedAt)
+                .ToListAsync();
+
+            return View(applications);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStatus(int id, string culture = "pt-BR")
+        {
+            var job = await _context.JobPostings.FindAsync(id);
+
+            if (job == null) return NotFound();
+
+            // Inverte o status booleano
+            job.IsActive = !job.IsActive;
+
+            _context.Update(job);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index), new { culture });
+        }
     }
 }

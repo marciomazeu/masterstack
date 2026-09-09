@@ -12,7 +12,7 @@
 
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-5">
+        <div class="col-md-6">
             <div class="card shadow border-0">
                 <div class="card-body p-4">
                     <h2 class="text-center mb-4 fw-bold">@Localizer["CreateAccount"]</h2>
@@ -22,11 +22,33 @@
                         <div class="alert alert-danger">@ViewBag.Error</div>
                     }
 
-                    @* ADICIONADO O ID="registerForm" AQUI *@
                     <form id="registerForm" asp-action="Register" asp-route-culture="@culture" method="post">
                         
-                        @* O campo oculto que receberá o token *@
+                        @* O campo oculto que receberá o token do reCAPTCHA *@
                         <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response" />
+
+                        @* 🔹 SELEÇÃO DO TIPO DE CONTA *@
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">@Localizer["AccountTypeLabel"]</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="userType" id="typeCandidate" value="Candidate" checked autocomplete="off">
+                                    <label class="btn btn-outline-primary w-100 py-3 text-start" for="typeCandidate">
+                                        <i class="bi bi-person-fill d-block fs-4 mb-1"></i>
+                                        <strong class="d-block">@Localizer["AccountTypeCandidateTitle"]</strong>
+                                        <small class="d-block text-muted style-small">@Localizer["AccountTypeCandidateDesc"]</small>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="userType" id="typeRecruiter" value="Recruiter" autocomplete="off">
+                                    <label class="btn btn-outline-primary w-100 py-3 text-start" for="typeRecruiter">
+                                        <i class="bi bi-briefcase-fill d-block fs-4 mb-1"></i>
+                                        <strong class="d-block">@Localizer["AccountTypeRecruiterTitle"]</strong>
+                                        <small class="d-block text-muted style-small">@Localizer["AccountTypeRecruiterDesc"]</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="mb-3">
                             <label class="form-label">@Localizer["DisplayName"]</label>
@@ -43,12 +65,12 @@
                             <input type="password" name="password" class="form-control" required />
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label">@Localizer["ConfirmPassword"]</label>
                             <input type="password" name="confirmPassword" class="form-control" required />
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold fs-5">
                             @Localizer["RegisterButton"]
                         </button>
                     </form>
@@ -58,8 +80,14 @@
     </div>
 </div>
 
+<style>
+    .style-small {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+</style>
+
 @section Scripts {
-    @* Carrega o script apenas nesta página *@
     <script src="https://www.google.com/recaptcha/api.js?render=@siteKey"></script>
     <script>
         document.getElementById("registerForm").addEventListener("submit", function(e) {
@@ -67,9 +95,7 @@
             
             grecaptcha.ready(function() {
                 grecaptcha.execute('@siteKey', {action: 'register'}).then(function(token) {
-                    // Preenche o input hidden com o token gerado
                     document.getElementById("g-recaptcha-response").value = token;
-                    // Envia o formulário de verdade
                     document.getElementById("registerForm").submit();
                 });
             });

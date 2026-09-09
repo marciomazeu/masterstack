@@ -8,6 +8,7 @@ namespace MasterStack.Models
         public int Id { get; set; }
 
         public int ResumeId { get; set; }
+        public string? Culture { get; set; } // ex: "pt-BR", "fr-CA", "en-US"
 
         [ForeignKey(nameof(ResumeId))]
         public Resume? Resume { get; set; }

@@ -25,6 +25,13 @@ namespace MasterStack.Models
         public int SearchRadiusKm { get; set; } = 25; // Padrão: 25 km
         public string? PreferredJobTitle { get; set; } = "developer"; // Padrão: "developer"
 
+        // Adicionar dentro da classe ApplicationUser:
+        public int? CompanyId { get; set; }
+        public virtual Company? Company { get; set; }
+
+        // Navegação para candidaturas realizadas como candidato
+        public virtual ICollection<JobApplication> Applications { get; set; } = new List<JobApplication>();
+
         // 📝 Propriedade de navegação para os Posts (Resolve o erro no ApplicationDbContext)
         public virtual ICollection<BlogPost> BlogPosts { get; set; } = new List<BlogPost>();
 

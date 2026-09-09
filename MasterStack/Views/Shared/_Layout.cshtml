@@ -4,21 +4,21 @@
 @using Microsoft.Extensions.Localization
 @using Microsoft.AspNetCore.Localization
 @using Microsoft.AspNetCore.Diagnostics
-@inject IStringLocalizer<SharedResource> Localizer
 @using MasterStack.Data
-@inject ApplicationDbContext _context
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ApplicationDbContext ContextDb
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
-    // 1. Resgata a cultura de forma robusta (via Feature -> RouteData -> CultureInfo)
+    // 1. Resgate robusto da cultura atual
     var requestCultureFeature = Context.Features.Get<IRequestCultureFeature>();
     var currentCulture = requestCultureFeature?.RequestCulture.Culture.Name;
+    var candidateId = ViewContext.RouteData.Values["id"]?.ToString();
 
     if (string.IsNullOrEmpty(currentCulture))
     {
         currentCulture = ViewContext.RouteData.Values["culture"]?.ToString();
     }
 
-    // Se ainda for nula (caso de rota 404 sem prefixo na reexecução), verifica se veio de uma URL de erro
     if (string.IsNullOrEmpty(currentCulture))
     {
         var reExecuteFeature = Context.Features.Get<IStatusCodeReExecuteFeature>();
@@ -32,30 +32,22 @@
         }
     }
 
-    // Fallback final para a thread atual
     currentCulture ??= System.Globalization.CultureInfo.CurrentCulture.Name;
 
-    // 2. Captura dados da rota para os links do menu
+    // 2. Leitura de rota
     var routeData = ViewContext.RouteData.Values;
     var currentController = routeData["controller"]?.ToString();
     var currentAction = routeData["action"]?.ToString();
-    var currentId = routeData["id"]?.ToString();
+    var currentSlug = routeData["slug"]?.ToString();
 
-    // 3. Busca a lista de idiomas
-    var dbLanguages = _context.Languages.ToList();
-
-    // 4. Busca o idioma atual comparando com o currentCulture validado
+    // 3. Busca de Idiomas
+    var dbLanguages = ContextDb.Languages.AsNoTracking().ToList();
     var currentLang = dbLanguages.FirstOrDefault(l => l.Culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase)) 
                       ?? dbLanguages.FirstOrDefault(); 
-    
-    // Captura o slug atual da rota
-    var currentSlug = ViewContext.RouteData.Values["slug"]?.ToString();
 }
 
 <!DOCTYPE html>
-
-    @* <html lang="@ViewContext.RouteData.Values["culture"]"> *@
-    <html lang="@(ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR")">
+<html lang="@currentCulture">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -67,224 +59,223 @@
     <meta property="og:description" content="@ViewData["Description"]" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="@currentCulture.Replace("-", "_")" />
+
     @foreach (var lang in dbLanguages)
-{
-    @* Informa ao Google as versões alternativas desta mesma página *@
-    <link rel="alternate" hreflang="@lang.Culture.ToLower()" 
-          href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path.ToString().Replace($"/{currentCulture}", $"/{lang.Culture}")}")" />
-}
-@* Tag padrão caso o idioma não seja reconhecido *@
-<link rel="alternate" hreflang="x-default" href="@($"{Context.Request.Scheme}://{Context.Request.Host}/pt-BR{Context.Request.Path}")" />
-    <script type="importmap"></script>
+    {
+        <link rel="alternate" hreflang="@lang.Culture.ToLower()" 
+              href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path.ToString().Replace($"/{currentCulture}", $"/{lang.Culture}")}")" />
+    }
+    <link rel="alternate" hreflang="x-default" href="@($"{Context.Request.Scheme}://{Context.Request.Host}/pt-BR{Context.Request.Path}")" />
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.2/css/flag-icons.min.css" />
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
     @await RenderSectionAsync("Styles", required: false)
     @RenderSection("Head", required: false)
-
 </head>
 <body class="d-flex flex-column min-vh-100">
-    
 
-   <nav class="navbar navbar-expand-xl navbar-dark bg-dark shadow-sm sticky-top">
-    <div class="container px-5">
-        <a class="navbar-brand fw-bold" href="/">
-            <span class="text-primary">MASTER</span>STACK
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navContent">
-    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-            <a class="nav-link text-white" asp-controller="BlogPosts" asp-action="Index" asp-route-culture="@currentCulture">
-                <i class="fas fa-blog me-1"></i> @Localizer["MenuBlog"]
+    <nav class="navbar navbar-expand-xl navbar-dark bg-dark shadow-sm sticky-top">
+        <div class="container px-5">
+            <a class="navbar-brand fw-bold" href="/">
+                <span class="text-primary">MASTER</span>STACK
             </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-white" asp-area="" asp-controller="StaticPages" asp-action="Page" 
-               asp-route-culture="@currentCulture" asp-route-slug="sobre-nos">
-                @Localizer["MenuAbout"]
-            </a>
-        </li>
-    </ul>
 
-    <ul class="navbar-nav align-items-center ms-auto">
-        <li class="nav-item mx-lg-2 my-2 my-lg-0">
-            <form class="d-flex" asp-controller="BlogPosts" asp-action="Index" method="get">
-                <input type="hidden" name="culture" value="@currentCulture" />
-                <div class="input-group input-group-sm" style="max-width: 150px;">
-                    <input type="text" name="searchTerm" class="form-control border-secondary bg-dark text-white shadow-none"
-                           placeholder="@Localizer["SearchPlaceholder"]" value="@Context.Request.Query["searchTerm"]">
-                    <button class="btn btn-outline-secondary border-start-0" type="submit">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </form>
-        </li>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-        <li class="nav-item dropdown me-2">
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown">
-                @if (currentLang != null) { <span class="fi @currentLang.FlagClass"></span> }
-            </a>
-           <ul class="dropdown-menu dropdown-menu-end shadow">
-                @foreach (var lang in dbLanguages) 
-                {
-                    // Captura os valores atuais ou define vazio se forem nulos
-                    var area = ViewContext.RouteData.Values["area"]?.ToString();
-                    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
-                    var action = ViewContext.RouteData.Values["action"]?.ToString();
-
-                  <li>
-                        <!-- O link agora verifica se a página atual precisa carregar o parâmetro slug -->
-                        <a class="dropdown-item" 
-                        asp-controller="@currentController" 
-                        asp-action="@currentAction" 
-                        asp-route-culture="@lang.Culture"
-                        asp-route-slug="@(currentAction == "Details" || currentAction == "Page" ? currentSlug : null)"> 
-                            <span class="fi @lang.FlagClass"></span> @lang.Name
+            <div class="collapse navbar-collapse" id="navContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" asp-controller="BlogPosts" asp-action="Index" asp-route-culture="@currentCulture">
+                            <i class="fas fa-blog me-1"></i> @Localizer["MenuBlog"]
                         </a>
                     </li>
-                }
-            </ul>
-        </li>
-
-        <li class="nav-item">
-    @if (User.Identity?.IsAuthenticated == true) {
-        <div class="dropdown">
-            <a class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-user-circle me-2"></i> @User.Identity.Name
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end shadow">
-                <li><h6 class="dropdown-header">@Localizer["Menu_Administration"]</h6></li>
-                
-               @* --- REINSERINDO OS BOTÕES DE ADMIN E AUTOR --- *@
-                @if (User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Author")))
-                {
-                    <li>
-                        <a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@currentCulture">
-                            <i class="fas fa-tachometer-alt me-2"></i> @Localizer["Menu_Dashboard"]
+                    <li class="nav-item">
+                        <a class="nav-link text-white" asp-area="" asp-controller="StaticPages" asp-action="Page" 
+                           asp-route-culture="@currentCulture" asp-route-slug="sobre-nos">
+                            @Localizer["MenuAbout"]
                         </a>
                     </li>
+                    <li class="nav-item">
+                         <a asp-controller="Jobs" 
+                            asp-action="Enterprises" 
+                            asp-route-culture="@currentCulture" 
+                            class="btn btn-outline-primary">
+                            <i class="bi bi-search me-1"></i> @Localizer["Nav_SearchJobs"]
+                        </a>
+                    </li>
+                </ul>
 
-                    @* Se você quiser que o gerenciamento de usuários seja APENAS para Admin, filtre aqui dentro *@
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <li>
-                            <a class="dropdown-item" asp-controller="StaticPages" asp-action="Index" asp-route-culture="@currentCulture">
-                                <i class="fas fa-file-code me-2 text-info"></i> @Localizer["Menu_ManagePages"]
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item text-danger" 
-                            asp-controller="Admin" 
-                            asp-action="Users" 
-                            asp-route-culture="@currentCulture">
-                                <i class="fas fa-users-cog me-2"></i> @Localizer["Menu_ManageUsers"]
-                            </a>
-                        </li>
-                        <li >
-                            <a class="dropdown-item text-danger"
-                            asp-controller="Affiliate" 
-                            asp-action="Index" 
-                            asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name">
-                                <i class="fas fa-tags me-1"></i> Produtos de Afiliados
-                            </a>
-                        </li>
-                    }
-                    <li><hr class="dropdown-divider"></li>
-                }
-                <li>
-                    <a class="dropdown-item" asp-controller="User" asp-action="Profile" asp-route-culture="@currentCulture">
-                        <i class="fas fa-user-edit me-2"></i> @Localizer["Menu_Profile"]
-                    </a>
-                </li>
-                <li >
-                    <a class="dropdown-item" asp-controller="Resume" asp-action="Index" asp-route-culture="@currentCulture">
-                       <i class="bi bi-person-vcard me-1"></i> @Localizer["Menu_Resume"]
-                    </a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <form asp-controller="Account" asp-action="Logout" asp-route-culture="@currentCulture" method="post" class="p-0">
-                        <button type="submit" class="dropdown-item text-warning">
-                            <i class="fas fa-sign-out-alt me-2"></i> Logout
-                        </button>
-                    </form>
-                </li>
-            </ul>
+                <ul class="navbar-nav align-items-center ms-auto">
+                    <li class="nav-item mx-lg-2 my-2 my-lg-0">
+                        <form class="d-flex" asp-controller="BlogPosts" asp-action="Index" method="get">
+                            <input type="hidden" name="culture" value="@currentCulture" />
+                            <div class="input-group input-group-sm" style="max-width: 150px;">
+                                <input type="text" name="searchTerm" class="form-control border-secondary bg-dark text-white shadow-none"
+                                       placeholder="@Localizer["SearchPlaceholder"]" value="@Context.Request.Query["searchTerm"]">
+                                <button class="btn btn-outline-secondary border-start-0" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </li>
+
+                    <!-- Dropdown Idiomas -->
+                    <li class="nav-item dropdown me-2">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @if (currentLang != null) { <span class="fi @currentLang.FlagClass"></span> }
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            @foreach (var lang in dbLanguages) 
+                            {
+                                <li>
+                                    <a class="dropdown-item" 
+                                       asp-controller="@currentController" 
+                                       asp-action="@currentAction" 
+                                       asp-route-culture="@lang.Culture"
+                                       asp-route-id="@candidateId"
+                                       asp-route-slug="@(currentAction == "Details" || currentAction == "Page" ? currentSlug : null)"> 
+                                        <span class="fi @lang.FlagClass"></span> @lang.Name
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+
+                    <!-- Menu Usuário Logado -->
+                    <li class="nav-item">
+                        @if (User.Identity?.IsAuthenticated == true) {
+                            <div class="dropdown">
+                                <a class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user-circle me-2"></i> @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                    <li><h6 class="dropdown-header">@Localizer["Menu_Administration"]</h6></li>
+                                    
+                                    <!-- Permissões de Admin / Autor -->
+                                    @if (User.IsInRole("Admin") || User.IsInRole("Author"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard" asp-route-culture="@currentCulture">
+                                                <i class="fas fa-tachometer-alt me-2"></i> @Localizer["Menu_Dashboard"]
+                                            </a>
+                                        </li>
+
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="StaticPages" asp-action="Index" asp-route-culture="@currentCulture">
+                                                    <i class="fas fa-file-code me-2 text-info"></i> @Localizer["Menu_ManagePages"]
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" asp-controller="Admin" asp-action="Users" asp-route-culture="@currentCulture">
+                                                    <i class="fas fa-users-cog me-2"></i> @Localizer["Menu_ManageUsers"]
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" asp-controller="Affiliate" asp-action="Index" asp-route-culture="@currentCulture">
+                                                    <i class="fas fa-tags me-2"></i> @Localizer["Menu_AffiliateProducts"]
+                                                </a>
+                                            </li>
+                                        }
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+
+                                    <!-- Permissões do Recrutador -->
+                                    @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item fw-bold text-primary" asp-controller="Recruiter" asp-action="Index" asp-route-culture="@currentCulture">
+                                                <i class="bi bi-briefcase-fill me-2"></i> @Localizer["Menu_RecruiterPanel"]
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+
+                                    <!-- Menu Comum do Usuário -->
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="User" asp-action="Profile" asp-route-culture="@currentCulture">
+                                            <i class="fas fa-user-edit me-2"></i> @Localizer["Menu_Profile"]
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Resume" asp-action="Index" asp-route-culture="@currentCulture">
+                                           <i class="bi bi-person-vcard me-2"></i> @Localizer["Menu_Resume"]
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Jobs" asp-action="MyApplications" asp-route-culture="@currentCulture">
+                                            <i class="bi bi-journal-check me-2"></i> @Localizer["Menu_MyApplications"]
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form id="logoutForm" asp-controller="Account" asp-action="Logout" asp-route-culture="@currentCulture" method="post" class="p-0">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item text-warning">
+                                                <i class="fas fa-sign-out-alt me-2"></i> @Localizer["Menu_Logout"]
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        } else {
+                            <a class="btn btn-primary btn-sm px-3" asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture">@Localizer["Menu_Login"]</a>
+                        }
+                    </li>
+                </ul>
+            </div>
         </div>
-    } else {
-        <a class="btn btn-primary btn-sm px-3" asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture">Login</a>
-    }
-</li>
-    </ul>
-</div>
-    </div>
-</nav>
-    
+    </nav>
 
-    @* Removida a div container-fluid solta para evitar espaços fantasmas *@
     <main role="main" class="flex-grow-1">
-        
-        @* O conteúdo da página vem aqui *@
         @RenderBody()
     </main>
 
-   
     <footer class="bg-dark text-white pt-5 pb-4 mt-auto">
         <div class="container text-center text-md-start">
             <div class="row text-center text-md-start">
-
-                @* Coluna 1: Branding *@
                 <div class="col-md-4 col-lg-4 col-xl-4 mt-3">
                     <h5 class="text-uppercase mb-4 font-weight-bold text-primary">MasterStack</h5>
                     <p>@Localizer["HeroSubtitle"]</p>
                 </div>
 
-                @* Coluna 2: Institucional (Seu Componente) *@
-                @* Adicionamos mt-3 para alinhar o topo com as outras colunas *@
                 <div class="col-md-4 col-lg-4 col-xl-4 mt-3">
                     @await Component.InvokeAsync("FooterPages")
                 </div>
 
-                @* Coluna 3: Contato *@
                 <div class="col-md-4 col-lg-4 col-xl-4 mt-3">
                     <h5 class="text-uppercase mb-4 font-weight-bold text-primary">@Localizer["FooterContact"]</h5>
                     <p><i class="fas fa-home me-3"></i> Québec, QC, CA</p>
                     <p><i class="fas fa-envelope me-3"></i> contato@masterstack.com</p>
                 </div>
-
             </div>
 
             <hr class="mb-4">
 
             <div class="row align-items-center">
                 <div class="col-md-7 col-lg-8">
-                    <p>
-                        © @DateTime.Now.Year MasterStack - @Localizer["FooterCopyright"]
-                    </p>
+                    <p>© @DateTime.Now.Year MasterStack - @Localizer["FooterCopyright"]</p>
                 </div>
                 <div class="col-md-5 col-lg-4">
                     <div class="text-center text-md-end">
                         <ul class="list-unstyled list-inline">
                             <li class="list-inline-item">
-                                    <a href="#" class="btn-floating btn-sm text-white" aria-label="Facebook" style="font-size: 23px;"><i class="fab fa-facebook"></i></a>
+                                <a href="#" class="btn-floating btn-sm text-white" aria-label="Facebook" style="font-size: 23px;"><i class="fab fa-facebook"></i></a>
                             </li>
                             <li class="list-inline-item">
-                                    <a href="#" class="btn-floating btn-sm text-white" aria-label="LinkedIn" style="font-size: 23px;"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="btn-floating btn-sm text-white" aria-label="LinkedIn" style="font-size: 23px;"><i class="fab fa-linkedin"></i></a>
                             </li>
-                            @* <li class="list-inline-item">
-                                    <a href="#" class="btn-floating btn-sm text-white" aria-label="Github" style="font-size: 23px;"><i class="fab fa-github"></i></a>
-                            </li> *@
                         </ul>
                     </div>
                 </div>
@@ -295,69 +286,70 @@
     <partial name="_CookieConsentPartial" />
 
    @if (User.Identity?.IsAuthenticated == true)
-{
-    <!-- Modal de Sessão Expirada (Trilingüe: PT / FR / EN) -->
-    <div class="modal fade" id="inactivityModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="inactivityModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg border-0">
-                <div class="modal-header bg-warning text-dark border-0">
-                    <h5 class="modal-title font-weight-bold" id="inactivityModalLabel">
-                        <i class="bi bi-clock-history me-2"></i>Sessão Expirada / Session Expirée / Session Expired
-                    </h5>
-                </div>
-                <div class="modal-body py-4 text-center fs-6">
-                    <p class="mb-2">Sua sessão expirou por inatividade (15 minutos).</p>
-                    <p class="mb-2 text-muted small">Votre session a expiré en raison d'une inactivité (15 minutes).</p>
-                    <p class="mb-0 text-muted small">Your session has expired due to inactivity (15 minutes).</p>
-                </div>
-                <div class="modal-footer border-0 justify-content-center">
-                    <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="redirectToLogout()">
-                        Entrar Novamente / Se reconnecter / Log In Again
-                    </button>
+    {
+        <div class="modal fade" id="inactivityModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="inactivityModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border-0">
+                    <div class="modal-header bg-warning text-dark border-0">
+                        <h5 class="modal-title font-weight-bold" id="inactivityModalLabel">
+                            <i class="bi bi-clock-history me-2"></i>Sessão Expirada / Session Expirée / Session Expired
+                        </h5>
+                    </div>
+                    <div class="modal-body py-4 text-center fs-6">
+                        <p class="mb-2">Sua sessão expirou por inatividade (15 minutos).</p>
+                        <p class="mb-2 text-muted small">Votre session a expiré en raison d'une inactivité (15 minutes).</p>
+                        <p class="mb-0 text-muted small">Your session has expired due to inactivity (15 minutes).</p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center">
+                        <!-- ✅ 'onclick' apontando para a mesma função do script -->
+                        <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="redirectToLogout()">
+                            Entrar Novamente / Se reconnecter / Log In Again
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+       <script>
+            // ✅ Salva a cultura atual do Razor diretamente para o JavaScript
+            const currentCulture = "@currentCulture";
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Tempo limite do JS: 14 minutos e 30 segundos (870.000 ms)
-            const timeoutInMs = (14 * 60 + 30) * 1000; 
-            let inactivityTimer;
-            let isModalShown = false;
+            document.addEventListener("DOMContentLoaded", function () {
+                const timeoutInMs = (14 * 60 + 30) * 1000; 
+                let inactivityTimer;
+                let isModalShown = false;
 
-            function resetTimer() {
-                if (isModalShown) return;
-                clearTimeout(inactivityTimer);
-                inactivityTimer = setTimeout(showInactivityModal, timeoutInMs);
-            }
-
-            function showInactivityModal() {
-                isModalShown = true;
-                const modalElement = document.getElementById('inactivityModal');
-                
-                if (modalElement && typeof bootstrap !== 'undefined') {
-                    const bsModal = new bootstrap.Modal(modalElement);
-                    bsModal.show();
-                } else {
-                    redirectToLogout();
+                function resetTimer() {
+                    if (isModalShown) return;
+                    clearTimeout(inactivityTimer);
+                    inactivityTimer = setTimeout(showInactivityModal, timeoutInMs);
                 }
-            }
 
-            const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-            activityEvents.forEach(event => {
-                window.addEventListener(event, resetTimer, { passive: true });
+                function showInactivityModal() {
+                    isModalShown = true;
+                    const modalElement = document.getElementById('inactivityModal');
+                    
+                    if (modalElement && typeof bootstrap !== 'undefined') {
+                        const bsModal = new bootstrap.Modal(modalElement);
+                        bsModal.show();
+                    } else {
+                        redirectToLogout();
+                    }
+                }
+
+                const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+                activityEvents.forEach(event => {
+                    window.addEventListener(event, resetTimer, { passive: true });
+                });
+
+                resetTimer();
             });
 
-            resetTimer();
-        });
-
-        function redirectToLogout() {
-            const currentCulture = document.documentElement.lang || 'pt-BR';
-            window.location.href = `/${currentCulture}/Account/Logout`;
-        }
-    </script>
-}
+            // ✅ Nome da função unificado + Rota dinâmica com a cultura correta
+            function redirectToLogout() {
+                window.location.href = '/' + currentCulture + '/Account/Logout'; 
+            }
+        </script>
+    }
     
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

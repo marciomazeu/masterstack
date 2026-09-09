@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using MasterStack; // Ajuste para o seu namespace onde está o SharedResource
+using MasterStack;
+using MasterStack.Models.Enums; // Ajuste para o seu namespace onde está o SharedResource
 
 public class RegisterViewModel
 {
@@ -18,4 +19,8 @@ public class RegisterViewModel
     [Compare("Password", ErrorMessageResourceName = "Err_PasswordMatch", ErrorMessageResourceType = typeof(SharedResource))]
     [Display(Name = "ConfirmPasswordLabel", ResourceType = typeof(SharedResource))]
     public string ConfirmPassword { get; set; }
+
+    [Required]
+        [Display(Name = "Tipo de Perfil")]
+        public UserType UserType { get; set; } = UserType.Candidate;
 }

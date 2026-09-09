@@ -12,7 +12,7 @@ namespace MasterStack.Models
 
         [ForeignKey(nameof(ResumeId))]
         public Resume? Resume { get; set; }
-        public string Culture { get; set; } = "pt-BR";
+        public string? Culture { get; set; } = "pt-BR";
 
         [Required]
         public string Institution { get; set; } = string.Empty;

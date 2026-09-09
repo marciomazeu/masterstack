@@ -1,0 +1,141 @@
+@using Microsoft.AspNetCore.Identity
+@using MasterStack.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject MasterStack.Data.ApplicationDbContext Context
+
+@model MasterStack.Models.JobPosting
+@{
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+    var currentUser = await UserManager.GetUserAsync(User);
+    
+    // Identifica se o usuário atual é o recrutador dono da vaga ou Admin
+    bool isRecruiterOrOwner = User.IsInRole("Admin") || 
+        (User.IsInRole("Recruiter") && currentUser != null && Model.RecruiterId == currentUser.Id);
+
+    bool hasApplied = false;
+    if (currentUser != null && !isRecruiterOrOwner)
+    {
+        hasApplied = Context.JobApplications.Any(a => a.JobPostingId == Model.Id && a.CandidateId == currentUser.Id);
+    }
+}
+
+<div class="card p-4 shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h3>@Model.Title</h3>
+            <p class="text-muted mb-2">@Model.CompanyName - @Model.Location</p>
+        </div>
+        @if (!Model.IsActive)
+        {
+            <span class="badge bg-warning text-dark">Pausada / Inativa</span>
+        }
+    </div>
+
+    <!-- Feedback da Ação -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning">@TempData["WarningMessage"]</div>
+    }
+
+    <!-- Descrição da Vaga -->
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="my-3">
+            <h5>Descrição da Vaga</h5>
+            <p>@Model.Description</p>
+        </div>
+        <hr />
+    }
+
+    <!-- BLOCO DE AÇÕES -->
+    <div class="mt-3">
+        @if (isRecruiterOrOwner)
+        {
+            <!-- PAINEL EXCLUSIVO DO RECRUTADOR / ADMIN -->
+            <div class="card bg-light p-3 border">
+                <h6 class="fw-bold mb-3 text-secondary">
+                    <i class="bi bi-gear-fill me-1"></i> Painel de Gestão da Vaga
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <!-- Ver Candidaturas -->
+                    <a asp-controller="Recruiter" 
+                       asp-action="JobApplications" 
+                       asp-route-jobId="@Model.Id" 
+                       asp-route-culture="@culture" 
+                       class="btn btn-info text-white fw-bold">
+                        <i class="bi bi-people-fill me-1"></i> Ver Candidaturas
+                    </a>
+
+                    <!-- Editar Vaga -->
+                    <a asp-controller="Recruiter" 
+                       asp-action="EditJob" 
+                       asp-route-id="@Model.Id" 
+                       asp-route-culture="@culture" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil-square me-1"></i> Editar
+                    </a>
+
+                    <!-- Pausar / Reativar Vaga -->
+                    <form asp-controller="Recruiter" 
+                          asp-action="ToggleJobStatus" 
+                          asp-route-culture="@culture" 
+                          method="post" 
+                          class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="btn @(Model.IsActive ? "btn-outline-warning" : "btn-outline-success")">
+                            <i class="bi @(Model.IsActive ? "bi-pause-circle" : "bi-play-circle") me-1"></i>
+                            @(Model.IsActive ? "Pausar Vaga" : "Reativar Vaga")
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else if (!Model.IsInternal && !string.IsNullOrEmpty(Model.RedirectUrl))
+        {
+            <!-- Vaga de Agregador Externo -->
+            <a href="@Model.RedirectUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                Ver no site de origem <i class="bi bi-box-arrow-up-right ms-1"></i>
+            </a>
+        }
+        else if (hasApplied)
+        {
+            <!-- Candidato já inscrito -->
+            <button class="btn btn-success btn-lg" disabled>
+                <i class="bi bi-check-circle-fill me-1"></i> Candidatura Enviada
+            </button>
+        }
+        else if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <!-- Candidato autenticado -->
+            <form asp-controller="Application" 
+      asp-action="Apply" 
+      asp-route-jobId="@Model.Id" 
+      asp-route-culture="@culture" 
+      method="post" 
+      enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Anexar Currículo (Apenas PDF):</label>
+                    <input type="file" name="resume" accept=".pdf" class="form-control" />
+                    <small class="text-muted">Se não anexar, o recrutador utilizará os dados do seu perfil cadastrado.</small>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg fw-bold px-4">
+                    Candidatar-se Agora
+                </button>
+            </form>
+        }
+        else
+        {
+            <!-- Usuário Não Autenticado -->
+            <a asp-controller="Account" asp-action="Login" asp-route-culture="@culture" class="btn btn-primary btn-lg">
+                Entre para Candidatar-se
+            </a>
+        }
+    </div>
+</div>

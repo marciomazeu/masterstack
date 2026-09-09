@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using MasterStack.Services.JobProviders;
 using MasterStack.Services.Providers;
+using MasterStack.Services;
 
 // --- CONFIGURAÇÃO INICIAL DO LOGGING (SERILOG) ---
 Log.Logger = new LoggerConfiguration()
@@ -85,6 +86,31 @@ try
 
     builder.Services.AddRazorPages();
 
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    // Converte a URL do PostgreSQL da DigitalOcean/Heroku para o formato padrão do Npgsql se necessário
+    if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
+    {
+        var databaseUri = new Uri(connectionString);
+        var userInfo = databaseUri.UserInfo.Split(':');
+
+        var builderConn = new Npgsql.NpgsqlConnectionStringBuilder
+        {
+            Host = databaseUri.Host,
+            Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+            Username = userInfo[0],
+            Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "",
+            Database = databaseUri.LocalPath.TrimStart('/'),
+            SslMode = Npgsql.SslMode.Require,
+            TrustServerCertificate = true
+        };
+
+        connectionString = builderConn.ToString();
+    }
+
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(connectionString));
+
     // --- 5. SERVIÇOS EXTRAS E INJEÇÃO DE DEPENDÊNCIA ---
     builder.Services.AddMemoryCache(); // CORREÇÃO: Registrado no container DI ANTES do builder.Build()
 
@@ -137,7 +163,7 @@ try
     builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
 
     builder.Services.AddHostedService<AffiliateExpirationService>();
-    builder.Services.AddHostedService<JobCleanupBackgroundService>();
+    builder.Services.AddHostedService<JobCleanupService>();
     builder.Services.AddScoped<IAffiliateRenderService, AffiliateRenderService>();
     builder.Services.AddScoped<JobAggregatorService>();
 
@@ -203,7 +229,13 @@ try
 
     app.UseHttpsRedirection();
     app.UseResponseCompression();
-    app.UseStaticFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");
+        }
+    });
     app.UseCookiePolicy();
 
     app.UseRouting();
@@ -249,7 +281,9 @@ try
             {
                 var db = services.GetRequiredService<ApplicationDbContext>();
                 await db.Database.MigrateAsync(); 
-                await SeedLanguagesAndRoles(services);
+                
+                // Chamada limpa utilizando a classe SeedData isolada:
+                await SeedData.SeedLanguagesAndRolesAsync(services);
             }
             catch (Exception ex)
             {
@@ -271,55 +305,4 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
-}
-
-async Task SeedLanguagesAndRoles(IServiceProvider services)
-{
-    var context = services.GetRequiredService<ApplicationDbContext>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-
-    var seedLanguages = new List<Language>
-    {
-        new Language { Culture = "pt-BR", Name = "Português", FlagClass = "fi-br", IsActive = true },
-        new Language { Culture = "en-US", Name = "English", FlagClass = "fi-us", IsActive = true },
-        new Language { Culture = "fr-CA", Name = "Français", FlagClass = "fi-ca", IsActive = true }
-    };
-
-    foreach (var lang in seedLanguages)
-    {
-        if (!context.Languages.Any(l => l.Culture == lang.Culture))
-        {
-            context.Languages.Add(lang);
-        }
-    }
-    await context.SaveChangesAsync();
-
-    string[] roles = { "Admin", "Author", "User" };
-    foreach (var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-        {
-            await roleManager.CreateAsync(new IdentityRole(role));
-        }
-    }
-
-    string adminEmail = "seu-email-real@dominio.com";
-    
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
-    {
-        var adminUser = new ApplicationUser 
-        { 
-            UserName = adminEmail, 
-            Email = adminEmail, 
-            DisplayName = "Admin MasterStack", 
-            EmailConfirmed = true 
-        };
-        
-        var result = await userManager.CreateAsync(adminUser, "SenhaProvisoria#2026!Secured");
-        if (result.Succeeded) 
-        {
-            await userManager.AddToRoleAsync(adminUser, "Admin");
-        }
-    }
 }

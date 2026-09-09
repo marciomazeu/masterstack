@@ -1,33 +1,90 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
 @model MasterStack.ViewModels.LoginWith2FAViewModel
 @{
-    ViewData["Title"] = "Autenticação em Dois Fatores";
+    ViewData["Title"] = Localizer["2FA_Title"];
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
 }
 
-<div class="container mt-5">
-    <div class="card max-width-450 mx-auto shadow-sm border-0">
-        <div class="card-body p-4 text-center">
-            <div class="text-primary mb-3">
-                <i class="fas fa-shield-alt fa-3x"></i>
-            </div>
-            <h3 class="fw-bold mb-2">Segurança Máxima</h3>
-            <p class="text-muted small">
-                Sua conta possui verificação em duas etapas. Abra o aplicativo autenticador (Google Authenticator) no seu celular para obter o código de acesso.
-            </p>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <!-- Container centralizado e limitado a 450px -->
+        <div class="col-12 col-sm-10 col-md-8 col-lg-5" style="max-width: 450px;">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4 text-center">
+                    
+                    <!-- Ícone de Segurança -->
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-shield-lock-fill fs-2"></i>
+                    </div>
 
-            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                    <h3 class="fw-bold mb-2">@Localizer["2FA_Header"]</h3>
+                    <p class="text-muted small mb-4">
+                        @Localizer["2FA_SubHeader"]
+                    </p>
 
-            <form asp-action="LoginWith2FA" asp-controller="Account" asp-route-culture="@ViewData["CurrentCulture"]" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" class="text-start mt-4">
-                <input type="hidden" name="culture" value="@ViewData["CurrentCulture"]" />
-                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                    <!-- Exibe mensagens de feedback e erros gerais de validação -->
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show text-start small mb-3" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
 
-                <div class="mb-3">
-                    <label asp-for="TwoFactorCode" class="form-label fw-bold text-muted small text-uppercase">Código de Verificação</label>
-                    <input asp-for="TwoFactorCode" class="form-control form-control-lg text-center fw-bold" placeholder="000000" maxlength="6" autocomplete="off" autofocus required />
-                    <span asp-validation-for="TwoFactorCode" class="text-danger small"></span>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger text-start small mb-3" role="alert"></div>
+
+                    <!-- FIX: Declarado explicitamente asp-controller e asp-action para evitar duplicar a URL -->
+                    <form asp-controller="Account" asp-action="LoginWith2FA" asp-route-culture="@culture" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="RememberMe" />
+
+                        <!-- Input de Código Formatado -->
+                        <div class="mb-4 text-start">
+                            <label asp-for="TwoFactorCode" class="form-label fw-bold small text-muted text-uppercase">
+                                @Localizer["2FA_Lbl_Code"]
+                            </label>
+                            <input asp-for="TwoFactorCode" 
+                                   class="form-control form-control-lg text-center fw-bold fs-4 tracking-wider" 
+                                   placeholder="000000" 
+                                   maxlength="7" 
+                                   autocomplete="off" 
+                                   autofocus />
+                            <span asp-validation-for="TwoFactorCode" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <!-- FIX: Apontado para a propriedade RememberMachine se ela existir no ViewModel (ou mantido RememberMe se for o caso) -->
+                        <div class="form-check text-start mb-4">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label small text-muted">
+                                @Localizer["2FA_Chk_RememberMachine"]
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold rounded-3 mb-3">
+                            @Localizer["2FA_Btn_Verify"]
+                        </button>
+                    </form>
+
+                    <hr class="my-3 text-muted opacity-25">
+
+                    <!-- Opções alternativas de Login / Segurança -->
+                    <div class="d-flex flex-column gap-2 small">
+                        <form asp-controller="Account" asp-action="SendEmailCode" asp-route-culture="@culture" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-link text-decoration-none p-0 text-muted">
+                                <i class="bi bi-envelope-at me-1"></i> @Localizer["2FA_Btn_SendViaEmail"]
+                            </button>
+                        </form>
+
+                        <a asp-controller="Account" asp-action="LoginWithRecoveryCode" asp-route-culture="@culture" class="text-decoration-none text-muted">
+                            <i class="bi bi-key me-1"></i> @Localizer["2FA_Link_UseRecoveryCode"]
+                        </a>
+                    </div>
+
                 </div>
-
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Verificar e Entrar</button>
-            </form>
+            </div>
         </div>
     </div>
 </div>

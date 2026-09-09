@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -1851,6 +1851,586 @@
   </data>
   <data name="Job_UndefinedRegion" xml:space="preserve">
     <value>Região Indefinida</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeLabel" xml:space="preserve">
+    <value>Como você pretende usar a plataforma?</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeCandidateTitle" xml:space="preserve">
+    <value>Candidato</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeCandidateDesc" xml:space="preserve">
+    <value>Quero buscar e me candidatar a vagas</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeRecruiterTitle" xml:space="preserve">
+    <value>Recrutador</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeRecruiterDesc" xml:space="preserve">
+    <value>Quero publicar vagas e contratar</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Title_MyPublishedJobs" xml:space="preserve">
+    <value>Minhas Vagas Publicadas</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_CreateNewJob" xml:space="preserve">
+    <value>Criar Nova Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Title" xml:space="preserve">
+    <value>Título</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Company" xml:space="preserve">
+    <value>Empresa</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Location" xml:space="preserve">
+    <value>Localização</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Applications" xml:space="preserve">
+    <value>Candidaturas</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Status" xml:space="preserve">
+    <value>Status</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Date" xml:space="preserve">
+    <value>Data</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Actions" xml:space="preserve">
+    <value>Ações</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Lbl_ApplicantSingular" xml:space="preserve">
+    <value>Candidato</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Lbl_ApplicantPlural" xml:space="preserve">
+    <value>Candidatos</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Badge_StatusActive" xml:space="preserve">
+    <value>Ativa</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Badge_StatusPaused" xml:space="preserve">
+    <value>Pausada</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_Pause" xml:space="preserve">
+    <value>Pausar</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_Reactivate" xml:space="preserve">
+    <value>Reativar</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_PauseJob" xml:space="preserve">
+    <value>Pausar vaga</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_ReactivateJob" xml:space="preserve">
+    <value>Reativar vaga</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_EditJob" xml:space="preserve">
+    <value>Editar vaga</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Msg_NoJobsPublishedYet" xml:space="preserve">
+    <value>Você ainda não publicou nenhuma vaga.</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Title_Applications" xml:space="preserve">
+    <value>Candidaturas da Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Btn_BackToDashboard" xml:space="preserve">
+    <value>Voltar ao Painel</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_Candidate" xml:space="preserve">
+    <value>Candidato</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_AppliedAt" xml:space="preserve">
+    <value>Data de Inscrição</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_Status" xml:space="preserve">
+    <value>Status</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_Resume" xml:space="preserve">
+    <value>Currículo</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_StatusAction" xml:space="preserve">
+    <value>Ação do Status</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Lbl_DefaultCandidateName" xml:space="preserve">
+    <value>Candidato</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Btn_ViewPdf" xml:space="preserve">
+    <value>Ver PDF</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Btn_ViewProfile" xml:space="preserve">
+    <value>Ver Perfil / DB</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Msg_NoApplications" xml:space="preserve">
+    <value>Nenhuma candidatura recebida para esta vaga até o momento.</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_Submitted" xml:space="preserve">
+    <value>Enviado</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_InReview" xml:space="preserve">
+    <value>Em Análise</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_Approved" xml:space="preserve">
+    <value>Aprovado</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_Rejected" xml:space="preserve">
+    <value>Rejeitado</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_Submitted" xml:space="preserve">
+    <value>Enviado</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_InReview" xml:space="preserve">
+    <value>Em Análise</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_Approved" xml:space="preserve">
+    <value>Aprovado</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_Rejected" xml:space="preserve">
+    <value>Rejeitado</value>
+    <comment/>
+  </data>
+  <data name="2FA_Title" xml:space="preserve">
+    <value>Verificação de Segurança</value>
+    <comment/>
+  </data>
+  <data name="2FA_Header" xml:space="preserve">
+    <value>Segurança Máxima</value>
+    <comment/>
+  </data>
+  <data name="2FA_SubHeader" xml:space="preserve">
+    <value>Digite o código de 6 dígitos gerado pelo seu aplicativo autenticador (Google Authenticator).</value>
+    <comment/>
+  </data>
+  <data name="2FA_Lbl_Code" xml:space="preserve">
+    <value>Código de Verificação</value>
+    <comment/>
+  </data>
+  <data name="2FA_Chk_RememberMachine" xml:space="preserve">
+    <value>Lembrar deste navegador</value>
+    <comment/>
+  </data>
+  <data name="2FA_Btn_Verify" xml:space="preserve">
+    <value>Verificar e Entrar</value>
+    <comment/>
+  </data>
+  <data name="2FA_Btn_SendViaEmail" xml:space="preserve">
+    <value>Receber código por e-mail em vez disso</value>
+    <comment/>
+  </data>
+  <data name="2FA_Link_UseRecoveryCode" xml:space="preserve">
+    <value>Usar código de recuperação</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Title_MyApplications" xml:space="preserve">
+    <value>Minhas Candidaturas</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Empty_Title" xml:space="preserve">
+    <value>Você ainda não se candidatou a nenhuma vaga</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Empty_Message" xml:space="preserve">
+    <value>Explore as vagas disponíveis e envie seu currículo com um clique!</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Btn_SearchJobs" xml:space="preserve">
+    <value>Buscar Vagas</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Job" xml:space="preserve">
+    <value>Vaga</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Company" xml:space="preserve">
+    <value>Empresa</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Location" xml:space="preserve">
+    <value>Localização</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_AppliedAt" xml:space="preserve">
+    <value>Data de Inscrição</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Status" xml:space="preserve">
+    <value>Status</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Actions" xml:space="preserve">
+    <value>Ações</value>
+    <comment/>
+  </data>
+  <data name="CandApps_WorkMode_Remote" xml:space="preserve">
+    <value>Remoto</value>
+    <comment/>
+  </data>
+  <data name="CandApps_WorkMode_Onsite" xml:space="preserve">
+    <value>Presencial/Híbrido</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Submitted" xml:space="preserve">
+    <value>Recebida</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_InReview" xml:space="preserve">
+    <value>Em Análise</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Interview" xml:space="preserve">
+    <value>Em Entrevista</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Approved" xml:space="preserve">
+    <value>Aprovado</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Rejected" xml:space="preserve">
+    <value>Encerrado</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Pending" xml:space="preserve">
+    <value>Pendente</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Btn_ViewJob" xml:space="preserve">
+    <value>Ver Vaga</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Title" xml:space="preserve">
+    <value>Acesso Negado</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Header" xml:space="preserve">
+    <value>Acesso Negado</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Message" xml:space="preserve">
+    <value>Você não tem permissão para acessar esta página ou visualizar estes recursos.</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Btn_BackHome" xml:space="preserve">
+    <value>Voltar ao Início</value>
+    <comment/>
+  </data>
+  <data name="Enterprise_Btn_SearchJobs" xml:space="preserve">
+    <value>Pesquisar</value>
+    <comment/>
+  </data>
+  <data name="Enterprise_Search_Placeholder" xml:space="preserve">
+    <value>Digite a vaga, tecnologia ou empresa...</value>
+    <comment/>
+  </data>
+  <data name="Tab_LocalJobs" xml:space="preserve">
+    <value>Vagas Próprias</value>
+    <comment/>
+  </data>
+  <data name="Tab_PartnerJobs" xml:space="preserve">
+    <value>Parceiros</value>
+    <comment/>
+  </data>
+  <data name="Tab_Companies" xml:space="preserve">
+    <value>Empresas</value>
+    <comment/>
+  </data>
+  <data name="Nav_SearchJobs" xml:space="preserve">
+    <value>Buscar Vagas</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_PageTitle" xml:space="preserve">
+    <value>Criar Nova Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_BackBtn" xml:space="preserve">
+    <value>Voltar ao Painel</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_TitleLabel" xml:space="preserve">
+    <value>Título da Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_TitlePlaceholder" xml:space="preserve">
+    <value>ex: Desenvolvedor .NET Full Stack Senior</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_CompanyLabel" xml:space="preserve">
+    <value>Empresa</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_CompanyPlaceholder" xml:space="preserve">
+    <value>Nome da empresa</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_LocationLabel" xml:space="preserve">
+    <value>Localização</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_LocationPlaceholder" xml:space="preserve">
+    <value>ex: São Paulo, SP - Brasil</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_IsRemoteLabel" xml:space="preserve">
+    <value>Trabalho Remoto</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_DescriptionLabel" xml:space="preserve">
+    <value>Descrição da Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_IsActiveLabel" xml:space="preserve">
+    <value>Vaga Ativa (visível para candidatos)</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_CancelBtn" xml:space="preserve">
+    <value>Cancelar</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_SubmitBtn" xml:space="preserve">
+    <value>Publicar Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_QuillPlaceholder" xml:space="preserve">
+    <value>Descreva os requisitos, responsabilidades e benefícios da vaga...</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_PageTitle" xml:space="preserve">
+    <value>Editar Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_BackBtn" xml:space="preserve">
+    <value>Voltar ao Painel</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_TitleLabel" xml:space="preserve">
+    <value>Título da Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_CompanyLabel" xml:space="preserve">
+    <value>Empresa</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_LocationLabel" xml:space="preserve">
+    <value>Localização</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_IsRemoteLabel" xml:space="preserve">
+    <value>Trabalho Remoto</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_DescriptionLabel" xml:space="preserve">
+    <value>Descrição da Vaga</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_IsActiveLabel" xml:space="preserve">
+    <value>Vaga Ativa (visível para candidatos)</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_CancelBtn" xml:space="preserve">
+    <value>Cancelar</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_SubmitBtn" xml:space="preserve">
+    <value>Salvar Alterações</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_QuillPlaceholder" xml:space="preserve">
+    <value>Descreva os requisitos, responsabilidades e benefícios da vaga...</value>
+    <comment/>
+  </data>
+  <data name="Resume_SummaryLabel" xml:space="preserve">
+    <value>Resumo</value>
+    <comment/>
+  </data>
+  <data name="Resume_ExpDescPlaceholder" xml:space="preserve">
+    <value>Descreva suas principais responsabilidades, projetos e conquistas nesta função...</value>
+    <comment/>
+  </data>
+  <data name="Menu_AffiliateProducts" xml:space="preserve">
+    <value>Produtos de Afiliados</value>
+    <comment/>
+  </data>
+  <data name="Menu_RecruiterPanel" xml:space="preserve">
+    <value>Painel do Recrutador</value>
+    <comment/>
+  </data>
+  <data name="Menu_MyApplications" xml:space="preserve">
+    <value>Minhas Candidaturas</value>
+    <comment/>
+  </data>
+  <data name="Menu_Login" xml:space="preserve">
+    <value>Entrar</value>
+    <comment/>
+  </data>
+  <data name="Job_Candidates" xml:space="preserve">
+    <value>Candidatos</value>
+    <comment/>
+  </data>
+  <data name="Job_Status" xml:space="preserve">
+    <value>Status</value>
+    <comment/>
+  </data>
+  <data name="Recruiter_MyJobs_Title" xml:space="preserve">
+    <value>Minhas Vagas</value>
+    <comment/>
+  </data>
+  <data name="Recruiter_MyJobs_Subtitle" xml:space="preserve">
+    <value>Gerencie suas vagas abertas, candidaturas e status de publicação.</value>
+    <comment/>
+  </data>
+  <data name="Recruiter_CreateJob_Btn" xml:space="preserve">
+    <value>Criar Nova Vaga</value>
+    <comment/>
+  </data>
+  <data name="Job_Title" xml:space="preserve">
+    <value>Titulo da Vaga</value>
+    <comment/>
+  </data>
+  <data name="Job_CandidatesCount" xml:space="preserve">
+    <value>Candidato(s)</value>
+    <comment/>
+  </data>
+  <data name="Job_StatusActive" xml:space="preserve">
+    <value>Ativa</value>
+    <comment/>
+  </data>
+  <data name="Job_StatusInactive" xml:space="preserve">
+    <value>Inativa</value>
+    <comment/>
+  </data>
+  <data name="Job_StatusClosed" xml:space="preserve">
+    <value>Fechada</value>
+    <comment/>
+  </data>
+  <data name="Job_Actions" xml:space="preserve">
+    <value>Ações</value>
+    <comment/>
+  </data>
+  <data name="Job_NoJobsFound" xml:space="preserve">
+    <value>Nenhuma vaga cadastrada até o momento.</value>
+    <comment/>
+  </data>
+  <data name="Job_AutoDeletionIn" xml:space="preserve">
+    <value>Exclusão automática em</value>
+    <comment/>
+  </data>
+  <data name="Job_BtnClose" xml:space="preserve">
+    <value>Encerrar</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_Title" xml:space="preserve">
+    <value>Encerrar Vaga?</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_Text" xml:space="preserve">
+    <value>Você está prestes a encerrar a vaga</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_Warning" xml:space="preserve">
+    <value>A vaga deixará de receber candidaturas e será excluída permanentemente do sistema em 30 dias.</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_ConfirmBtn" xml:space="preserve">
+    <value>Sim, Encerrar Vaga</value>
+    <comment/>
+  </data>
+  <data name="Home_Hero_Badge" xml:space="preserve">
+    <value>Conectando Talentos em TI Globalmente</value>
+    <comment/>
+  </data>
+  <data name="Home_Hero_Btn_Explore" xml:space="preserve">
+    <value>Conhecer a Plataforma</value>
+    <comment/>
+  </data>
+  <data name="Home_Stat_TechFocus" xml:space="preserve">
+    <value>Foco em Tecnologia</value>
+    <comment/>
+  </data>
+  <data name="Home_Stat_Languages" xml:space="preserve">
+    <value>Idiomas Suportados</value>
+    <comment/>
+  </data>
+  <data name="Home_Stat_Reach" xml:space="preserve">
+    <value>Oportunidades</value>
+    <comment/>
+  </data>
+  <data name="Home_Pillars_Title" xml:space="preserve">
+    <value>O que você encontra na MasterStack</value>
+    <comment/>
+  </data>
+  <data name="Home_Pillars_Subtitle" xml:space="preserve">
+    <value>Uma plataforma completa construída para desenvolvedores, profissionais de TI e empresas.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Jobs_Title" xml:space="preserve">
+    <value>Vagas de TI</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Jobs_Desc" xml:space="preserve">
+    <value>Oportunidades nacionais e internacionais para desenvolvedores, engenheiros de software e especialistas de dados.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Courses_Title" xml:space="preserve">
+    <value>Cursos e Capacitação</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Courses_Desc" xml:space="preserve">
+    <value>Trilhas de aprendizado focado em tecnologias modernas como C#, .NET, React, Cloud e Banco de Dados.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Blog_Title" xml:space="preserve">
+    <value>Blog &amp; Conteúdo Tech</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Blog_Desc" xml:space="preserve">
+    <value>Artigos, tutoriais e novidades do mercado de tecnologia em Português, Inglês e Francês.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Recruiters_Title" xml:space="preserve">
+    <value>Para Empresas</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Recruiters_Desc" xml:space="preserve">
+    <value>Publique vagas, receba candidaturas qualificadas e gerencie processos seletivos de forma ágil.</value>
+    <comment/>
+  </data>
+  <data name="Home_Blog_ViewAll" xml:space="preserve">
+    <value>Ver Todos os Artigos</value>
     <comment/>
   </data>
 </root>

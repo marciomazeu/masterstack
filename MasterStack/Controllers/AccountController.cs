@@ -13,10 +13,11 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text.Encodings.Web;
+using Serilog;
 
 namespace MasterStack.Controllers
 {
-    [Route("{culture}/[controller]/[action]")]
+    [Route("{culture}/[controller]")]
     public class AccountController : Controller
     {
        private readonly SignInManager<ApplicationUser> _signInManager;
@@ -46,7 +47,7 @@ namespace MasterStack.Controllers
         _context = context;
     }
 
-    [HttpGet("")]
+    [HttpGet]
     [HttpGet("Login")]
     public IActionResult Login(string culture, string returnUrl = null)
     {
@@ -59,128 +60,158 @@ namespace MasterStack.Controllers
         return View();
     }
 
-    [HttpPost("")]
+    [HttpPost]
     [HttpPost("Login")]
     [ValidateAntiForgeryToken]
-public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
-{
-    // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
-    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-    // 1. Executa a tentativa de login (lockoutOnFailure ativado)
-    var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: true);
-
-    // 🔒 INTERCOPTAÇÃO DO 2FA: Se o usuário ativou o 2FA, ele cai aqui!
-    if (result.RequiresTwoFactor)
+    public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
     {
-        // Redirecionamos para a tela de digitação do código do celular
-        // Passamos a cultura para manter o idioma na próxima tela
-        return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
-    }
+        // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
+        string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
 
-    if (result.Succeeded)
-    {
-        var user = await _userManager.FindByNameAsync(username);
-        if (user == null) 
+        // 1. Executa a tentativa de login (lockoutOnFailure ativado)
+        var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: true);
+
+        // 🔒 INTERCOPTAÇÃO DO 2FA: Se o usuário ativou o 2FA, ele cai aqui!
+        if (result.RequiresTwoFactor)
         {
-            ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+            // Redirecionamos para a tela de digitação do código do celular
+            // Passamos a cultura para manter o idioma na próxima tela
+            return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
+        }
+
+        if (result.Succeeded)
+        {
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null) 
+            {
+                ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+                return View();
+            }
+
+            // Se for Admin ou Autor, manda para o Dashboard
+            if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+            {
+                return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+            }
+
+            // Se for User (Leitor), manda para o Perfil dele
+            return RedirectToAction("Profile", "Account", new { culture = currentCulture });
+        }
+
+        if (result.IsLockedOut)
+        {
+            ViewBag.Error = _localizer["AccountLocked"].Value; 
             return View();
         }
 
-        // Se for Admin ou Autor, manda para o Dashboard
-        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
-        {
-            return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-        }
-
-        // Se for User (Leitor), manda para o Perfil dele
-        return RedirectToAction("Profile", "Account", new { culture = currentCulture });
-    }
-
-    if (result.IsLockedOut)
-    {
-        ViewBag.Error = _localizer["AccountLocked"].Value; 
+        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
         return View();
     }
 
-    ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-    return View();
-}
-
-// 1. GET do Login com 2FA
-[HttpGet("LoginWith2FA")]
-[AllowAnonymous]
-public async Task<IActionResult> LoginWith2FA([FromRoute] string culture, string returnUrl = null)
-{
-    var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-    if (user == null)
+    // 1. GET do Login com 2FA
+[   HttpGet("LoginWith2FA")]
+    [AllowAnonymous]
+    public async Task<IActionResult> LoginWith2FA([FromRoute] string culture, string returnUrl = null)
     {
-        return RedirectToAction("Login", "Account", new { culture = culture });
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+        {
+            return RedirectToAction("Login", "Account", new { culture });
+        }
+
+        ViewData["ReturnUrl"] = returnUrl;
+        ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+        return View(new LoginWith2FAViewModel());
     }
 
-    ViewData["ReturnUrl"] = returnUrl;
-    ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-    return View();
-}
-
-// 2. POST do Login com 2FA
-[HttpPost("LoginWith2FA")]
-[AllowAnonymous]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [FromRoute] string culture, string returnUrl = null)
-{
-    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-    var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-    if (user == null) return RedirectToAction("Login", "Account", new { culture = currentCulture });
-
-    if (!ModelState.IsValid)
+    // 2. POST do Login com 2FA
+    [HttpPost("LoginWith2FA")]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [FromRoute] string culture, string returnUrl = null)
     {
+        string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null) 
+        {
+            return RedirectToAction("Login", "Account", new { culture = currentCulture });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            ViewData["CurrentCulture"] = currentCulture;
+            return View(model);
+        }
+
+        var cleanCode = model.TwoFactorCode?.Replace(" ", "").Replace("-", "");
+
+        var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(cleanCode, isPersistent: model.RememberMe, rememberClient: false);
+
+        if (result.Succeeded)
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+            {
+                return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+            }
+
+            return RedirectToAction("Profile", "User", new { culture = currentCulture });
+        }
+
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(string.Empty, _localizer["AccountLocked"].Value);
+            return View(model);
+        }
+
+        ModelState.AddModelError(string.Empty, "Código inválido. Verifique o seu aplicativo autenticador.");
         ViewData["ReturnUrl"] = returnUrl;
         ViewData["CurrentCulture"] = currentCulture;
         return View(model);
     }
 
-    // 🔥 O Identity valida o código vindo do ViewModel
-    var cleanCode = model.TwoFactorCode.Replace(" ", "").Replace("-", "");
+// 3. POST para Envio de Código por E-mail
+[HttpPost("SendEmailCode")]
+[AllowAnonymous]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> SendEmailCode([FromRoute] string culture, string returnUrl = null)
+{
+    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
 
-    var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(cleanCode, isPersistent: model.RememberMe, rememberClient: false);
-
-    if (result.Succeeded)
+    var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+    if (user == null)
     {
-        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
-        {
-            return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-        }
-
-        return RedirectToAction("Profile", "User", new { culture = currentCulture });
+        return RedirectToAction("Login", "Account", new { culture = currentCulture });
     }
 
-    if (result.IsLockedOut)
+    // Gera o token do tipo Email do Identity
+    var code = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
+
+    // Envia o e-mail via IEmailSender
+    string subject = "Seu Código de Acesso 2FA";
+    string message = $"Olá, seu código de verificação em duas etapas é: <strong>{code}</strong>";
+
+    try
     {
-        ViewBag.Error = _localizer["AccountLocked"].Value;
-        return View(model);
+        await _emailSender.SendEmailAsync(user.Email, subject, message);
+        TempData["SuccessMessage"] = "Código enviado para o seu e-mail com sucesso!";
+    }
+    catch
+    {
+        TempData["ErrorMessage"] = "Não foi possível enviar o e-mail no momento. Verifique as configurações de SMTP.";
     }
 
-    ModelState.AddModelError(string.Empty, "Código inválido. Verifique o seu aplicativo autenticador.");
-    ViewData["ReturnUrl"] = returnUrl;
-    ViewData["CurrentCulture"] = currentCulture;
-    return View(model);
+    return RedirectToAction(nameof(LoginWith2FA), new { culture = currentCulture, returnUrl });
 }
 
-   // Mude para HttpPost por segurança, mas se o seu link for um <a> simples, use HttpGet
-    [HttpGet("Logout")]
-    [HttpPost("Logout")] // <--- CORREÇÃO AQUI: Apenas "Logout", pois o prefixo já vem da classe
-    public async Task<IActionResult> Logout(string culture)
-    {
-        await _signInManager.SignOutAsync();
-        
-        // Pega a cultura da rota se o parâmetro vier nulo
-        var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
-
-        return RedirectToAction("Index", "Home", new { culture = currentCulture });
-    }
+   
 
     // 1. O método GET (Abre a página quando você digita a URL)
     [HttpGet("Register")]
@@ -190,8 +221,14 @@ public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [From
         return View();
     }
 
-  [HttpPost("Register")]
-public async Task<IActionResult> Register(string email, string password, string confirmPassword, string displayName, string culture)
+[HttpPost("Register")]
+public async Task<IActionResult> Register(
+    string email, 
+    string password, 
+    string confirmPassword, 
+    string displayName, 
+    string userType, // 👈 Novo parâmetro vindo do formulário ("Recruiter" ou "Candidate")
+    string culture)
 {
     var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
 
@@ -216,9 +253,14 @@ public async Task<IActionResult> Register(string email, string password, string 
 
     if (result.Succeeded)
     {
-        await _userManager.AddToRoleAsync(user, "User");
+        // 4. Atribuição de Role baseada na seleção (Fallback para Candidate)
+        string roleToAssign = string.Equals(userType, "Recruiter", StringComparison.OrdinalIgnoreCase) 
+            ? "Recruiter" 
+            : "Candidate";
 
-        // 4. Fluxo de E-mail de Confirmação
+        await _userManager.AddToRoleAsync(user, roleToAssign);
+
+        // 5. Fluxo de E-mail de Confirmação
         try 
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -244,16 +286,21 @@ public async Task<IActionResult> Register(string email, string password, string 
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERRO AO ENVIAR E-MAIL]: {ex.Message}");
-            // Em produção, você registraria isso em um log real (Serilog/NLog)
+            Log.Error(ex, "[ERRO AO ENVIAR E-MAIL]");
         }
 
-        // 5. Login e Redirecionamento
+        // 6. Login e Redirecionamento condicional ao Perfil
         await _signInManager.SignInAsync(user, isPersistent: false);
+
+        if (roleToAssign == "Recruiter")
+        {
+            return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+        }
+
         return RedirectToAction("Index", "Home", new { culture = currentCulture });
     }
 
-    // 6. Tratamento de Erros do Identity (Tradução)
+    // 7. Tratamento de Erros do Identity (Tradução)
     var firstError = result.Errors.FirstOrDefault();
     if (firstError != null)
     {
@@ -266,9 +313,21 @@ public async Task<IActionResult> Register(string email, string password, string 
     return View();
 }
 
+ // ✅ Sem atributo [Route] ou [HttpGet("Logout")]. 
+    // Usamos apenas [HttpGet, HttpPost] para aceitar os dois verbos na rota padrão "/Account/Logout".
+    [HttpGet]
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Logout(string culture)
+    {
+        await _signInManager.SignOutAsync();
         
-        
+        var currentCulture = !string.IsNullOrEmpty(culture) 
+            ? culture 
+            : RouteData.Values["culture"]?.ToString() ?? "pt-BR";
 
+        return RedirectToAction("Login", "Account", new { culture = currentCulture });
+    }
 
     [HttpGet("ConfirmEmail")]
     public async Task<IActionResult> ConfirmEmail(string userId, string token, string culture)
@@ -300,12 +359,6 @@ public async Task<IActionResult> Register(string email, string password, string 
             ViewBag.Error = "Erro ao confirmar o e-mail. O token pode ter expirado.";
             return View("Error");
         }
-    }
-
-    [HttpGet("AccessDenied")]
-    public IActionResult AccessDenied()
-    {
-        return View();
     }
 
         // 1. Abre a página para digitar o e-mail
@@ -584,5 +637,13 @@ public async Task<IActionResult> VerifyTwoFactor(string verificationCode)
     ModelState.AddModelError(string.Empty, "Erro ao ativar o 2FA no banco de dados.");
     return View();
 }
+
+    [HttpGet("AccessDenied")]
+    [HttpGet("/AccessDenied")]
+    public IActionResult AccessDenied()
+    {
+        TempData["WarningMessage"] = "Seu perfil de usuário não tem permissão para realizar candidaturas.";
+        return RedirectToAction("Index", "Home");
+    }
     }
 }

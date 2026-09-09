@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -1650,7 +1650,7 @@
     <comment/>
   </data>
   <data name="Resume_SummaryPlaceholder" xml:space="preserve">
-    <value>Décrivez brièvement votre parcours et vos objectifs...</value>
+    <value>Decrivez brievement votre parcours et vos objectifs...</value>
     <comment/>
   </data>
   <data name="Resume_SectionSkills" xml:space="preserve">
@@ -1847,6 +1847,586 @@
   </data>
   <data name="Job_UndefinedRegion" xml:space="preserve">
     <value>Région non définie</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeLabel" xml:space="preserve">
+    <value>Comment souhaitez-vous utiliser la plateforme ?</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeCandidateTitle" xml:space="preserve">
+    <value>Candidat</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeCandidateDesc" xml:space="preserve">
+    <value>Je veux chercher e postuler à des emplois</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeRecruiterTitle" xml:space="preserve">
+    <value>Recruteur</value>
+    <comment/>
+  </data>
+  <data name="AccountTypeRecruiterDesc" xml:space="preserve">
+    <value>Je veux publier des offres et recruter</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Title_MyPublishedJobs" xml:space="preserve">
+    <value>Mes offres d'emploi</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_CreateNewJob" xml:space="preserve">
+    <value>Créer une offre</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Title" xml:space="preserve">
+    <value>Titre</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Company" xml:space="preserve">
+    <value>Entreprise</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Location" xml:space="preserve">
+    <value>Emplacement</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Applications" xml:space="preserve">
+    <value>Candidatures</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Status" xml:space="preserve">
+    <value>Statut</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Date" xml:space="preserve">
+    <value>Date</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Col_Actions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Lbl_ApplicantSingular" xml:space="preserve">
+    <value>Candidat</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Lbl_ApplicantPlural" xml:space="preserve">
+    <value>Candidats</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Badge_StatusActive" xml:space="preserve">
+    <value>Active</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Badge_StatusPaused" xml:space="preserve">
+    <value>En pause</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_Pause" xml:space="preserve">
+    <value>Suspendre</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_Reactivate" xml:space="preserve">
+    <value>Réactiver</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_PauseJob" xml:space="preserve">
+    <value>Suspendre l'offre</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_ReactivateJob" xml:space="preserve">
+    <value>Réactiver l'offre</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Btn_EditJob" xml:space="preserve">
+    <value>Modifier l'offre</value>
+    <comment/>
+  </data>
+  <data name="JobMgmt_Msg_NoJobsPublishedYet" xml:space="preserve">
+    <value>Vous n'avez pas encore publié d'offres d'emploi.</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Title_Applications" xml:space="preserve">
+    <value>Candidatures pour l'offre</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Btn_BackToDashboard" xml:space="preserve">
+    <value>Retour au tableau de bord</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_Candidate" xml:space="preserve">
+    <value>Candidat</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_AppliedAt" xml:space="preserve">
+    <value>Date de candidature</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_Status" xml:space="preserve">
+    <value>Statut</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_Resume" xml:space="preserve">
+    <value>C.V.</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Col_StatusAction" xml:space="preserve">
+    <value>Modifier le statut</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Lbl_DefaultCandidateName" xml:space="preserve">
+    <value>Candidat</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Btn_ViewPdf" xml:space="preserve">
+    <value>Voir le PDF</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Btn_ViewProfile" xml:space="preserve">
+    <value>Voir le profil</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Msg_NoApplications" xml:space="preserve">
+    <value>Aucune candidature reçue pour cette offre pour le moment.</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_Submitted" xml:space="preserve">
+    <value>Soumis</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_InReview" xml:space="preserve">
+    <value>En révision</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_Approved" xml:space="preserve">
+    <value>Approuvé</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Option_Rejected" xml:space="preserve">
+    <value>Refusé</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_Submitted" xml:space="preserve">
+    <value>Soumis</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_InReview" xml:space="preserve">
+    <value>En révision</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_Approved" xml:space="preserve">
+    <value>Approuvé</value>
+    <comment/>
+  </data>
+  <data name="JobApps_Status_Rejected" xml:space="preserve">
+    <value>Refusé</value>
+    <comment/>
+  </data>
+  <data name="2FA_Title" xml:space="preserve">
+    <value>Vérification de sécurité</value>
+    <comment/>
+  </data>
+  <data name="2FA_Header" xml:space="preserve">
+    <value>Sécurité Maximale</value>
+    <comment/>
+  </data>
+  <data name="2FA_SubHeader" xml:space="preserve">
+    <value>Entrez le code à 6 chiffres généré par votre application d'authentification (Google Authenticator).</value>
+    <comment/>
+  </data>
+  <data name="2FA_Lbl_Code" xml:space="preserve">
+    <value>Code de vérification</value>
+    <comment/>
+  </data>
+  <data name="2FA_Chk_RememberMachine" xml:space="preserve">
+    <value>Mémoriser ce navigateur</value>
+    <comment/>
+  </data>
+  <data name="2FA_Btn_Verify" xml:space="preserve">
+    <value>Vérifier et se connecter</value>
+    <comment/>
+  </data>
+  <data name="2FA_Btn_SendViaEmail" xml:space="preserve">
+    <value>Recevoir le code par courriel à la place</value>
+    <comment/>
+  </data>
+  <data name="2FA_Link_UseRecoveryCode" xml:space="preserve">
+    <value>Utiliser un code de récupération</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Title_MyApplications" xml:space="preserve">
+    <value>Mes candidatures</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Empty_Title" xml:space="preserve">
+    <value>Vous ne vous êtes encore postulé à aucune offre</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Empty_Message" xml:space="preserve">
+    <value>Explorez les offres disponibles et envoyez votre C.V. en un clic !</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Btn_SearchJobs" xml:space="preserve">
+    <value>Rechercher des offres</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Job" xml:space="preserve">
+    <value>Offre</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Company" xml:space="preserve">
+    <value>Entreprise</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Location" xml:space="preserve">
+    <value>Emplacement</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_AppliedAt" xml:space="preserve">
+    <value>Date de candidature</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Status" xml:space="preserve">
+    <value>Statut</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Col_Actions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="CandApps_WorkMode_Remote" xml:space="preserve">
+    <value>Télétravail</value>
+    <comment/>
+  </data>
+  <data name="CandApps_WorkMode_Onsite" xml:space="preserve">
+    <value>Présentiel/Hybride</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Submitted" xml:space="preserve">
+    <value>Reçue</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_InReview" xml:space="preserve">
+    <value>En révision</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Interview" xml:space="preserve">
+    <value>En entrevue</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Approved" xml:space="preserve">
+    <value>Approuvé</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Rejected" xml:space="preserve">
+    <value>Fermé</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Status_Pending" xml:space="preserve">
+    <value>En attente</value>
+    <comment/>
+  </data>
+  <data name="CandApps_Btn_ViewJob" xml:space="preserve">
+    <value>Voir l'offre</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Title" xml:space="preserve">
+    <value>Accès refusé</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Header" xml:space="preserve">
+    <value>Accès refusé</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Message" xml:space="preserve">
+    <value>Vous n'avez pas la permission d'accéder à cette page ou de afficher ces ressources.</value>
+    <comment/>
+  </data>
+  <data name="AccessDenied_Btn_BackHome" xml:space="preserve">
+    <value>Retour à l'accueil</value>
+    <comment/>
+  </data>
+  <data name="Enterprise_Btn_SearchJobs" xml:space="preserve">
+    <value>Rechercher</value>
+    <comment/>
+  </data>
+  <data name="Enterprise_Search_Placeholder" xml:space="preserve">
+    <value>Rechercher un poste, techno ou entreprise...</value>
+    <comment/>
+  </data>
+  <data name="Tab_LocalJobs" xml:space="preserve">
+    <value>Emplois Directs</value>
+    <comment/>
+  </data>
+  <data name="Tab_PartnerJobs" xml:space="preserve">
+    <value>Partenaires</value>
+    <comment/>
+  </data>
+  <data name="Tab_Companies" xml:space="preserve">
+    <value>Entreprises</value>
+    <comment/>
+  </data>
+  <data name="Nav_SearchJobs" xml:space="preserve">
+    <value>Rechercher des emplois</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_PageTitle" xml:space="preserve">
+    <value>Créer ഒരു nouvelle offre d'emploi</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_BackBtn" xml:space="preserve">
+    <value>Retour au tableau de bord</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_TitleLabel" xml:space="preserve">
+    <value>Titre du poste</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_TitlePlaceholder" xml:space="preserve">
+    <value>ex. Développeur Full Stack .NET Sénior</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_CompanyLabel" xml:space="preserve">
+    <value>Entreprise</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_CompanyPlaceholder" xml:space="preserve">
+    <value>Nom de l'entreprise</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_LocationLabel" xml:space="preserve">
+    <value>Emplacement</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_LocationPlaceholder" xml:space="preserve">
+    <value>ex. Montréal, QC - Canada</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_IsRemoteLabel" xml:space="preserve">
+    <value>Travail à distance</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_DescriptionLabel" xml:space="preserve">
+    <value>Description du poste</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_IsActiveLabel" xml:space="preserve">
+    <value>Offre active (visible par les candidats)</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_CancelBtn" xml:space="preserve">
+    <value>Annuler</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_SubmitBtn" xml:space="preserve">
+    <value>Publier l'offre</value>
+    <comment/>
+  </data>
+  <data name="JobCreate_QuillPlaceholder" xml:space="preserve">
+    <value>Décrivez les exigences, les responsabilités et les avantages du poste...</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_PageTitle" xml:space="preserve">
+    <value>Modifier l'offre d'emploi</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_BackBtn" xml:space="preserve">
+    <value>Retour au tableau de bord</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_TitleLabel" xml:space="preserve">
+    <value>Titre du poste</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_CompanyLabel" xml:space="preserve">
+    <value>Entreprise</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_LocationLabel" xml:space="preserve">
+    <value>Emplacement</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_IsRemoteLabel" xml:space="preserve">
+    <value>Travail à distance</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_DescriptionLabel" xml:space="preserve">
+    <value>Description du poste</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_IsActiveLabel" xml:space="preserve">
+    <value>Offre active (visible par les candidats)</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_CancelBtn" xml:space="preserve">
+    <value>Annuler</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_SubmitBtn" xml:space="preserve">
+    <value>Enregistrer les modifications</value>
+    <comment/>
+  </data>
+  <data name="JobEdit_QuillPlaceholder" xml:space="preserve">
+    <value>Décrivez les exigences, les responsabilités et les avantages du poste...</value>
+    <comment/>
+  </data>
+  <data name="Resume_SummaryLabel" xml:space="preserve">
+    <value>Résumé</value>
+    <comment/>
+  </data>
+  <data name="Resume_ExpDescPlaceholder" xml:space="preserve">
+    <value>Décrivez vos principales responsabilités, projets et réalisations dans ce poste...</value>
+    <comment/>
+  </data>
+  <data name="Menu_AffiliateProducts" xml:space="preserve">
+    <value>Produits d'affiliation</value>
+    <comment/>
+  </data>
+  <data name="Menu_RecruiterPanel" xml:space="preserve">
+    <value>Tableau de bord du recruteur</value>
+    <comment/>
+  </data>
+  <data name="Menu_MyApplications" xml:space="preserve">
+    <value>Mes candidatures</value>
+    <comment/>
+  </data>
+  <data name="Menu_Login" xml:space="preserve">
+    <value>Connexion</value>
+    <comment/>
+  </data>
+  <data name="Job_Candidates" xml:space="preserve">
+    <value>Candidats</value>
+    <comment/>
+  </data>
+  <data name="Job_Status" xml:space="preserve">
+    <value>Statut</value>
+    <comment/>
+  </data>
+  <data name="Recruiter_MyJobs_Title" xml:space="preserve">
+    <value>Mes offres d'emploi</value>
+    <comment/>
+  </data>
+  <data name="Recruiter_MyJobs_Subtitle" xml:space="preserve">
+    <value>Gérez vos postes ouverts, candidatures et statuts de publication.</value>
+    <comment/>
+  </data>
+  <data name="Recruiter_CreateJob_Btn" xml:space="preserve">
+    <value>Créer une offre</value>
+    <comment/>
+  </data>
+  <data name="Job_Title" xml:space="preserve">
+    <value>Titre du poste</value>
+    <comment/>
+  </data>
+  <data name="Job_CandidatesCount" xml:space="preserve">
+    <value>Candidat(s)</value>
+    <comment/>
+  </data>
+  <data name="Job_StatusActive" xml:space="preserve">
+    <value>Active</value>
+    <comment/>
+  </data>
+  <data name="Job_StatusInactive" xml:space="preserve">
+    <value>Inactive</value>
+    <comment/>
+  </data>
+  <data name="Job_StatusClosed" xml:space="preserve">
+    <value>Fermée</value>
+    <comment/>
+  </data>
+  <data name="Job_Actions" xml:space="preserve">
+    <value>Actions</value>
+    <comment/>
+  </data>
+  <data name="Job_NoJobsFound" xml:space="preserve">
+    <value>Aucune offre d'emploi enregistrée.</value>
+    <comment/>
+  </data>
+  <data name="Job_AutoDeletionIn" xml:space="preserve">
+    <value>Suppression automatique le</value>
+    <comment/>
+  </data>
+  <data name="Job_BtnClose" xml:space="preserve">
+    <value>Fermer l'offre</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_Title" xml:space="preserve">
+    <value>Fermer l'offre d'emploi ?</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_Text" xml:space="preserve">
+    <value>Vous êtes sur le point de fermer l'offre</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_Warning" xml:space="preserve">
+    <value>L'offre n'acceptera plus de candidatures et sera définitivement supprimée dans 30 jours.</value>
+    <comment/>
+  </data>
+  <data name="Job_ModalClose_ConfirmBtn" xml:space="preserve">
+    <value>Oui, fermer l'offre</value>
+    <comment/>
+  </data>
+  <data name="Home_Hero_Badge" xml:space="preserve">
+    <value>Connecter les talents TI à l'échelle mondiale</value>
+    <comment/>
+  </data>
+  <data name="Home_Hero_Btn_Explore" xml:space="preserve">
+    <value>Découvrir la Plateforme</value>
+    <comment/>
+  </data>
+  <data name="Home_Stat_TechFocus" xml:space="preserve">
+    <value>Axé sur la Techno</value>
+    <comment/>
+  </data>
+  <data name="Home_Stat_Languages" xml:space="preserve">
+    <value>Langues Supportées</value>
+    <comment/>
+  </data>
+  <data name="Home_Stat_Reach" xml:space="preserve">
+    <value>Opportunités</value>
+    <comment/>
+  </data>
+  <data name="Home_Pillars_Title" xml:space="preserve">
+    <value>Ce que vous trouverez sur MasterStack</value>
+    <comment/>
+  </data>
+  <data name="Home_Pillars_Subtitle" xml:space="preserve">
+    <value>Une plateforme complète conçue pour les développeurs, professionnels des TI et entreprises.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Jobs_Title" xml:space="preserve">
+    <value>Emplois en TI</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Jobs_Desc" xml:space="preserve">
+    <value>Opportunités nationales et internationales pour développeurs, ingénieurs logiciel et spécialistes de données.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Courses_Title" xml:space="preserve">
+    <value>Cours et Formation</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Courses_Desc" xml:space="preserve">
+    <value>Parcours d'apprentissage axés sur les technologies modernes comme C#, .NET, React, Cloud et bases de données.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Blog_Title" xml:space="preserve">
+    <value>Blogue &amp; Contenu Techno</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Blog_Desc" xml:space="preserve">
+    <value>Articles, tutoriels et actualités du marché des technologies en français, anglais et portugais.</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Recruiters_Title" xml:space="preserve">
+    <value>Pour les Entreprises</value>
+    <comment/>
+  </data>
+  <data name="Pillar_Recruiters_Desc" xml:space="preserve">
+    <value>Publiez des offres, recevez des candidatures qualifiées et gérez vos recrutements efficacement.</value>
+    <comment/>
+  </data>
+  <data name="Home_Blog_ViewAll" xml:space="preserve">
+    <value>Voir Tous les Emplois</value>
     <comment/>
   </data>
 </root>

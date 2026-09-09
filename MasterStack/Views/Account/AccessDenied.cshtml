@@ -1,27 +1,27 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
 @{
-    ViewData["Title"] = "Acesso Negado";
+    ViewData["Title"] = Localizer["AccessDenied_Title"];
     var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
 }
 
-<div class="container mt-5 text-center">
+<div class="container py-5 text-center">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="display-1 text-danger"><i class="fas fa-user-shield"></i></div>
-            <h1 class="text-dark">Ops! Você não tem permissão.</h1>
-            <p class="lead text-muted">
-                Sua conta não possui o nível de acesso necessário para visualizar esta página.
-            </p>
-            <hr />
-            <div class="d-grid gap-2 d-md-block">
-                <a asp-controller="Home" asp-action="Index" asp-route-culture="@culture" 
-                   class="btn btn-outline-secondary">Voltar para a Home</a>
-                
-                <form asp-controller="Account" asp-action="Logout" asp-route-culture="@culture" 
-                      method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger text-white">
-                        Sair e entrar com outra conta
-                    </button>
-                </form>
+            <div class="card border-0 shadow-sm p-4 rounded-4">
+                <div class="card-body">
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-shield-slash fs-1"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">@Localizer["AccessDenied_Header"]</h2>
+                    <p class="text-muted mb-4">
+                        @Localizer["AccessDenied_Message"]
+                    </p>
+                    <a href="/@culture" class="btn btn-primary fw-bold px-4 rounded-3">
+                        @Localizer["AccessDenied_Btn_BackHome"]
+                    </a>
+                </div>
             </div>
         </div>
     </div>

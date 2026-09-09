@@ -21,13 +21,12 @@ namespace MasterStack.Data
         public DbSet<StaticPage> StaticPages { get; set; }
         public DbSet<StaticPageTranslation> StaticPageTranslations { get; set; }
 
-        // O DbSet de AuthorProfile FOI REMOVIDO daqui (Opção 2)
-
         public DbSet<UserTranslation> UserTranslations { get; set; }
 
         public DbSet<Company> Companies { get; set; }
 
         public DbSet<JobPosting> JobPostings { get; set; }
+        public DbSet<JobApplication> JobApplications { get; set; }
         public DbSet<AffiliateProduct> AffiliateProducts { get; set; }
         public DbSet<Resume> Resumes { get; set; }
         public DbSet<ResumeExperience> ResumeExperiences { get; set; }
@@ -84,7 +83,7 @@ namespace MasterStack.Data
                 .OnDelete(DeleteBehavior.Restrict); 
                 // Restrict: Se deletar o autor, o post não some automaticamente (segurança)
 
-            //slug unico de cada página
+            // slug unico de cada página
             modelBuilder.Entity<StaticPage>()
                 .HasIndex(p => p.Slug)
                 .IsUnique();
@@ -106,6 +105,25 @@ namespace MasterStack.Data
                 .WithOne(s => s.Resume)
                 .HasForeignKey(s => s.ResumeId)
                 .OnDelete(DeleteBehavior.Cascade);
-                }
+
+            // Mapeamento JobApplication -> JobPosting
+            modelBuilder.Entity<JobApplication>()
+                .HasOne(a => a.JobPosting)
+                .WithMany(j => j.Applications)
+                .HasForeignKey(a => a.JobPostingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Mapeamento JobApplication -> Candidate
+            modelBuilder.Entity<JobApplication>()
+                .HasOne(a => a.Candidate)
+                .WithMany(u => u.Applications)
+                .HasForeignKey(a => a.CandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Garantir índice único para que o candidato não se aplique 2x na mesma vaga
+            modelBuilder.Entity<JobApplication>()
+                .HasIndex(a => new { a.JobPostingId, a.CandidateId })
+                .IsUnique();
+        }
     }
 }

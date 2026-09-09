@@ -7,79 +7,142 @@
     var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
 }
 
-<!-- HERO SECTION: Agora inclui Vagas em TI + Cursos + Conteúdo -->
-<header class="py-5 bg-dark text-white position-relative overflow-hidden">
+<!-- HERO SECTION COM ESTATÍSTICAS E CHAMADA CLARA -->
+<header class="py-5 bg-dark text-white position-relative overflow-hidden border-bottom border-primary border-3">
     <div class="container px-5">
-        <div class="row gx-5 align-items-center justify-content-center">
-            <div class="col-lg-8 col-xl-7 col-xxl-6">
-                <div class="my-5 text-center text-xl-start">
-                    <h1 class="display-5 fw-bolder text-white mb-3">@Localizer["Hero_Title"]</h1>
+        <div class="row gx-5 align-items-center justify-content-between">
+            <div class="col-lg-7 col-xl-6">
+                <div class="my-5 text-center text-lg-start">
+                    <span class="badge bg-primary bg-opacity-20 text-primary border border-primary px-3 py-2 rounded-pill fw-bold mb-3">
+                        <i class="bi bi-globe me-1"></i> @Localizer["Home_Hero_Badge"]
+                    </span>
+                    <h1 class="display-4 fw-bolder text-white mb-3">@Localizer["Hero_Title"]</h1>
                     <p class="lead fw-normal text-white-50 mb-4">@Localizer["Hero_Subtitle"]</p>
-                    <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
-                        <!-- CTA Principal: Ir para Vagas -->
-                        <a class="btn btn-primary btn-lg px-4 me-sm-3 fw-bold" href="/@currentCulture/Jobs">
+                    
+                    <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-lg-start mb-4">
+                        <a class="btn btn-primary btn-lg px-4 me-sm-2 fw-bold rounded-pill shadow" href="/@currentCulture/Jobs">
                             <i class="bi bi-briefcase-fill me-2"></i>@Localizer["Home_Hero_Btn_Jobs"]
                         </a>
-                        <!-- CTA Secundário: Cursos ou Blog -->
-                        <a class="btn btn-outline-light btn-lg px-4" href="#latest-posts">
-                            <i class="bi bi-book-fill me-2"></i>@Localizer["Hero_Btn_ReadNow"]
+                        <a class="btn btn-outline-light btn-lg px-4 rounded-pill" href="#about-activities">
+                            <i class="bi bi-compass me-2"></i>@Localizer["Home_Hero_Btn_Explore"]
                         </a>
+                    </div>
+
+                    <!-- Métricas Rápidas / Social Proof -->
+                    <div class="row pt-3 text-white-50 text-center text-lg-start border-top border-secondary border-opacity-25">
+                        <div class="col-4">
+                            <div class="fw-bold text-white fs-4">100%</div>
+                            <div class="small">@Localizer["Home_Stat_TechFocus"]</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-white fs-4">3</div>
+                            <div class="small">@Localizer["Home_Stat_Languages"]</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-white fs-4">Global</div>
+                            <div class="small">@Localizer["Home_Stat_Reach"]</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center">
-                <img class="img-fluid rounded-3 my-5 shadow-lg" src="~/img/home/hero-universe.png" alt="@Localizer["Hero_Img_Alt"]" />
+            <div class="col-lg-5 col-xl-5 d-none d-lg-block text-center">
+                <img class="img-fluid rounded-4 shadow-lg border border-secondary border-opacity-25" src="~/img/home/hero-universe1.png" alt="@Localizer["Hero_Img_Alt"]" />
             </div>
         </div>
     </div>
 </header>
 
-<!-- QUICK ACCESS TOPICS (Navegação contextual) -->
-<section class="py-4 bg-light border-bottom">
-    <div class="container px-5">
-        <div class="d-flex flex-wrap justify-content-center gap-2">
-            <span class="fw-bold align-self-center me-2 text-muted">@Localizer["Nav_Topics"]:</span>
-            @* <a href="/@currentCulture/Jobs" class="btn btn-sm btn-primary rounded-pill px-3"><i class="bi bi-briefcase me-1"></i> @Localizer["Home_Cat_Jobs"]</a>
-            <a href="/@currentCulture/Courses" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-mortarboard me-1"></i> @Localizer["Home_Cat_Courses"]</a>
-            <a href="/@currentCulture/Category/programming" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-code-slash me-1"></i> @Localizer["Cat_Programming"]</a>
-            <a href="/@currentCulture/Category/games" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-controller me-1"></i> @Localizer["Cat_Games"]</a>
-            <a href="/@currentCulture/Category/tech" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-cpu me-1"></i> @Localizer["Cat_Tech"]</a> *@
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "CSS" })" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-        #CSS
-            </a>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "C#" })" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                #C#
-            </a>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "ASP.NET" })" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                #ASP.NET
-            </a>
+<!-- SEÇÃO DE ATIVIDADES / PILARES DA EMPRESA (COM NOVAS IMAGENS) -->
+<section class="py-5 bg-light border-bottom" id="about-activities">
+    <div class="container px-5 my-4">
+        <div class="text-center mb-5">
+            <h2 class="fw-bolder">@Localizer["Home_Pillars_Title"]</h2>
+            <p class="lead fw-normal text-muted mb-0">@Localizer["Home_Pillars_Subtitle"]</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Pilar 1: Vagas de TI -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 text-center hover-shadow transition bg-white">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <div class="mb-3 d-flex align-items-center justify-content-center" style="height: 100px;">
+                            <img src="~/img/home/pillar-jobs.png" alt="@Localizer["Pillar_Jobs_Title"]" class="img-fluid" style="max-height: 90px; object-fit: contain;" />
+                        </div>
+                        <h3 class="h5 fw-bold mb-2 text-dark">@Localizer["Pillar_Jobs_Title"]</h3>
+                        <p class="text-muted small mb-0">@Localizer["Pillar_Jobs_Desc"]</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pilar 2: Cursos & Capacitação -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 text-center hover-shadow transition bg-white">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <div class="mb-3 d-flex align-items-center justify-content-center" style="height: 100px;">
+                            <img src="~/img/home/pillar-courses.png" alt="@Localizer["Pillar_Courses_Title"]" class="img-fluid" style="max-height: 90px; object-fit: contain;" />
+                        </div>
+                        <h3 class="h5 fw-bold mb-2 text-dark">@Localizer["Pillar_Courses_Title"]</h3>
+                        <p class="text-muted small mb-0">@Localizer["Pillar_Courses_Desc"]</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pilar 3: Conteúdo Tech & Blog -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 text-center hover-shadow transition bg-white">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <div class="mb-3 d-flex align-items-center justify-content-center" style="height: 100px;">
+                            <img src="~/img/home/pillar-blog.png" alt="@Localizer["Pillar_Blog_Title"]" class="img-fluid" style="max-height: 90px; object-fit: contain;" />
+                        </div>
+                        <h3 class="h5 fw-bold mb-2 text-dark">@Localizer["Pillar_Blog_Title"]</h3>
+                        <p class="text-muted small mb-0">@Localizer["Pillar_Blog_Desc"]</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pilar 4: Soluções para Recrutadores -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 text-center hover-shadow transition bg-white">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <div class="mb-3 d-flex align-items-center justify-content-center" style="height: 100px;">
+                            <img src="~/img/home/pillar-recruiters.png" alt="@Localizer["Pillar_Recruiters_Title"]" class="img-fluid" style="max-height: 90px; object-fit: contain;" />
+                        </div>
+                        <h3 class="h5 fw-bold mb-2 text-dark">@Localizer["Pillar_Recruiters_Title"]</h3>
+                        <p class="text-muted small mb-0">@Localizer["Pillar_Recruiters_Desc"]</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- SEÇÃO DE VAGAS EM DESTAQUE (Nova funcionalidade de Negócio) -->
-<!-- SEÇÃO DE VAGAS EM DESTAQUE -->
-<section class="py-5 bg-white border-bottom" id="featured-jobs">
+<!-- QUICK ACCESS TOPICS (Filtros Rápidos) -->
+<section class="py-3 bg-white border-bottom">
+    <div class="container px-5 text-center">
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+            <span class="fw-bold me-2 text-muted small"><i class="bi bi-tags me-1"></i>@Localizer["Nav_Topics"]:</span>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "C#" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#C#</a>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "ASP.NET" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#ASP.NET</a>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "React" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#React</a>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "SQL Server" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#SQLServer</a>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "CSS" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#CSS</a>
+        </div>
+    </div>
+</section>
+
+<!-- VAGAS EM DESTAQUE -->
+<section class="py-5 bg-light border-bottom" id="featured-jobs">
     <div class="container px-5 my-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
             <div>
                 <h2 class="fw-bolder mb-0">@Localizer["Home_Jobs_Section_Title"]</h2>
                 <p class="text-muted small mb-0">@Localizer["Home_Jobs_Section_Subtitle"]</p>
             </div>
-            @if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                <!-- Se estiver LOGADO: vai para a lista de vagas -->
-                <a href="/@currentCulture/Jobs" class="btn btn-outline-primary btn-sm rounded-pill">
-                    @Localizer["Home_Jobs_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-            }
-            else
-            {
-                <!-- Se estiver DESLOGADO: vai para o Login com retorno para as vagas -->
-                <a href="/@currentCulture/Account/Login?returnUrl=/@currentCulture/Jobs" class="btn btn-outline-primary btn-sm rounded-pill">
-                    @Localizer["Home_Jobs_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-            }
+            
+            <a href="@(User.Identity?.IsAuthenticated == true ? $"/{currentCulture}/Jobs" : $"/{currentCulture}/Account/Login?returnUrl=/{currentCulture}/Jobs")" 
+               class="btn btn-outline-primary btn-sm rounded-pill fw-bold">
+                @Localizer["Home_Jobs_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
+            </a>
         </div>
 
         <div class="row g-4">
@@ -88,29 +151,27 @@
                 @foreach (var job in Model.FeaturedJobs)
                 {
                     <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm border-0 hover-shadow transition">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 transition hover-shadow">
                             <div class="card-body p-4 d-flex flex-column">
                                 <div class="d-flex align-items-center justify-content-between mb-3 gap-2">
-                                    <!-- Só renderiza o Badge se houver texto -->
                                     @if (!string.IsNullOrWhiteSpace(job.JobType))
                                     {
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-2 py-1 fs-7">
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-2 py-1 fs-7 rounded-pill">
                                             @Localizer[@job.JobType]
                                         </span>
                                     }
-                                    <!-- text-truncate evita que cidades com nomes longos quebrem a linha -->
                                     <small class="text-muted text-truncate" title="@job.Location">
                                         <i class="bi bi-geo-alt me-1"></i>@job.Location
                                     </small>
                                 </div>
 
-                                <h3 class="h5 card-title fw-bold mb-2">@job.Title</h3>
+                                <h3 class="h5 card-title fw-bold mb-2 text-dark">@job.Title</h3>
                                 <p class="text-muted small mb-3">@job.CompanyName</p>
                             </div>
                             
                             <div class="card-footer p-4 pt-0 bg-transparent border-top-0 d-flex justify-content-between align-items-center">
-                                <small class="text-muted">@job.PostedDate.ToString("dd/MM/yyyy")</small>
-                                <a href="/@currentCulture/Jobs/Details/@job.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                                <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>@job.PostedDate.ToString("dd/MM/yyyy")</small>
+                                <a href="/@currentCulture/Jobs/Details/@job.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                                     @Localizer["Home_Jobs_Apply"]
                                 </a>
                             </div>
@@ -118,25 +179,33 @@
                     </div>
                 }
             }
+            else
+            {
+                <div class="col-12 text-center text-muted py-5 bg-white rounded-4 shadow-sm">
+                    <i class="bi bi-briefcase fs-1 d-block mb-2 text-secondary"></i>
+                    <p class="mb-0">@Localizer["Home_Jobs_Empty"]</p>
+                </div>
+            }
         </div>
 
-        <!-- Atribuição da API de Vagas (Requisito Legal) -->
+        <!-- Atribuição Legal da API -->
         <div class="text-end mt-3">
             <small class="text-muted">@Localizer["Home_Jobs_PoweredBy"] <a href="https://www.adzuna.com" target="_blank" rel="nofollow noreferrer" class="text-decoration-none">Adzuna</a></small>
         </div>
     </div>
 </section>
 
-<!-- LATEST POSTS / CURSOS SECTION -->
-<section class="py-5" id="latest-posts">
-    <div class="container px-5 my-5">
-        <div class="row gx-5 justify-content-center">
-            <div class="col-lg-8 col-xl-6">
-                <div class="text-center mb-5">
-                    <h2 class="fw-bolder">@Localizer["Feed_Title"]</h2>
-                    <p class="lead fw-normal text-muted mb-0">@Localizer["Feed_Subtitle"]</p>
-                </div>
+<!-- LATEST POSTS / ARTIGOS TÉCNICOS -->
+<section class="py-5 bg-white" id="latest-posts">
+    <div class="container px-5 my-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5 gap-3">
+            <div>
+                <h2 class="fw-bolder mb-0">@Localizer["Feed_Title"]</h2>
+                <p class="text-muted small mb-0">@Localizer["Feed_Subtitle"]</p>
             </div>
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture })" class="btn btn-outline-secondary btn-sm rounded-pill fw-bold">
+                @Localizer["Home_Blog_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
+            </a>
         </div>
         
         <div class="row gx-5">
@@ -157,8 +226,8 @@
                     {
                         var postImage = translation.ImageUrl ?? "/img/posts/placeholder-default.jpg";
 
-                        <div class="col-lg-4 mb-5">
-                            <div class="card h-100 shadow border-0 overflow-hidden post-card">
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition hover-shadow">
                                 <img class="card-img-top" src="@postImage" alt="@translation.Title" style="height: 200px; object-fit: cover;" />
                                 
                                 <div class="card-body p-4">
@@ -166,21 +235,21 @@
                                         @translation.Culture.ToUpper()
                                     </div>
                                     
-                                    <a href="@Url.Action("Details", "BlogPosts", new { culture = currentCulture, slug = translation.Slug })" class="text-decoration-none">
+                                    <a href="@Url.Action("Details", "BlogPosts", new { culture = currentCulture, slug = translation.Slug })" class="text-decoration-none text-dark">
                                         <h3 class="h5 card-title mb-3 fw-bold">@translation.Title</h3>
                                     </a>
                                     
                                     <p class="card-text mb-0 text-muted small">
-                                        @(translation.MetaDescription?.Length > 120 
-                                            ? translation.MetaDescription.Substring(0, 120) + "..." 
+                                        @(translation.MetaDescription?.Length > 110 
+                                            ? translation.MetaDescription.Substring(0, 110) + "..." 
                                             : translation.MetaDescription ?? "")
                                     </p>
                                 </div>
                                 
                                 <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
                                     <div class="d-flex align-items-center justify-content-between text-muted small">
-                                        <span class="fw-bold">MasterStack</span>
-                                        <span>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+                                        <span class="fw-bold text-primary">MasterStack</span>
+                                        <span><i class="bi bi-clock me-1"></i>@DateTime.Now.ToString("dd/MM/yyyy")</span>
                                     </div>
                                 </div>
                             </div>
@@ -192,25 +261,25 @@
     </div>
 </section>
 
-<!-- NEWSLETTER / OPT-IN COM CONFORMIDADE LEGAL (Lei 25 / CASL) -->
-<section class="py-5 bg-primary bg-gradient text-white">
-    <div class="container px-5 my-5 text-center">
-        <h2 class="fw-bolder">@Localizer["Newsletter_Title"]</h2>
-        <p class="lead fw-normal text-white-50 mb-4">@Localizer["Newsletter_Subtitle"]</p>
-        
+<!-- NEWSLETTER / CONFORMIDADE LEGAL (Lei 25 / CASL) -->
+<section class="py-5 bg-dark text-white">
+    <div class="container px-5 my-4 text-center">
         <div class="row justify-content-center">
-            <div class="col-md-6">
-                <form asp-controller="Home" asp-action="SubscribeNewsletter" method="post">
+            <div class="col-lg-8">
+                <i class="bi bi-envelope-paper display-4 text-primary mb-3 d-block"></i>
+                <h2 class="fw-bolder text-white">@Localizer["Newsletter_Title"]</h2>
+                <p class="lead fw-normal text-white-50 mb-4">@Localizer["Newsletter_Subtitle"]</p>
+                
+                <form asp-controller="Home" asp-action="SubscribeNewsletter" method="post" class="text-start max-w-lg mx-auto">
                     @Html.AntiForgeryToken()
-                    <div class="input-group mb-2">
-                        <input class="form-control" type="email" name="email" required placeholder="@Localizer["Newsletter_Placeholder"]" aria-label="Email..." />
-                        <button class="btn btn-dark font-weight-bold" type="submit">@Localizer["Newsletter_Btn"]</button>
+                    <div class="input-group input-group-lg mb-3">
+                        <input class="form-control border-0 rounded-start-pill px-4" type="email" name="email" required placeholder="@Localizer["Newsletter_Placeholder"]" aria-label="Email..." />
+                        <button class="btn btn-primary font-weight-bold rounded-end-pill px-4" type="submit">@Localizer["Newsletter_Btn"]</button>
                     </div>
                     
-                    <!-- Checkbox de Consentimento Obrigatório para Leis de Privacidade -->
-                    <div class="form-check text-start mt-2">
+                    <div class="form-check mt-2">
                         <input class="form-check-input" type="checkbox" name="consent" id="newsletterConsent" required>
-                        <label class="form-check-input-label text-white-50 small" for="newsletterConsent">
+                        <label class="form-check-label text-white-50 small" for="newsletterConsent">
                             @Localizer["Home_Newsletter_Consent_Text"] 
                             <a asp-controller="Home" asp-action="Privacy" class="text-white text-decoration-underline">@Localizer["Home_Privacy_Officer_Label"]</a>.
                         </label>

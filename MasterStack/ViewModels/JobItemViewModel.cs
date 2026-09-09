@@ -12,5 +12,9 @@ namespace MasterStack.ViewModels
         public string JobType { get; set; } 
         public DateTime PostedDate { get; set; }
         public List<string> Skills { get; set; } = new List<string>();
+
+        // Campos essenciais para a correção da busca e direcionamento:
+        public string Url { get; set; }
+        public string Source { get; set; } // Ex: "Interna", "Adzuna"
     }
 }

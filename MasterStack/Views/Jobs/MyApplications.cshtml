@@ -1,0 +1,92 @@
+@using MasterStack.Models
+@using MasterStack.Models.Enums
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+@model IEnumerable<MasterStack.Models.JobApplication>
+
+@{
+    ViewData["Title"] = Localizer["CandApps_Title_MyApplications"];
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+}
+
+<div class="container mt-4 mb-5">
+    <h2 class="fw-bold mb-4">@Localizer["CandApps_Title_MyApplications"]</h2>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card p-5 text-center shadow-sm border-0">
+            <i class="bi bi-briefcase fs-1 text-muted mb-3"></i>
+            <h4>@Localizer["CandApps_Empty_Title"]</h4>
+            <p class="text-muted">@Localizer["CandApps_Empty_Message"]</p>
+            <div class="mt-3">
+                <a asp-controller="Jobs" asp-action="Enterprises" asp-route-culture="@culture" class="btn btn-primary fw-bold">
+                    @Localizer["CandApps_Btn_SearchJobs"]
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive card shadow-sm border-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">@Localizer["CandApps_Col_Job"]</th>
+                        <th scope="col">@Localizer["CandApps_Col_Company"]</th>
+                        <th scope="col">@Localizer["CandApps_Col_Location"]</th>
+                        <th scope="col">@Localizer["CandApps_Col_AppliedAt"]</th>
+                        <th scope="col">@Localizer["CandApps_Col_Status"]</th>
+                        <th scope="col" class="text-end">@Localizer["CandApps_Col_Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var app in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong class="d-block">@(app.JobPosting?.Title ?? "-")</strong>
+                                <small class="text-muted">
+                                    @(app.JobPosting != null && app.JobPosting.IsRemote 
+                                        ? Localizer["CandApps_WorkMode_Remote"].Value 
+                                        : Localizer["CandApps_WorkMode_Onsite"].Value)
+                                </small>
+                            </td>
+                            <td>@(app.JobPosting?.CompanyName ?? "-")</td>
+                            <td>@(string.IsNullOrEmpty(app.JobPosting?.Location) ? "-" : app.JobPosting.Location)</td>
+                            <td>@app.AppliedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @switch (app.Status)
+                                {
+                                    case ApplicationStatus.Submitted:
+                                        <span class="badge bg-info text-dark">@Localizer["CandApps_Status_Submitted"]</span>
+                                        break;
+                                    case ApplicationStatus.InReview:
+                                        <span class="badge bg-warning text-dark">@Localizer["CandApps_Status_InReview"]</span>
+                                        break;
+                                    case ApplicationStatus.Interview:
+                                        <span class="badge bg-primary">@Localizer["CandApps_Status_Interview"]</span>
+                                        break;
+                                    case ApplicationStatus.Approved:
+                                        <span class="badge bg-success">@Localizer["CandApps_Status_Approved"]</span>
+                                        break;
+                                    case ApplicationStatus.Rejected:
+                                        <span class="badge bg-secondary">@Localizer["CandApps_Status_Rejected"]</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-light text-dark">@Localizer["CandApps_Status_Pending"]</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-controller="Jobs" asp-action="Details" asp-route-id="@app.JobPostingId" asp-route-culture="@culture" class="btn btn-sm btn-outline-primary">
+                                    @Localizer["CandApps_Btn_ViewJob"]
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
