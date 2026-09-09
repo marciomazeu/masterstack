@@ -48,10 +48,12 @@ namespace MasterStack.Controllers
     }
 
     [HttpGet]
+    [HttpGet("Login")] // 👈 ADICIONE ESTA LINHA
+    [HttpGet("/Account/Login")]
     public IActionResult Login(string culture, string returnUrl = null)
     {
         // 1. Prioriza a cultura da URL, se não houver, usa a do sistema
-        ViewBag.CurrentCulture = culture ?? RouteData.Values["culture"] ?? "pt-BR";
+        ViewBag.CurrentCulture = culture ?? RouteData.Values["culture"] ?? "fr-CA";
         
         // 2. Armazena a URL de retorno para o formulário saber para onde ir após o sucesso
         ViewBag.ReturnUrl = returnUrl;

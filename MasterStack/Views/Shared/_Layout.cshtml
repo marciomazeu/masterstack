@@ -230,7 +230,10 @@
                                 </ul>
                             </div>
                         } else {
-                            <a class="btn btn-primary btn-sm px-3" asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture">@Localizer["Menu_Login"]</a>
+                            <a class="btn btn-primary btn-sm px-3" 
+                            href="/@currentCulture/Account/Login">
+                                @Localizer["Menu_Login"]
+                            </a>
                         }
                     </li>
                 </ul>
