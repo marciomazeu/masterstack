@@ -89,14 +89,26 @@ namespace MasterStack.Controllers
                 return View();
             }
 
+            // Se houver uma ReturnUrl válida (ex: página que o usuário tentou acessar antes), redireciona para ela
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
             // Se for Admin ou Autor, manda para o Dashboard
             if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
             {
                 return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
             }
 
-            // Se for User (Leitor), manda para o Perfil dele
-            return RedirectToAction("Profile", "Account", new { culture = currentCulture });
+            // Se for Recrutador
+            if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+            {
+                return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+            }
+
+            // Caso contrário (Candidate/User comum), redireciona para a Home
+            return RedirectToAction("Index", "Home", new { culture = currentCulture });
         }
 
         if (result.IsLockedOut)
