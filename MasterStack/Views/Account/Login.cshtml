@@ -28,13 +28,15 @@
 
                     @if (ViewBag.Error != null)
                     {
-                        @* Aqui o erro já deve vir traduzido do Controller, mas podemos garantir *@
                         <div class="alert alert-danger small">@ViewBag.Error</div>
                     }
-                    <input type="hidden" id="recaptchaToken" name="recaptchaToken" />
                    
-                    <form asp-controller="Account" asp-action="Login" asp-route-culture="@(ViewBag.CurrentCulture ?? "pt-BR")" method="post">
+                    <form id="loginForm" asp-controller="Account" asp-action="Login" asp-route-culture="@(ViewBag.CurrentCulture ?? culture)" method="post">
+                        @Html.AntiForgeryToken()
                         
+                        <!-- Token reCAPTCHA posicionado dentro do formulário -->
+                        <input type="hidden" id="recaptchaToken" name="recaptchaToken" />
+
                         <div class="mb-3">
                             <label class="form-label small fw-bold">@Localizer["EmailOrUsername"]</label>
                             <input type="text" name="username" class="form-control" required autofocus />
@@ -55,28 +57,35 @@
                                 @Localizer["RegisterHere"]
                             </a>
                         </div>
-                        <div class="mb-3">
-    <a asp-controller="Account" asp-action="ForgotPassword" asp-route-culture="@culture">
-    @Localizer["ForgotPassword"]
-</a>
-</div>
+                        <div class="mt-2 text-center small">
+                            <a asp-controller="Account" asp-action="ForgotPassword" asp-route-culture="@culture" class="text-muted text-decoration-none">
+                                @Localizer["ForgotPassword"]
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
             <div class="text-center mt-3">
-                <a href="/" class="text-muted small text-decoration-none">← @Localizer["BackToSite"]</a>
+                <a href="/@culture" class="text-muted small text-decoration-none">← @Localizer["BackToSite"]</a>
             </div>
         </div>
     </div>
 </div>
-</body>
-</html>
 
-<script src="https://www.google.com/recaptcha/api.js?render=@Configuration["Recaptcha:SiteKey"]"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=@Configuration["ReCaptcha:SiteKey"]"></script>
 <script>
-  grecaptcha.ready(function() {
-      grecaptcha.execute('@Configuration["Recaptcha:SiteKey"]', {action: 'submit'}).then(function(token) {
-          document.getElementById('recaptchaToken').value = token;
-      });
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+      var siteKey = '@Configuration["ReCaptcha:SiteKey"]';
+      if (siteKey) {
+          e.preventDefault();
+          grecaptcha.ready(function() {
+              grecaptcha.execute(siteKey, {action: 'login'}).then(function(token) {
+                  document.getElementById('recaptchaToken').value = token;
+                  document.getElementById('loginForm').submit();
+              });
+          });
+      }
   });
 </script>
+</body>
+</html>

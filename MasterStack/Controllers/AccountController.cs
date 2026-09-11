@@ -247,7 +247,7 @@ public async Task<IActionResult> Register(
     var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
 
     // 1. Validação do reCAPTCHA
-    var captchaToken = Request.Form["g-recaptcha-response"];
+    var captchaToken = Request.Form["recaptchaToken"];
     if (string.IsNullOrEmpty(captchaToken) || !await IsReCaptchaValid(captchaToken))
     {
         ViewBag.Error = "Falha na verificação de segurança (reCAPTCHA).";
