@@ -83,7 +83,8 @@ namespace MasterStack.Controllers
 
         if (result.Succeeded)
         {
-            var user = await _userManager.FindByNameAsync(username);
+            
+            var user = await _userManager.FindByEmailAsync(username) ?? await _userManager.FindByNameAsync(username);
             if (user == null) 
             {
                 ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
