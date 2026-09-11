@@ -63,6 +63,7 @@ namespace MasterStack.Controllers
 
     [HttpPost]
     [HttpPost("Login")]
+    [HttpPost("/Account/Login")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
     {
