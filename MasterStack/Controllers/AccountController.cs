@@ -28,6 +28,7 @@ namespace MasterStack.Controllers
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<AccountController> _logger;
 
     public AccountController(
         SignInManager<ApplicationUser> signInManager, 
@@ -36,7 +37,8 @@ namespace MasterStack.Controllers
         IStringLocalizer<SharedResource> localizer,
         IConfiguration configuration,
         IWebHostEnvironment webHostEnvironment,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        ILogger<AccountController> logger)
     {
         _signInManager = signInManager;
         _userManager = userManager;
@@ -45,6 +47,7 @@ namespace MasterStack.Controllers
         _configuration = configuration;
         _webHostEnvironment = webHostEnvironment;
         _context = context;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -390,71 +393,76 @@ public async Task<IActionResult> Register(
         {
             var currentCulture = culture ?? "pt-BR";
             
-            // Buscamos o usuário pelo e-mail
+            // 1. Busca o usuário pelo e-mail
             var user = await _userManager.FindByEmailAsync(email);
 
-            // Se o usuário não existe ou o e-mail não está confirmado (opcional), 
-            // não revelamos o erro. Apenas fingimos que enviamos.
-            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            // Se o usuário não existe, redireciona por segurança (sem revelar se o e-mail existe)
+            if (user == null)
             {
+                _logger.LogWarning("Tentativa de recuperacao de senha para email nao cadastrado: {Email}", email);
                 return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
             }
 
-            // Gerar o Token de Reset de Senha
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            try
+            {
+                // 2. Gerar o Token de Reset de Senha
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            // Gerar o Link (Apontando para a futura Action 'ResetPassword')
-            var callbackUrl = Url.Action("ResetPassword", "Account", 
-                new { token = token, email = user.Email, culture = currentCulture }, Request.Scheme);
+                // 3. Gerar o Link (Apontando para a Action 'ResetPassword')
+                var callbackUrl = Url.Action("ResetPassword", "Account", 
+                    new { token = token, email = user.Email, culture = currentCulture }, Request.Scheme);
 
-            // Disparar o E-mail usando seu serviço e localizer
-            // await _emailSender.SendEmailAsync(user.Email!, _localizer["ResetPasswordSubject"],
-            //         $"{_localizer["EmailGreeting"]} {user.DisplayName},<br/><br/>" +
-            //         $"{_localizer["ResetPasswordInstruction"]} <a href='{callbackUrl}'>{_localizer["ResetPasswordLinkText"]}</a>");
+                // 4. Montar o assunto e corpo do e-mail
+                string subject = _localizer["ResetPasswordSubject"];
+                string body = $@"
+        <!DOCTYPE html>
+        <html lang='{currentCulture}'>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                .container {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }}
+                .header {{ text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }}
+                .button-container {{ text-align: center; margin: 30px 0; }}
+                .button {{ background-color: #007bff; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; }}
+                .footer {{ font-size: 12px; color: #777; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>MasterStack</h2>
+                </div>
+                <p>{_localizer["EmailGreeting"]} {user.DisplayName},</p>
+                <p>{_localizer["ResetPasswordInstruction"]}</p>
+                
+                <div class='button-container'>
+                    <a href='{callbackUrl}' class='button'>{_localizer["ResetPasswordLinkText"]}</a>
+                </div>
+                
+                <p>Se você não solicitou a redefinição de senha, nenhuma ação adicional é necessária e você pode ignorar este e-mail com segurança.</p>
+                
+                <div class='footer'>
+                    <p>Este é um e-mail automático enviado pelo sistema MasterStack.<br>
+                    Por favor, não responda a este e-mail.</p>
+                </div>
+            </div>
+        </body>
+        </html>";
 
-            // 1. Defina o assunto e o corpo com HTML estruturado
-string subject = _localizer["ResetPasswordSubject"];
-string body = $@"
-<!DOCTYPE html>
-<html lang='{currentCulture}'>
-<head>
-    <meta charset='UTF-8'>
-    <style>
-        .container {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }}
-        .header {{ text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }}
-        .button-container {{ text-align: center; margin: 30px 0; }}
-        .button {{ background-color: #007bff; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; }}
-        .footer {{ font-size: 12px; color: #777; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h2>MasterStack</h2>
-        </div>
-        <p>{_localizer["EmailGreeting"]} {user.DisplayName},</p>
-        <p>{_localizer["ResetPasswordInstruction"]}</p>
-        
-        <div class='button-container'>
-            <a href='{callbackUrl}' class='button'>{_localizer["ResetPasswordLinkText"]}</a>
-        </div>
-        
-        <p>Se você não solicitou a redefinição de senha, nenhuma ação adicional é necessária e você pode ignorar este e-mail com segurança.</p>
-        
-        <div class='footer'>
-            <p>Este é um e-mail automático enviado pelo sistema MasterStack.<br>
-            Por favor, não responda a este e-mail.</p>
-        </div>
-    </div>
-</body>
-</html>";
+                _logger.LogInformation("Iniciando disparo de e-mail de recuperacao via AWS SES para: {Email}", user.Email);
 
-// 2. Envie o e-mail
-await _emailSender.SendEmailAsync(user.Email!, subject, body);
+                // 5. Enviar o e-mail
+                await _emailSender.SendEmailAsync(user.Email!, subject, body);
+
+                _logger.LogInformation("E-mail de recuperacao enviado com SUCESSO para: {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ERRO AO DISPARAR E-MAIL VIA SMTP DA AWS: {Message}", ex.Message);
+            }
 
             return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
         }
-
         // 1. GET: Abre o formulário de nova senha
         [HttpGet("ResetPassword")]
         public IActionResult ResetPassword(string token, string email, string culture)
