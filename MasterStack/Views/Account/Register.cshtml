@@ -91,12 +91,18 @@
     <script src="https://www.google.com/recaptcha/api.js?render=@siteKey"></script>
     <script>
         document.getElementById("registerForm").addEventListener("submit", function(e) {
+            var form = this;
+            if (form.dataset.recaptchaPassed) {
+                return; // Deixa o formulário enviar nativamente se o token já foi gerado
+            }
+
             e.preventDefault(); 
             
             grecaptcha.ready(function() {
                 grecaptcha.execute('@siteKey', {action: 'register'}).then(function(token) {
                     document.getElementById("g-recaptcha-response").value = token;
-                    document.getElementById("registerForm").submit();
+                    form.dataset.recaptchaPassed = "true";
+                    form.submit();
                 });
             });
         });

@@ -245,15 +245,20 @@ public async Task<IActionResult> Register(
     string password, 
     string confirmPassword, 
     string displayName, 
-    string userType, // 👈 Novo parâmetro vindo do formulário ("Recruiter" ou "Candidate")
+    string userType,
     string culture)
 {
     var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
 
-    // 1. Validação do reCAPTCHA
-    var captchaToken = Request.Form["recaptchaToken"];
+    // 1. LER A CHAVE CORRETA VINDA DA VIEW: "g-recaptcha-response"
+    var captchaToken = Request.Form["g-recaptcha-response"].ToString();
+
+    // Log para você acompanhar no terminal da DigitalOcean
+    _logger.LogInformation(">>> REGISTRO: Recebido token reCAPTCHA com tamanho: {Size}", captchaToken?.Length ?? 0);
+
     if (string.IsNullOrEmpty(captchaToken) || !await IsReCaptchaValid(captchaToken))
     {
+        _logger.LogWarning(">>> REGISTRO: Falha na verificacao do reCAPTCHA para o email: {Email}", email);
         ViewBag.Error = "Falha na verificação de segurança (reCAPTCHA).";
         return View();
     }
@@ -264,7 +269,6 @@ public async Task<IActionResult> Register(
         ViewBag.Error = _localizer["PasswordsDoNotMatch"].Value; 
         return View();
     }
-
     // 3. Criação do Usuário
     var user = new ApplicationUser { UserName = email, Email = email, DisplayName = displayName };
     var result = await _userManager.CreateAsync(user, password);
