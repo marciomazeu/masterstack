@@ -393,15 +393,24 @@ public async Task<IActionResult> Register(
         {
             var currentCulture = culture ?? "pt-BR";
             
-            // 1. Busca o usuário pelo e-mail
-            var user = await _userManager.FindByEmailAsync(email);
+            // LOG DE DIAGNÓSTICO: Verifique o que o formulário está entregando
+            _logger.LogInformation(">>> RECEBIDO PEDIDO DE RESET PARA O EMAIL: '{Email}' | Cultura: '{Culture}'", email, currentCulture);
 
-            // Se o usuário não existe, redireciona por segurança (sem revelar se o e-mail existe)
-            if (user == null)
+            if (string.IsNullOrWhiteSpace(email))
             {
-                _logger.LogWarning("Tentativa de recuperacao de senha para email nao cadastrado: {Email}", email);
+                _logger.LogWarning(">>> O parâmetro 'email' chegou NULO ou VAZIO do formulário!");
                 return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
             }
+
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                _logger.LogWarning(">>> BUSCA NO BANCO: Nenhum usuário encontrado para o e-mail: '{Email}'", email);
+                return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
+            }
+
+            _logger.LogInformation(">>> USUÁRIO ENCONTRADO! Id: {UserId}, Email: {Email}", user.Id, user.Email);
 
             try
             {
