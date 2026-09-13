@@ -2489,4 +2489,20 @@
     <value>Vérifier et enregistrer</value>
     <comment/>
   </data>
+  <data name="2FAEmailSentSuccess" xml:space="preserve">
+    <value>Code de vérification envoyé à votre courriel avec succès !</value>
+    <comment/>
+  </data>
+  <data name="2FAEmailSentError" xml:space="preserve">
+    <value>Impossible d'envoyer le courriel pour le moment. Veuillez réessayer plus tard.</value>
+    <comment/>
+  </data>
+  <data name="2FAEmailSubject" xml:space="preserve">
+    <value>Votre code d'accès 2FA - MasterStack</value>
+    <comment/>
+  </data>
+  <data name="2FAEmailBody" xml:space="preserve">
+    <value>Votre code de vérification à deux facteurs est :</value>
+    <comment/>
+  </data>
 </root>
