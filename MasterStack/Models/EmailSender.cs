@@ -35,12 +35,23 @@ namespace MasterStack.Models // Mantido na pasta Models
             _logger.LogInformation(">>> SMTP CONNECT: Host={Host}, Port={Port}, UserLength={UserLen}", 
                 smtpHost, smtpPort, smtpUser?.Length ?? 0);
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("MasterStack", "marciomazeu@hotmail.com"));
-            message.To.Add(new MailboxAddress("", email.Trim()));
-            message.Subject = subject;
-            message.Body = new TextPart("html") { Text = htmlMessage };
+          var message = new MimeMessage();
 
+        // Pega o e-mail do remetente da configuração ou usa o verificado na AWS SES como padrão
+        var senderEmail = _config["EmailSettings:FromEmail"] 
+            ?? _config["EmailSettings:Sender"] 
+            ?? "marciomazeu@hotmail.com";
+
+        var senderName = _config["EmailSettings:FromName"] ?? "MasterStack";
+
+        // REMETENTE (Quem envia)
+        message.From.Add(new MailboxAddress(senderName, senderEmail));
+
+        // DESTINATÁRIO (Quem recebe - o e-mail digitado no formulário)
+        message.To.Add(new MailboxAddress("", email.Trim()));
+
+        message.Subject = subject;
+        message.Body = new TextPart("html") { Text = htmlMessage };
             using var client = new MailKit.Net.Smtp.SmtpClient();
             try
             {
