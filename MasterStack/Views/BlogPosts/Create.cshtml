@@ -1,8 +1,9 @@
 ﻿@model MasterStack.Models.BlogPostCreateViewModel
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<SharedResource> Localizer
 @using MasterStack
 @using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer Localizer
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> Localizer
+
 @{
     ViewData["Title"] = Localizer["CreatePageTitle"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
@@ -42,7 +43,6 @@
         top: 20px;
     }
 
-    /* Estilo para simular o Google */
     .google-preview-box {
         background-color: #fff;
         border: 1px solid #dfe1e5;
@@ -60,7 +60,8 @@
         </a>
     </div>
 
-    <form asp-action="Create" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data" id="createForm">
+    <!-- Form com enctype="multipart/form-data" para permitir envio de imagem de capa -->
+    <form asp-action="Create" asp-controller="BlogPosts" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data" id="createForm">
         @Html.AntiForgeryToken()
 
         <div class="row">
@@ -260,7 +261,6 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
     <script>
-        // 1. Inicialização do Quill
         var quill = new Quill('#quill-editor', {
             theme: 'snow',
             modules: {
@@ -276,7 +276,6 @@
             }
         });
 
-        // 2. Upload de Imagem no Editor
         async function imageHandler() {
             const input = document.createElement('input');
             input.setAttribute('type', 'file');
@@ -299,7 +298,6 @@
             };
         }
 
-        // 3. Funções Auxiliares de Texto
         function slugify(text) {
             return text.toString().toLowerCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -315,7 +313,6 @@
             return (tempDiv.textContent || tempDiv.innerText || "").replace(/\s+/g, ' ').trim();
         }
 
-        // 4. Lógica de SEO em Tempo Real
         const titleInput = document.getElementById('Title');
         const slugInput = document.getElementById('Slug');
         const descField = document.getElementById('MetaDescription');
@@ -337,7 +334,6 @@
             });
         }
 
-        // Monitora o texto do editor para atualizar metadados e validador
         quill.on('text-change', function() {
             const df = document.getElementById('MetaDescription');
             if (!df) return; 
@@ -392,7 +388,6 @@
             if(pDesc) pDesc.innerText = (df && df.value) ? df.value : "A descrição aparecerá aqui...";
         }
 
-        // 5. Preview da Imagem de Capa
         document.getElementById('ImageInput').onchange = evt => {
             const [file] = document.getElementById('ImageInput').files;
             if (file) {
@@ -402,13 +397,11 @@
             }
         };
 
-        // 6. Envio do Formulário
         document.getElementById('createForm').onsubmit = function() {
             document.getElementById('quill-content').value = quill.root.innerHTML;
             return true;
         };
 
-        // 7. Configurações de Status Switch
         const sw = document.getElementById('publishSwitch');
         const label = document.getElementById('statusLabel');
         
@@ -422,9 +415,7 @@
             sw.addEventListener('change', updateLabel);
         }
 
-        // 8. Assistente de Escrita Inteligente com IA
         async function generateContentWithAi() {
-            // 🔥 CORREÇÃO CRÍTICA: Captura 'aiTopic' que é o ID correto do input no HTML
             const topicEl = document.getElementById('aiTopic');
             const lengthEl = document.getElementById('aiLength');
             const opinionEl = document.getElementById('userOpinion');
@@ -441,14 +432,19 @@
             document.getElementById('aiSpinner').classList.remove('d-none');
             document.getElementById('btnGenerateAi').disabled = true;
 
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
             try {
-                const response = await fetch('/pt-BR/Admin/GenerateAiContent', {
+                const response = await fetch(`/${culture}/Admin/GenerateAiContent`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
                     body: `topic=${encodeURIComponent(topic)}&culture=${encodeURIComponent(culture)}&length=${encodeURIComponent(length)}&opinion=${encodeURIComponent(opinion)}`
                 });
 
-                if (!response.ok) throw new Error('Erro na resposta do servidor (Status 500)');
+                if (!response.ok) throw new Error('Erro na resposta do servidor (Status ' + response.status + ')');
 
                 const data = await response.json();
                 
@@ -481,7 +477,6 @@
             const opinion = opinionEl.value.trim();
             const culture = '@currentCulture';
 
-            // 🔥 Mantém os metadados atuais do formulário para não perdê-los no postback
             const currentTitle = titleInput ? titleInput.value : '';
             const currentSlug = slugInput ? slugInput.value : '';
             const currentMeta = descField ? descField.value : '';
@@ -492,10 +487,15 @@
             document.getElementById('aiRefineSpinner').classList.remove('d-none');
             document.getElementById('btnRefineAi').disabled = true;
 
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
             try {
-                const response = await fetch('/pt-BR/Admin/RefineAiContent', {
+                const response = await fetch(`/${culture}/Admin/RefineAiContent`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
                     body: `culture=${encodeURIComponent(culture)}&opinion=${encodeURIComponent(opinion)}&currentContent=${encodeURIComponent(currentContent)}`
                 });
 
@@ -505,7 +505,6 @@
                 
                 quill.root.innerHTML = data.content || '';
                 
-                // 🔥 Mantém ou atualiza os inputs originais da tela
                 if (titleInput) titleInput.value = data.title || currentTitle;
                 if (slugInput) slugInput.value = data.slug || currentSlug;
                 if (descField) descField.value = data.metaDescription || currentMeta;
@@ -566,7 +565,6 @@
             }
         }
 
-        // 9. Gatilhos de Inicialização Global
         window.addEventListener('load', () => {
             updateGooglePreview();
             updateLabel();
