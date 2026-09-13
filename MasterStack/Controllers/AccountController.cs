@@ -7,8 +7,8 @@ using MasterStack.Data;
 using Microsoft.Extensions.Localization;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using MasterStack.ViewModels;
-using Microsoft.AspNetCore.Http;          // Para IFormFile (imagens)
-using Microsoft.AspNetCore.Hosting;      // Para IWebHostEnvironment
+using Microsoft.AspNetCore.Http;          
+using Microsoft.AspNetCore.Hosting;      
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -20,298 +20,300 @@ namespace MasterStack.Controllers
     [Route("{culture}/[controller]")]
     public class AccountController : Controller
     {
-       private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IStringLocalizer<SharedResource> _localizer;
-    private readonly IEmailSender _emailSender;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IEmailSender _emailSender;
 
-    private readonly IConfiguration _configuration;
-    private readonly IWebHostEnvironment _webHostEnvironment;
-    private readonly ApplicationDbContext _context;
-    private readonly ILogger<AccountController> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<AccountController> _logger;
 
-    public AccountController(
-        SignInManager<ApplicationUser> signInManager, 
-        UserManager<ApplicationUser> userManager,
-        IEmailSender emailSender, 
-        IStringLocalizer<SharedResource> localizer,
-        IConfiguration configuration,
-        IWebHostEnvironment webHostEnvironment,
-        ApplicationDbContext context,
-        ILogger<AccountController> logger)
-    {
-        _signInManager = signInManager;
-        _userManager = userManager;
-        _localizer = localizer;
-        _emailSender = emailSender;
-        _configuration = configuration;
-        _webHostEnvironment = webHostEnvironment;
-        _context = context;
-        _logger = logger;
-    }
-
-    [HttpGet]
-    [HttpGet("Login")] // 👈 ADICIONE ESTA LINHA
-    [HttpGet("/Account/Login")]
-    public IActionResult Login(string culture, string returnUrl = null)
-    {
-        // 1. Prioriza a cultura da URL, se não houver, usa a do sistema
-        ViewBag.CurrentCulture = culture ?? RouteData.Values["culture"] ?? "fr-CA";
-        
-        // 2. Armazena a URL de retorno para o formulário saber para onde ir após o sucesso
-        ViewBag.ReturnUrl = returnUrl;
-        
-        return View();
-    }
-
-   [HttpPost]
-[HttpPost("Login")]
-[HttpPost("/Account/Login")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
-{
-    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-    {
-        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-        return View();
-    }
-
-    var cleanInput = username.Trim().ToLower();
-
-    var user = await _userManager.FindByEmailAsync(cleanInput) 
-            ?? await _userManager.FindByNameAsync(cleanInput)
-            ?? _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanInput.ToUpper() || u.NormalizedUserName == cleanInput.ToUpper());
-
-    if (user == null)
-    {
-        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-        return View();
-    }
-
-    // 1. Garante a confirmação de e-mail e persiste no banco caso esteja pendente
-    if (!user.EmailConfirmed)
-    {
-        _logger.LogInformation(">>> EMAIL NÃO CONFIRMADO. Atualizando EmailConfirmed=true no PostgreSQL para {Email}", user.Email);
-        user.EmailConfirmed = true;
-        await _userManager.UpdateAsync(user);
-    }
-
-    // 2. Tenta autenticar usando o UserName oficial do Identity
-    var result = await _signInManager.PasswordSignInAsync(user.UserName!, password, isPersistent: false, lockoutOnFailure: true);
-
-    _logger.LogInformation(">>> RESULTADO DO LOGIN PARA {Email}: Succeeded={Succeeded}, LockedOut={IsLockedOut}, Requires2FA={Requires2FA}", 
-        user.Email, result.Succeeded, result.IsLockedOut, result.RequiresTwoFactor);
-
-    if (result.RequiresTwoFactor)
-    {
-        return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
-    }
-
-    if (result.Succeeded)
-    {
-        _logger.LogInformation(">>> LOGIN REALIZADO COM SUCESSO PARA {Email}", user.Email);
-
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        public AccountController(
+            SignInManager<ApplicationUser> signInManager, 
+            UserManager<ApplicationUser> userManager,
+            IEmailSender emailSender, 
+            IStringLocalizer<SharedResource> localizer,
+            IConfiguration configuration,
+            IWebHostEnvironment webHostEnvironment,
+            ApplicationDbContext context,
+            ILogger<AccountController> logger)
         {
-            return Redirect(returnUrl);
+            _signInManager = signInManager;
+            _userManager = userManager;
+            _localizer = localizer;
+            _emailSender = emailSender;
+            _configuration = configuration;
+            _webHostEnvironment = webHostEnvironment;
+            _context = context;
+            _logger = logger;
         }
 
-        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+        // ==========================================
+        // Helper para tradução com Fallback seguro em E-mails
+        // ==========================================
+        private string GetLocalizedString(string key, string cultureStr, string frText, string ptText, string enText)
         {
-            return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+            var localized = _localizer[key];
+            if (!localized.ResourceNotFound && localized.Value != key)
+            {
+                return localized.Value;
+            }
+
+            return cultureStr.StartsWith("fr", StringComparison.OrdinalIgnoreCase) 
+                ? frText 
+                : (cultureStr.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? enText : ptText);
         }
 
-        if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+        [HttpGet]
+        [HttpGet("Login")]
+        [HttpGet("/Account/Login")]
+        public IActionResult Login(string culture, string returnUrl = null)
         {
-            return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+            ViewBag.CurrentCulture = culture ?? RouteData.Values["culture"] ?? "fr-CA";
+            ViewBag.ReturnUrl = returnUrl;
+            return View();
         }
 
-        return RedirectToAction("Index", "Home", new { culture = currentCulture });
-    }
-
-    if (result.IsLockedOut)
-    {
-        ViewBag.Error = _localizer["AccountLocked"].Value; 
-        return View();
-    }
-
-    ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-    return View();
-}
-
-    // 1. GET do Login com 2FA
-[   HttpGet("LoginWith2FA")]
-    [AllowAnonymous]
-    public async Task<IActionResult> LoginWith2FA([FromRoute] string culture, string returnUrl = null)
-    {
-        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-        if (user == null)
+        [HttpPost]
+        [HttpPost("Login")]
+        [HttpPost("/Account/Login")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
         {
-            return RedirectToAction("Login", "Account", new { culture });
+            string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+                return View();
+            }
+
+            var cleanInput = username.Trim().ToLower();
+
+            var user = await _userManager.FindByEmailAsync(cleanInput) 
+                    ?? await _userManager.FindByNameAsync(cleanInput)
+                    ?? _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanInput.ToUpper() || u.NormalizedUserName == cleanInput.ToUpper());
+
+            if (user == null)
+            {
+                ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+                return View();
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                _logger.LogInformation(">>> EMAIL NÃO CONFIRMADO. Atualizando EmailConfirmed=true para {Email}", user.Email);
+                user.EmailConfirmed = true;
+                await _userManager.UpdateAsync(user);
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, password, isPersistent: false, lockoutOnFailure: true);
+
+            _logger.LogInformation(">>> RESULTADO DO LOGIN PARA {Email}: Succeeded={Succeeded}, LockedOut={IsLockedOut}, Requires2FA={Requires2FA}", 
+                user.Email, result.Succeeded, result.IsLockedOut, result.RequiresTwoFactor);
+
+            if (result.RequiresTwoFactor)
+            {
+                return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
+            }
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation(">>> LOGIN REALIZADO COM SUCESSO PARA {Email}", user.Email);
+
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
+
+                if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+                {
+                    return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+                }
+
+                if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+                {
+                    return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+                }
+
+                return RedirectToAction("Index", "Home", new { culture = currentCulture });
+            }
+
+            if (result.IsLockedOut)
+            {
+                ViewBag.Error = _localizer["AccountLocked"].Value; 
+                return View();
+            }
+
+            ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+            return View();
         }
 
-        ViewData["ReturnUrl"] = returnUrl;
-        ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-        return View(new LoginWith2FAViewModel());
-    }
-
-    // 2. POST do Login com 2FA
-    [HttpPost("LoginWith2FA")]
-    [AllowAnonymous]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [FromRoute] string culture, string returnUrl = null)
-    {
-        string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-        if (user == null) 
+        [HttpGet("LoginWith2FA")]
+        [AllowAnonymous]
+        public async Task<IActionResult> LoginWith2FA([FromRoute] string culture, string returnUrl = null)
         {
-            return RedirectToAction("Login", "Account", new { culture = currentCulture });
+            var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account", new { culture });
+            }
+
+            ViewData["ReturnUrl"] = returnUrl;
+            ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+            return View(new LoginWith2FAViewModel());
         }
 
-        if (!ModelState.IsValid)
+        [HttpPost("LoginWith2FA")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [FromRoute] string culture, string returnUrl = null)
         {
+            string currentCulture = string.IsNullOrEmpty(culture) ? (string)RouteData.Values["culture"] ?? "pt-BR" : culture;
+
+            var cultureInfo = new CultureInfo(currentCulture);
+            CultureInfo.CurrentCulture = cultureInfo;
+            CultureInfo.CurrentUICulture = cultureInfo;
+
+            var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+            if (user == null) 
+            {
+                return RedirectToAction("Login", "Account", new { culture = currentCulture });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewData["ReturnUrl"] = returnUrl;
+                ViewData["CurrentCulture"] = currentCulture;
+                return View(model);
+            }
+
+            var cleanCode = model.TwoFactorCode?.Replace(" ", "").Replace("-", "");
+            var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(cleanCode, isPersistent: model.RememberMe, rememberClient: false);
+
+            if (result.Succeeded)
+            {
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
+
+                if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+                {
+                    return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+                }
+
+                return RedirectToAction("Profile", "User", new { culture = currentCulture });
+            }
+
+            if (result.IsLockedOut)
+            {
+                ModelState.AddModelError(string.Empty, _localizer["AccountLocked"].Value);
+                return View(model);
+            }
+
+            // 🌐 Tradução dinâmica da mensagem de código inválido
+            ModelState.AddModelError(string.Empty, _localizer["Invalid2FACode"].Value);
             ViewData["ReturnUrl"] = returnUrl;
             ViewData["CurrentCulture"] = currentCulture;
             return View(model);
         }
 
-        var cleanCode = model.TwoFactorCode?.Replace(" ", "").Replace("-", "");
-
-        var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(cleanCode, isPersistent: model.RememberMe, rememberClient: false);
-
-        if (result.Succeeded)
+        [HttpPost("SendEmailCode")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendEmailCode([FromRoute] string culture, string returnUrl = null)
         {
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+            var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+            if (user == null)
             {
-                return Redirect(returnUrl);
+                return RedirectToAction("Login", "Account", new { culture = currentCulture });
             }
 
-            if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+            var code = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
+
+            string subject = _localizer["2FAEmailSubject"];
+            string message = $"{_localizer["EmailGreeting"]} {user.DisplayName},<br/><br/>{_localizer["2FAEmailBody"]} <strong>{code}</strong>";
+
+            try
             {
-                return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+                await _emailSender.SendEmailAsync(user.Email!, subject, message);
+                TempData["SuccessMessage"] = _localizer["2FAEmailSentSuccess"].Value;
+            }
+            catch
+            {
+                TempData["ErrorMessage"] = _localizer["2FAEmailSentError"].Value;
             }
 
-            return RedirectToAction("Profile", "User", new { culture = currentCulture });
+            return RedirectToAction(nameof(LoginWith2FA), new { culture = currentCulture, returnUrl });
         }
 
-        if (result.IsLockedOut)
+        [HttpGet("Register")]
+        public IActionResult Register()
         {
-            ModelState.AddModelError(string.Empty, _localizer["AccountLocked"].Value);
-            return View(model);
+            ViewBag.SiteKey = _configuration["ReCaptcha:SiteKey"];
+            return View();
         }
 
-        ModelState.AddModelError(string.Empty, "Código inválido. Verifique o seu aplicativo autenticador.");
-        ViewData["ReturnUrl"] = returnUrl;
-        ViewData["CurrentCulture"] = currentCulture;
-        return View(model);
-    }
-
-// 3. POST para Envio de Código por E-mail
-[HttpPost("SendEmailCode")]
-[AllowAnonymous]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> SendEmailCode([FromRoute] string culture, string returnUrl = null)
-{
-    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-    var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-    if (user == null)
-    {
-        return RedirectToAction("Login", "Account", new { culture = currentCulture });
-    }
-
-    // Gera o token do tipo Email do Identity
-    var code = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
-
-    // Envia o e-mail via IEmailSender
-    string subject = "Seu Código de Acesso 2FA";
-    string message = $"Olá, seu código de verificação em duas etapas é: <strong>{code}</strong>";
-
-    try
-    {
-        await _emailSender.SendEmailAsync(user.Email, subject, message);
-        TempData["SuccessMessage"] = "Código enviado para o seu e-mail com sucesso!";
-    }
-    catch
-    {
-        TempData["ErrorMessage"] = "Não foi possível enviar o e-mail no momento. Verifique as configurações de SMTP.";
-    }
-
-    return RedirectToAction(nameof(LoginWith2FA), new { culture = currentCulture, returnUrl });
-}
-
-   
-
-    // 1. O método GET (Abre a página quando você digita a URL)
-    [HttpGet("Register")]
-    public IActionResult Register()
-    {
-        ViewBag.SiteKey = _configuration["ReCaptcha:SiteKey"];
-        return View();
-    }
-
-[HttpPost("Register")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Register(
-    string email, 
-    string password, 
-    string confirmPassword, 
-    string displayName, 
-    string userType,
-    string culture)
-{
-    var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
-
-    var captchaToken = Request.Form["g-recaptcha-response"].ToString();
-
-    _logger.LogInformation(">>> REGISTRO: Recebido token reCAPTCHA com tamanho: {Size}", captchaToken?.Length ?? 0);
-
-    if (string.IsNullOrEmpty(captchaToken) || !await IsReCaptchaValid(captchaToken))
-    {
-        _logger.LogWarning(">>> REGISTRO: Falha na verificação do reCAPTCHA para o e-mail: {Email}", email);
-        ViewBag.Error = "Falha na verificação de segurança (reCAPTCHA).";
-        return View();
-    }
-
-    if (password != confirmPassword)
-    {
-        ViewBag.Error = _localizer["PasswordsDoNotMatch"].Value; 
-        return View();
-    }
-
-    var user = new ApplicationUser { UserName = email.Trim(), Email = email.Trim(), DisplayName = displayName };
-    var result = await _userManager.CreateAsync(user, password);
-
-    if (result.Succeeded)
-    {
-        string roleToAssign = string.Equals(userType, "Recruiter", StringComparison.OrdinalIgnoreCase) 
-            ? "Recruiter" 
-            : "Candidate";
-
-        await _userManager.AddToRoleAsync(user, roleToAssign);
-
-        // Disparo do E-mail de Confirmação com Template Responsivo
-        try 
+        [HttpPost("Register")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(
+            string email, 
+            string password, 
+            string confirmPassword, 
+            string displayName, 
+            string userType,
+            string culture)
         {
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var confirmationLink = Url.Action("ConfirmEmail", "Account", 
-                new { userId = user.Id, token = token, culture = currentCulture }, Request.Scheme);
+            var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
 
-// Força a cultura na thread para garantir a tradução correta no _localizer
-var cultureInfo = new System.Globalization.CultureInfo(currentCulture);
-System.Globalization.CultureInfo.CurrentCulture = cultureInfo;
-System.Globalization.CultureInfo.CurrentUICulture = cultureInfo;
-            // Assunto e textos do e-mail traduzidos
-string subject = _localizer["EmailConfirmationSubject"];
-string greeting = _localizer["EmailGreeting"];
-string instruction = _localizer["EmailInstruction"];
-string confirmText = _localizer["ConfirmLinkText"];
-string footerText = _localizer["EmailFooter"];
-            string body = $@"
+            var captchaToken = Request.Form["g-recaptcha-response"].ToString();
+
+            if (string.IsNullOrEmpty(captchaToken) || !await IsReCaptchaValid(captchaToken))
+            {
+                ViewBag.Error = _localizer["RecaptchaError"].Value;
+                return View();
+            }
+
+            if (password != confirmPassword)
+            {
+                ViewBag.Error = _localizer["PasswordsDoNotMatch"].Value; 
+                return View();
+            }
+
+            var user = new ApplicationUser { UserName = email.Trim(), Email = email.Trim(), DisplayName = displayName };
+            var result = await _userManager.CreateAsync(user, password);
+
+            if (result.Succeeded)
+            {
+                string roleToAssign = string.Equals(userType, "Recruiter", StringComparison.OrdinalIgnoreCase) 
+                    ? "Recruiter" 
+                    : "Candidate";
+
+                await _userManager.AddToRoleAsync(user, roleToAssign);
+
+                try 
+                {
+                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    var confirmationLink = Url.Action("ConfirmEmail", "Account", 
+                        new { userId = user.Id, token = token, culture = currentCulture }, Request.Scheme);
+
+                    var cultureInfo = new CultureInfo(currentCulture);
+                    CultureInfo.CurrentCulture = cultureInfo;
+                    CultureInfo.CurrentUICulture = cultureInfo;
+
+                    string subject = GetLocalizedString("EmailConfirmationSubject", currentCulture, "Confirmez votre courriel - MasterStack", "Confirme seu e-mail - MasterStack", "Confirm your email - MasterStack");
+                    string greeting = GetLocalizedString("EmailGreeting", currentCulture, "Bonjour", "Olá", "Hello");
+                    string instruction = GetLocalizedString("EmailInstruction", currentCulture, "Merci de vous être inscrit. Veuillez confirmer votre courriel en cliquant sur le bouton ci-dessous :", "Obrigado por se cadastrar. Por favor, confirme seu e-mail clicando no botão abaixo:", "Thank you for registering. Please confirm your email by clicking the button below:");
+                    string confirmText = GetLocalizedString("ConfirmLinkText", currentCulture, "Confirmer mon courriel", "Confirmar Meu E-mail", "Confirm My Email");
+                    string footerText = GetLocalizedString("EmailFooter", currentCulture, "Tous droits réservés.", "Todos os direitos reservados.", "All rights reserved.");
+
+                    string body = $@"
 <!DOCTYPE html>
 <html lang='{currentCulture}'>
 <head>
@@ -363,84 +365,75 @@ string footerText = _localizer["EmailFooter"];
 </body>
 </html>";
 
-            await _emailSender.SendEmailAsync(user.Email!, subject, body);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[ERRO AO ENVIAR E-MAIL DE REGISTRO]");
-        }
+                    await _emailSender.SendEmailAsync(user.Email!, subject, body);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[ERRO AO ENVIAR E-MAIL DE REGISTRO]");
+                }
 
-        await _signInManager.SignInAsync(user, isPersistent: false);
+                await _signInManager.SignInAsync(user, isPersistent: false);
 
-        if (roleToAssign == "Recruiter")
-        {
-            return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
-        }
+                if (roleToAssign == "Recruiter")
+                {
+                    return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+                }
 
-        return RedirectToAction("Index", "Home", new { culture = currentCulture });
-    }
+                return RedirectToAction("Index", "Home", new { culture = currentCulture });
+            }
 
-    var firstError = result.Errors.FirstOrDefault();
-    if (firstError != null)
-    {
-        var translatedError = _localizer[firstError.Code].Value;
-        ViewBag.Error = translatedError != firstError.Code 
-                        ? translatedError 
-                        : _localizer["RegistrationError"].Value;
-    }
+            var firstError = result.Errors.FirstOrDefault();
+            if (firstError != null)
+            {
+                var translatedError = _localizer[firstError.Code].Value;
+                ViewBag.Error = translatedError != firstError.Code 
+                                ? translatedError 
+                                : _localizer["RegistrationError"].Value;
+            }
 
-    return View();
-}
-
- // ✅ Sem atributo [Route] ou [HttpGet("Logout")]. 
-    // Usamos apenas [HttpGet, HttpPost] para aceitar os dois verbos na rota padrão "/Account/Logout".
-    [HttpGet]
-    [HttpPost]
-    [IgnoreAntiforgeryToken]
-    public async Task<IActionResult> Logout(string culture)
-    {
-        await _signInManager.SignOutAsync();
-        
-        var currentCulture = !string.IsNullOrEmpty(culture) 
-            ? culture 
-            : RouteData.Values["culture"]?.ToString() ?? "pt-BR";
-
-        return RedirectToAction("Login", "Account", new { culture = currentCulture });
-    }
-
-    [HttpGet("ConfirmEmail")]
-    public async Task<IActionResult> ConfirmEmail(string userId, string token, string culture)
-    {
-        var currentCulture = culture ?? "pt-BR";
-
-        if (userId == null || token == null)
-        {
-            return RedirectToAction("Index", "Home", new { culture = currentCulture });
+            return View();
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
+        [HttpGet]
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Logout(string culture)
         {
-            ViewBag.Error = $"Usuário ID {userId} não encontrado.";
+            await _signInManager.SignOutAsync();
+            var currentCulture = !string.IsNullOrEmpty(culture) 
+                ? culture 
+                : RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+
+            return RedirectToAction("Login", "Account", new { culture = currentCulture });
+        }
+
+        [HttpGet("ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token, string culture)
+        {
+            var currentCulture = culture ?? "pt-BR";
+
+            if (userId == null || token == null)
+            {
+                return RedirectToAction("Index", "Home", new { culture = currentCulture });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                ViewBag.Error = $"Usuário ID {userId} não encontrado.";
+                return View("Error");
+            }
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                return View("ConfirmEmailSuccess"); 
+            }
+
+            ViewBag.Error = _localizer["ConfirmEmailTokenExpired"].Value;
             return View("Error");
         }
 
-        // Tenta confirmar o e-mail com o token recebido
-        var result = await _userManager.ConfirmEmailAsync(user, token);
-
-        if (result.Succeeded)
-        {
-            // Aqui você pode redirecionar para uma página de sucesso ou direto para o Login
-            return View("ConfirmEmailSuccess"); 
-        }
-        else
-        {
-            ViewBag.Error = "Erro ao confirmar o e-mail. O token pode ter expirado.";
-            return View("Error");
-        }
-    }
-
-        // 1. Abre a página para digitar o e-mail
         [HttpGet("ForgotPassword")]
         public IActionResult ForgotPassword(string culture)
         {
@@ -448,57 +441,52 @@ string footerText = _localizer["EmailFooter"];
         }
 
         [HttpPost("ForgotPassword")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> ForgotPassword(string email, string culture)
-{
-    var currentCulture = culture ?? "pt-BR";
-    var cleanEmail = email?.Trim().ToLower();
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(string email, string culture)
+        {
+            var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
+            var cleanEmail = email?.Trim().ToLower();
 
-    // 🔍 1. DIAGNÓSTICO: Listar os últimos usuários cadastrados no banco
-    var totalUsers = _context.Users.Count();
-    var registeredEmails = _context.Users.Select(u => u.Email).Take(10).ToList();
-    
-    _logger.LogInformation("==================================================");
-    _logger.LogInformation(">>> DIAGNÓSTICO DE BANCO:");
-    _logger.LogInformation(">>> Total de Usuários no Banco: {Total}", totalUsers);
-    _logger.LogInformation(">>> E-mails cadastrados: {Emails}", string.Join(", ", registeredEmails));
-    _logger.LogInformation(">>> E-mail recebido no formulário: '{Email}'", cleanEmail);
-    _logger.LogInformation("==================================================");
+            var user = await _userManager.FindByEmailAsync(cleanEmail);
+            if (user == null && !string.IsNullOrEmpty(cleanEmail))
+            {
+                user = _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanEmail.ToUpper());
+            }
 
-    // 2. Busca o usuário
-    var user = await _userManager.FindByEmailAsync(cleanEmail);
-    if (user == null && !string.IsNullOrEmpty(cleanEmail))
-    {
-        user = _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanEmail.ToUpper());
-    }
+            if (user == null)
+            {
+                return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
+            }
 
-    if (user == null)
-    {
-        _logger.LogWarning(">>> BUSCA: Usuário '{Email}' NÃO encontrado!", cleanEmail);
-        return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
-    }
+            try
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var callbackUrl = Url.Action("ResetPassword", "Account", 
+                    new { token = token, email = user.Email, culture = currentCulture }, Request.Scheme);
 
-    _logger.LogInformation(">>> USUÁRIO ENCONTRADO (ID: {Id}). Disparando AWS SES...", user.Id);
+                var cultureInfo = new CultureInfo(currentCulture);
+                CultureInfo.CurrentCulture = cultureInfo;
+                CultureInfo.CurrentUICulture = cultureInfo;
 
-    try
-    {
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var callbackUrl = Url.Action("ResetPassword", "Account", 
-            new { token = token, email = user.Email, culture = currentCulture }, Request.Scheme);
+                string subject = GetLocalizedString("ResetPasswordSubject", currentCulture, "Réinitialiser le mot de passe", "Redefinição de senha", "Reset Password");
+                string title = GetLocalizedString("ResetPasswordTitle", currentCulture, "Réinitialiser le mot de passe", "Recuperação de Senha", "Reset Password");
+                string bodyText = GetLocalizedString("ResetPasswordBodyText", currentCulture, 
+                    "Nous avons reçu une demande de réinitialisation du mot de passe de votre compte MasterStack. Cliquez sur le bouton ci-dessous pour continuer :", 
+                    "Recebemos uma solicitação para redefinir a senha da sua conta na MasterStack. Clique no botão abaixo para prosseguir:", 
+                    "We received a request to reset your password for your MasterStack account. Click the button below to proceed:");
 
-// Seta o idioma ativo para tradução dos arquivos .resx ou _localizer
-var cultureInfo = new System.Globalization.CultureInfo(currentCulture);
-System.Globalization.CultureInfo.CurrentCulture = cultureInfo;
-System.Globalization.CultureInfo.CurrentUICulture = cultureInfo;
+                string buttonText = GetLocalizedString("ResetPasswordButtonText", currentCulture, "Réinitialiser mon mot de passe", "Redefinir Minha Senha", "Reset My Password");
+                string warningText = GetLocalizedString("ResetPasswordWarningText", currentCulture, 
+                    "Si vous n'avez pas demandé cette modification, aucune action n'est requise et votre mot de passe restera le même.", 
+                    "Se você não solicitou essa alteração, nenhuma ação é necessária e sua senha permanecerá a mesma.", 
+                    "If you did not request this change, no action is required and your password will remain the same.");
 
-string subject = _localizer["ResetPasswordSubject"];
-string title = _localizer["ResetPasswordTitle"];
-string bodyText = _localizer["ResetPasswordBodyText"];
-string buttonText = _localizer["ResetPasswordButtonText"];
-string warningText = _localizer["ResetPasswordWarningText"];
-string linkText = _localizer["ResetPasswordLinkFallback"];
-        // 🎨 Template HTML Moderno e Responsivo
-        string body = $@"
+                string linkText = GetLocalizedString("ResetPasswordLinkFallback", currentCulture, 
+                    "Si le bouton ci-dessus ne fonctionne pas, copiez et collez le lien suivant dans votre navigateur :", 
+                    "Caso o botão acima não funcione, copie e cole o link a seguir no seu navegador:", 
+                    "If the button above does not work, copy and paste the following link into your browser:");
+
+                string body = $@"
 <!DOCTYPE html>
 <html lang='{currentCulture}'>
 <head>
@@ -555,18 +543,17 @@ string linkText = _localizer["ResetPasswordLinkFallback"];
 </body>
 </html>";
 
-        await _emailSender.SendEmailAsync(user.Email!, subject, body);
+                await _emailSender.SendEmailAsync(user.Email!, subject, body);
+                _logger.LogInformation(">>> E-MAIL ENVIADO COM SUCESSO PARA: {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ">>> ERRO NO SMTP DA AWS: {Message}", ex.Message);
+            }
 
-        _logger.LogInformation(">>> E-MAIL ENVIADO COM SUCESSO PARA: {Email}", user.Email);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, ">>> ERRO NO SMTP DA AWS: {Message}", ex.Message);
-    }
+            return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
+        }
 
-    return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
-}
-        // 1. GET: Abre o formulário de nova senha
         [HttpGet("ResetPassword")]
         public IActionResult ResetPassword(string token, string email, string culture)
         {
@@ -575,12 +562,10 @@ string linkText = _localizer["ResetPasswordLinkFallback"];
                 return RedirectToAction("Index", "Home");
             }
 
-            // Criamos um ViewModel simples para carregar o token e o e-mail
             var model = new ResetPasswordViewModel { Token = token, Email = email };
             return View(model);
         }
 
-        // 2. POST: Processa a nova senha
         [HttpPost("ResetPassword")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
@@ -592,12 +577,10 @@ string linkText = _localizer["ResetPasswordLinkFallback"];
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null) 
             {
-                // Novamente, não revelamos que o usuário não existe
                 return RedirectToAction("ResetPasswordConfirmation", new { culture = culture });
             }
 
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
-            
             if (result.Succeeded)
             {
                 return RedirectToAction("ResetPasswordConfirmation", new { culture = culture });
@@ -611,28 +594,25 @@ string linkText = _localizer["ResetPasswordLinkFallback"];
         }
 
         private async Task<bool> IsReCaptchaValid(string token)
-{
-    if (string.IsNullOrEmpty(token)) return false;
+        {
+            if (string.IsNullOrEmpty(token)) return false;
 
-    var secretKey = _configuration["ReCaptcha:SecretKey"];
-    using var client = new HttpClient();
-    
-    var response = await client.PostAsync(
-        $"https://www.google.com/recaptcha/api/siteverify?secret={secretKey}&response={token}", 
-        null);
+            var secretKey = _configuration["ReCaptcha:SecretKey"];
+            using var client = new HttpClient();
+            
+            var response = await client.PostAsync(
+                $"https://www.google.com/recaptcha/api/siteverify?secret={secretKey}&response={token}", 
+                null);
 
-    if (response.IsSuccessStatusCode)
-    {
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        // Na v3, precisamos olhar o 'success' E o 'score'
-        // Exemplo de resposta: {"success": true, "score": 0.9, "action": "register", ...}
-        
-        return jsonResponse.Contains("\"success\": true") && 
-               !jsonResponse.Contains("\"score\": 0.0") && 
-               !jsonResponse.Contains("\"score\": 0.1"); // Rejeita scores muito baixos
-    }
-    return false;
-}
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return jsonResponse.Contains("\"success\": true") && 
+                       !jsonResponse.Contains("\"score\": 0.0") && 
+                       !jsonResponse.Contains("\"score\": 0.1");
+            }
+            return false;
+        }
 
         [HttpGet("ForgotPasswordConfirmation")]
         public IActionResult ForgotPasswordConfirmation()
@@ -643,133 +623,124 @@ string linkText = _localizer["ResetPasswordLinkFallback"];
         [HttpGet("ResetPasswordConfirmation")]
         public IActionResult ResetPasswordConfirmation()
         {
-            // Esta Action apenas exibe a View informando que a senha foi alterada.
             return View();
         }
 
-       [HttpGet("/{culture}/Account/EnableTwoFactor")]
-public async Task<IActionResult> EnableTwoFactor([FromRoute] string culture)
-{
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) return Challenge();
+        [HttpGet("/{culture}/Account/EnableTwoFactor")]
+        public async Task<IActionResult> EnableTwoFactor([FromRoute] string culture)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
 
-    var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
-    if (string.IsNullOrEmpty(unformattedKey))
-    {
-        await _userManager.ResetAuthenticatorKeyAsync(user);
-        unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
-    }
+            var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+            if (string.IsNullOrEmpty(unformattedKey))
+            {
+                await _userManager.ResetAuthenticatorKeyAsync(user);
+                unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+            }
 
-    string appName = "MasterStack";
-    string encodedEmail = UrlEncoder.Default.Encode(user.Email ?? "");
-    string authenticatorUri = $"otpauth://totp/{UrlEncoder.Default.Encode(appName)}:{encodedEmail}?secret={unformattedKey}&issuer={appName}&digits=6";
+            string appName = "MasterStack";
+            string encodedEmail = UrlEncoder.Default.Encode(user.Email ?? "");
+            string authenticatorUri = $"otpauth://totp/{UrlEncoder.Default.Encode(appName)}:{encodedEmail}?secret={unformattedKey}&issuer={appName}&digits=6";
 
-    var model = new EnableTwoFactorViewModel
-    {
-        SharedKey = unformattedKey!,
-        AuthenticatorUri = authenticatorUri
-    };
+            var model = new EnableTwoFactorViewModel
+            {
+                SharedKey = unformattedKey!,
+                AuthenticatorUri = authenticatorUri
+            };
 
-    ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-    return View(model);
-}
+            ViewData["CurrentCulture"] = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+            return View(model);
+        }
 
-[HttpPost("/{culture}/Account/EnableTwoFactor")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> EnableTwoFactor(EnableTwoFactorViewModel model, [FromRoute] string culture)
-{
-    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-    
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) return Challenge();
+        [HttpPost("/{culture}/Account/EnableTwoFactor")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnableTwoFactor(EnableTwoFactorViewModel model, [FromRoute] string culture)
+        {
+            string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+            
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
 
-    // Se o formulário veio inválido do HTML, vamos descobrir o motivo aqui
-    if (!ModelState.IsValid) 
-    {
-        var erros = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-        return Content($"Erro de validação do formulário: {erros}");
-    }
+            if (!ModelState.IsValid) 
+            {
+                var erros = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return Content($"Erro de validação do formulário: {erros}");
+            }
 
-    var cleanCode = model.VerificationCode.Replace(" ", "").Replace("-", "");
+            var cleanCode = model.VerificationCode.Replace(" ", "").Replace("-", "");
 
-    // Valida o token contra o banco
-    var isValid = await _userManager.VerifyTwoFactorTokenAsync(
-        user, 
-        _userManager.Options.Tokens.AuthenticatorTokenProvider, 
-        cleanCode
-    );
+            var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+                user, 
+                _userManager.Options.Tokens.AuthenticatorTokenProvider, 
+                cleanCode
+            );
 
-    if (!isValid)
-    {
-        // SE O CÓDIGO FOR REJEITADO, VAI PARAR AQUI:
-        return Content("O ASP.NET Identity rejeitou o código do seu celular. Motivos: Relógio do computador/celular dessincronizado ou a chave SharedKey mudou entre o GET e o POST.");
-    }
+            if (!isValid)
+            {
+                return Content("O ASP.NET Identity rejeitou o código do seu celular. Motivos: Relógio do computador/celular dessincronizado ou a chave SharedKey mudou entre o GET e o POST.");
+            }
 
-    var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
-    
-    if (result.Succeeded)
-{
-    await _context.SaveChangesAsync();
-    await _signInManager.RefreshSignInAsync(user);
-    
-    TempData["Success"] = "Autenticação em dois fatores ativada com sucesso!";
+            var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
+            if (result.Succeeded)
+            {
+                await _context.SaveChangesAsync();
+                await _signInManager.RefreshSignInAsync(user);
+                
+                TempData["Success"] = _localizer["2FAEnabledSuccess"].Value;
 
-    // 💡 Redirecionamento Inteligente baseado na Role do Usuário:
-    if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
-    {
-        // Se for Admin ou Autor, manda para o Dashboard do Admin
-        return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-    }
+                if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+                {
+                    return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+                }
 
-    // Se for um usuário comum, manda de volta para o Perfil dele
-    return RedirectToAction("Profile", "Account", new { culture = currentCulture });
-}
+                return RedirectToAction("Profile", "User", new { culture = currentCulture });
+            }
 
-    return Content($"Erro do Identity ao salvar: {result.Errors.FirstOrDefault()?.Description}");
-}
+            return Content($"Erro do Identity ao salvar: {result.Errors.FirstOrDefault()?.Description}");
+        }
 
-[HttpPost]
-[Route("[action]")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> VerifyTwoFactor(string verificationCode)
-{
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) return Challenge();
+        [HttpPost]
+        [Route("[action]")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyTwoFactor(string verificationCode)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
 
-    var cleanCode = verificationCode.Replace(" ", "").Replace("-", "");
+            var cleanCode = verificationCode.Replace(" ", "").Replace("-", "");
 
-    var isValid = await _userManager.VerifyTwoFactorTokenAsync(
-        user, 
-        _userManager.Options.Tokens.AuthenticatorTokenProvider, 
-        cleanCode
-    );
+            var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+                user, 
+                _userManager.Options.Tokens.AuthenticatorTokenProvider, 
+                cleanCode
+            );
 
-    if (!isValid)
-    {
-        ModelState.AddModelError(string.Empty, "Código inválido.");
-        return View(); // Retorna a view mostrando o erro
-    }
+            if (!isValid)
+            {
+                ModelState.AddModelError(string.Empty, _localizer["Invalid2FACode"].Value);
+                return View();
+            }
 
-    // 🔥 ISSO AQUI PRECISA RODAR E SUBIR PRO BANCO:
-    var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
-    
-    if (result.Succeeded)
-    {
-        // Força a atualização dos cookies do usuário logado para reconhecer o 2FA ativo
-        await _signInManager.RefreshSignInAsync(user);
-        return RedirectToAction("Dashboard", "Admin");
-    }
+            var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(user);
+                return RedirectToAction("Dashboard", "Admin");
+            }
 
-    ModelState.AddModelError(string.Empty, "Erro ao ativar o 2FA no banco de dados.");
-    return View();
-}
+            ModelState.AddModelError(string.Empty, "Erro ao ativar o 2FA no banco de dados.");
+            return View();
+        }
 
-    [HttpGet("AccessDenied")]
-    [HttpGet("/AccessDenied")]
-    public IActionResult AccessDenied()
-    {
-        TempData["WarningMessage"] = "Seu perfil de usuário não tem permissão para realizar candidaturas.";
-        return RedirectToAction("Index", "Home");
-    }
+        [HttpGet("AccessDenied")]
+        [HttpGet("/AccessDenied")]
+        [HttpGet("{culture}/Account/AccessDenied")]
+        public IActionResult AccessDenied(string culture)
+        {
+            var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
+            TempData["WarningMessage"] = _localizer["AccessDeniedMessage"].Value;
+            return RedirectToAction("Index", "Home", new { culture = currentCulture });
+        }
     }
 }

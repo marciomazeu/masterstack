@@ -2026,7 +2026,7 @@
     <comment/>
   </data>
   <data name="2FA_Title" xml:space="preserve">
-    <value>Verificação de Segurança</value>
+    <value>Autenticação em Dois Fatores</value>
     <comment/>
   </data>
   <data name="2FA_Header" xml:space="preserve">
