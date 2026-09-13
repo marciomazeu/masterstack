@@ -734,13 +734,16 @@ namespace MasterStack.Controllers
         }
 
         [HttpGet("AccessDenied")]
-        [HttpGet("/AccessDenied")]
-        [HttpGet("{culture}/Account/AccessDenied")]
-        public IActionResult AccessDenied(string culture)
+        [HttpGet("/Account/AccessDenied")]
+        [HttpGet("/{culture}/Account/AccessDenied")]
+        public IActionResult AccessDenied(string culture = "pt-BR")
         {
-            var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
-            TempData["WarningMessage"] = _localizer["AccessDeniedMessage"].Value;
+            var currentCulture = string.IsNullOrEmpty(culture) 
+                ? (string)RouteData.Values["culture"] ?? "pt-BR" 
+                : culture;
+
+            TempData["WarningMessage"] = _localizer["AccessDeniedMessage"]?.Value ?? "Acesso negado.";
             return RedirectToAction("Index", "Home", new { culture = currentCulture });
-        }
+}
     }
 }
