@@ -391,63 +391,58 @@ public async Task<IActionResult> Register(
         }
 
         [HttpPost("ForgotPassword")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword(string email, string culture)
-        {
-            var currentCulture = culture ?? "pt-BR";
-            
-            // Clean do e-mail (remove espaços em branco e garante minúsculas)
-            var cleanEmail = email?.Trim();
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> ForgotPassword(string email, string culture)
+{
+    var currentCulture = culture ?? "pt-BR";
+    var cleanEmail = email?.Trim().ToLower();
 
-            _logger.LogInformation(">>> INICIANDO RESET: Email recebido: '{Email}'", cleanEmail);
+    // 🔍 1. DIAGNÓSTICO: Listar os últimos usuários cadastrados no banco
+    var totalUsers = _context.Users.Count();
+    var registeredEmails = _context.Users.Select(u => u.Email).Take(10).ToList();
+    
+    _logger.LogInformation("==================================================");
+    _logger.LogInformation(">>> DIAGNÓSTICO DE BANCO:");
+    _logger.LogInformation(">>> Total de Usuários no Banco: {Total}", totalUsers);
+    _logger.LogInformation(">>> E-mails cadastrados: {Emails}", string.Join(", ", registeredEmails));
+    _logger.LogInformation(">>> E-mail recebido no formulário: '{Email}'", cleanEmail);
+    _logger.LogInformation("==================================================");
 
-            if (string.IsNullOrWhiteSpace(cleanEmail))
-            {
-                _logger.LogWarning(">>> RESET CANCELADO: Parâmetro email veio vazio.");
-                return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
-            }
+    // 2. Busca o usuário
+    var user = await _userManager.FindByEmailAsync(cleanEmail);
+    if (user == null && !string.IsNullOrEmpty(cleanEmail))
+    {
+        user = _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanEmail.ToUpper());
+    }
 
-            // 1. Busca primeiro por FindByEmailAsync
-            var user = await _userManager.FindByEmailAsync(cleanEmail);
+    if (user == null)
+    {
+        _logger.LogWarning(">>> BUSCA: Usuário '{Email}' NÃO encontrado!", cleanEmail);
+        return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
+    }
 
-            // 2. Se não achar, busca pelo UserName (caso o Identity use o e-mail como username)
-            if (user == null)
-            {
-                user = await _userManager.FindByNameAsync(cleanEmail);
-            }
+    _logger.LogInformation(">>> USUÁRIO ENCONTRADO (ID: {Id}). Disparando AWS SES...", user.Id);
 
-            if (user == null)
-            {
-                _logger.LogWarning(">>> RESET CANCELADO: Usuário '{Email}' NÃO foi encontrado no banco de dados!", cleanEmail);
-                return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
-            }
+    try
+    {
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var callbackUrl = Url.Action("ResetPassword", "Account", 
+            new { token = token, email = user.Email, culture = currentCulture }, Request.Scheme);
 
-            _logger.LogInformation(">>> USUÁRIO ENCONTRADO! ID: {Id}. Iniciando envio SMTP via AWS SES...", user.Id);
+        string subject = _localizer["ResetPasswordSubject"];
+        string body = $@"<h2>MasterStack</h2><p><a href='{callbackUrl}'>Clique aqui para redefinir sua senha</a></p>";
 
-            try
-            {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var callbackUrl = Url.Action("ResetPassword", "Account", 
-                    new { token = token, email = user.Email, culture = currentCulture }, Request.Scheme);
+        await _emailSender.SendEmailAsync(user.Email!, subject, body);
 
-                string subject = _localizer["ResetPasswordSubject"];
-                string body = $@"
-                <h2>MasterStack</h2>
-                <p>{_localizer["EmailGreeting"]} {user.DisplayName},</p>
-                <p>{_localizer["ResetPasswordInstruction"]}</p>
-                <p><a href='{callbackUrl}'>{_localizer["ResetPasswordLinkText"]}</a></p>";
+        _logger.LogInformation(">>> E-MAIL ENVIADO COM SUCESSO PARA: {Email}", user.Email);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, ">>> ERRO NO SMTP DA AWS: {Message}", ex.Message);
+    }
 
-                await _emailSender.SendEmailAsync(user.Email!, subject, body);
-
-                _logger.LogInformation(">>> E-MAIL ENVIADO COM SUCESSO PARA: {Email}", user.Email);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ">>> ERRO CRÍTICO NO SMTP DA AWS SES: {Message}", ex.Message);
-            }
-
-            return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
-        }
+    return RedirectToAction("ForgotPasswordConfirmation", new { culture = currentCulture });
+}
         // 1. GET: Abre o formulário de nova senha
         [HttpGet("ResetPassword")]
         public IActionResult ResetPassword(string token, string email, string culture)
