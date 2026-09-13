@@ -70,8 +70,9 @@ namespace MasterStack.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
         {
-            // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
             string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+
+            _logger.LogInformation(">>> TENTATIVA DE LOGIN: Input={Input}", username);
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
@@ -79,22 +80,36 @@ namespace MasterStack.Controllers
                 return View();
             }
 
-            var cleanInput = username.Trim();
+            var cleanInput = username.Trim().ToLower();
 
-            // 1. Busca o usuário primeiro por E-mail, e se não achar, por Nome de Usuário
+            // Busca manual flexível
             var user = await _userManager.FindByEmailAsync(cleanInput) 
-                    ?? await _userManager.FindByNameAsync(cleanInput);
+                    ?? await _userManager.FindByNameAsync(cleanInput)
+                    ?? _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanInput.ToUpper() || u.NormalizedUserName == cleanInput.ToUpper());
 
             if (user == null)
             {
+                _logger.LogWarning(">>> LOGIN FALHOU: Usuário não encontrado para a busca '{Input}'", cleanInput);
                 ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
                 return View();
             }
 
-            // 2. Executa o login usando o UserName REAL encontrado no banco de dados
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, password, isPersistent: false, lockoutOnFailure: true);
+            _logger.LogInformation(">>> USUÁRIO ENCONTRADO: Id={Id}, UserName={UserName}, Email={Email}, LockoutEnd={LockoutEnd}", 
+                user.Id, user.UserName, user.Email, user.LockoutEnd);
 
-            // 🔒 INTERCEPTAÇÃO DO 2FA
+            // Se estiver bloqueado por tentativas anteriores, desativa o bloqueio para testar
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                _logger.LogWarning(">>> CONTA BLOQUEADA POR LOCKOUT! Destravando para teste...");
+                await _userManager.SetLockoutEndDateAsync(user, null);
+            }
+
+            // Tenta autenticar usando o UserName oficial
+            var result = await _signInManager.PasswordSignInAsync(user.UserName, password, isPersistent: false, lockoutOnFailure: false);
+
+            _logger.LogInformation(">>> RESULTADO DO SIGNIN: Succeeded={Succeeded}, LockedOut={IsLockedOut}, Requires2FA={Requires2FA}", 
+                result.Succeeded, result.IsLockedOut, result.RequiresTwoFactor);
+
             if (result.RequiresTwoFactor)
             {
                 return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
@@ -102,32 +117,22 @@ namespace MasterStack.Controllers
 
             if (result.Succeeded)
             {
-                // Se houver uma ReturnUrl válida, redireciona para ela
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
                 }
 
-                // Se for Admin ou Autor, manda para o Dashboard
                 if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
                 {
                     return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
                 }
 
-                // Se for Recrutador
                 if (await _userManager.IsInRoleAsync(user, "Recruiter"))
                 {
                     return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
                 }
 
-                // Caso contrário, redireciona para a Home
                 return RedirectToAction("Index", "Home", new { culture = currentCulture });
-            }
-
-            if (result.IsLockedOut)
-            {
-                ViewBag.Error = _localizer["AccountLocked"].Value; 
-                return View();
             }
 
             ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
