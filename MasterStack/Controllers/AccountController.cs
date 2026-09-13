@@ -64,7 +64,7 @@ namespace MasterStack.Controllers
         return View();
     }
 
-        [HttpPost]
+   [HttpPost]
 [HttpPost("Login")]
 [HttpPost("/Account/Login")]
 [ValidateAntiForgeryToken]
@@ -90,47 +90,55 @@ public async Task<IActionResult> Login(string username, string password, string 
         return View();
     }
 
-    // 1. Garante que o e-mail do usuário esteja marcado como confirmado
+    // 1. Garante a confirmação de e-mail e persiste no banco caso esteja pendente
     if (!user.EmailConfirmed)
     {
-        _logger.LogInformation(">>> EMAIL NÃO CONFIRMADO. Forçando EmailConfirmed=true para o usuário {Email}", user.Email);
+        _logger.LogInformation(">>> EMAIL NÃO CONFIRMADO. Atualizando EmailConfirmed=true no PostgreSQL para {Email}", user.Email);
         user.EmailConfirmed = true;
         await _userManager.UpdateAsync(user);
     }
 
-    // 2. Valida a senha diretamente com o UserManager
-    var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
-    _logger.LogInformation(">>> CHECAGEM DE SENHA (CheckPasswordAsync): {IsValid}", isPasswordValid);
+    // 2. Tenta autenticar usando o UserName oficial do Identity
+    var result = await _signInManager.PasswordSignInAsync(user.UserName!, password, isPersistent: false, lockoutOnFailure: true);
 
-    if (!isPasswordValid)
+    _logger.LogInformation(">>> RESULTADO DO LOGIN PARA {Email}: Succeeded={Succeeded}, LockedOut={IsLockedOut}, Requires2FA={Requires2FA}", 
+        user.Email, result.Succeeded, result.IsLockedOut, result.RequiresTwoFactor);
+
+    if (result.RequiresTwoFactor)
     {
-        _logger.LogWarning(">>> SENHA INCORRETA para o usuário {Email}", user.Email);
-        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+        return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
+    }
+
+    if (result.Succeeded)
+    {
+        _logger.LogInformation(">>> LOGIN REALIZADO COM SUCESSO PARA {Email}", user.Email);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+        {
+            return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+        }
+
+        if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+        {
+            return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+        }
+
+        return RedirectToAction("Index", "Home", new { culture = currentCulture });
+    }
+
+    if (result.IsLockedOut)
+    {
+        ViewBag.Error = _localizer["AccountLocked"].Value; 
         return View();
     }
 
-    // 3. Efetua o login pelo SignInManager (sem verificar o lockout novamente)
-    await _signInManager.SignInAsync(user, isPersistent: false);
-
-    _logger.LogInformation(">>> LOGIN REALIZADO COM SUCESSO PARA {Email}", user.Email);
-
-    // Redirecionamentos de acordo com a Role
-    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-    {
-        return Redirect(returnUrl);
-    }
-
-    if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
-    {
-        return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-    }
-
-    if (await _userManager.IsInRoleAsync(user, "Recruiter"))
-    {
-        return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
-    }
-
-    return RedirectToAction("Index", "Home", new { culture = currentCulture });
+    ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+    return View();
 }
 
     // 1. GET do Login com 2FA
@@ -247,6 +255,7 @@ public async Task<IActionResult> SendEmailCode([FromRoute] string culture, strin
     }
 
 [HttpPost("Register")]
+[ValidateAntiForgeryToken]
 public async Task<IActionResult> Register(
     string email, 
     string password, 
@@ -257,39 +266,35 @@ public async Task<IActionResult> Register(
 {
     var currentCulture = culture ?? (string)RouteData.Values["culture"] ?? "pt-BR";
 
-    // 1. LER A CHAVE CORRETA VINDA DA VIEW: "g-recaptcha-response"
     var captchaToken = Request.Form["g-recaptcha-response"].ToString();
 
-    // Log para você acompanhar no terminal da DigitalOcean
     _logger.LogInformation(">>> REGISTRO: Recebido token reCAPTCHA com tamanho: {Size}", captchaToken?.Length ?? 0);
 
     if (string.IsNullOrEmpty(captchaToken) || !await IsReCaptchaValid(captchaToken))
     {
-        _logger.LogWarning(">>> REGISTRO: Falha na verificacao do reCAPTCHA para o email: {Email}", email);
+        _logger.LogWarning(">>> REGISTRO: Falha na verificação do reCAPTCHA para o e-mail: {Email}", email);
         ViewBag.Error = "Falha na verificação de segurança (reCAPTCHA).";
         return View();
     }
 
-    // 2. Validação Manual de Senha
     if (password != confirmPassword)
     {
         ViewBag.Error = _localizer["PasswordsDoNotMatch"].Value; 
         return View();
     }
-    // 3. Criação do Usuário
-    var user = new ApplicationUser { UserName = email, Email = email, DisplayName = displayName };
+
+    var user = new ApplicationUser { UserName = email.Trim(), Email = email.Trim(), DisplayName = displayName };
     var result = await _userManager.CreateAsync(user, password);
 
     if (result.Succeeded)
     {
-        // 4. Atribuição de Role baseada na seleção (Fallback para Candidate)
         string roleToAssign = string.Equals(userType, "Recruiter", StringComparison.OrdinalIgnoreCase) 
             ? "Recruiter" 
             : "Candidate";
 
         await _userManager.AddToRoleAsync(user, roleToAssign);
 
-        // 5. Fluxo de E-mail de Confirmação
+        // Disparo do E-mail de Confirmação com Template Responsivo
         try 
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -298,27 +303,64 @@ public async Task<IActionResult> Register(
 
             string subject = _localizer["EmailConfirmationSubject"];
             string body = $@"
-                <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto;'>
-                    <h2>{_localizer["EmailGreeting"]} {displayName},</h2>
-                    <p>{_localizer["EmailInstruction"]}</p>
-                    <div style='margin: 30px 0;'>
-                        <a href='{confirmationLink}' 
-                           style='background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>
-                            {_localizer["ConfirmLinkText"]}
-                        </a>
-                    </div>
-                    <hr />
-                    <p style='font-size: 12px; color: #666;'>{_localizer["EmailFooter"]}</p>
-                </div>";
+            <!DOCTYPE html>
+            <html lang='{currentCulture}'>
+            <head>
+                <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            </head>
+            <body style='margin: 0; padding: 0; background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;'>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='background-color: #f4f6f9; padding: 40px 10px;'>
+                    <tr>
+                        <td align='center'>
+                            <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='max-width: 520px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); overflow: hidden;'>
+                                <tr>
+                                    <td style='padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #f0f0f0;'>
+                                        <h1 style='margin: 0; font-size: 24px; font-weight: 700; color: #111827;'>MasterStack</h1>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 32px;'>
+                                        <h2 style='margin: 0 0 16px 0; font-size: 18px; font-weight: 600; color: #1f2937;'>{_localizer["EmailGreeting"]} {displayName},</h2>
+                                        <p style='margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4b5563;'>
+                                            {_localizer["EmailInstruction"]}
+                                        </p>
+                                        <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0'>
+                                            <tr>
+                                                <td align='center' style='padding: 8px 0 24px 0;'>
+                                                    <a href='{confirmationLink}' target='_blank' style='display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 28px; border-radius: 8px;'>
+                                                        {_localizer["ConfirmLinkText"]}
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <hr style='border: none; border-top: 1px solid #f0f0f0; margin: 24px 0 16px 0;' />
+                                        <p style='margin: 0; font-size: 12px; color: #9ca3af; word-break: break-all;'>
+                                            <a href='{confirmationLink}' style='color: #2563eb; text-decoration: underline;'>{confirmationLink}</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 24px 32px; background-color: #f9fafb; text-align: center; border-top: 1px solid #f0f0f0;'>
+                                        <p style='margin: 0; font-size: 12px; color: #9ca3af;'>
+                                            © {DateTime.UtcNow.Year} MasterStack Jobs. {_localizer["EmailFooter"]}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>";
 
-            await _emailSender.SendEmailAsync(email, subject, body);
+            await _emailSender.SendEmailAsync(user.Email!, subject, body);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "[ERRO AO ENVIAR E-MAIL]");
+            _logger.LogError(ex, "[ERRO AO ENVIAR E-MAIL DE REGISTRO]");
         }
 
-        // 6. Login e Redirecionamento condicional ao Perfil
         await _signInManager.SignInAsync(user, isPersistent: false);
 
         if (roleToAssign == "Recruiter")
@@ -329,7 +371,6 @@ public async Task<IActionResult> Register(
         return RedirectToAction("Index", "Home", new { culture = currentCulture });
     }
 
-    // 7. Tratamento de Erros do Identity (Tradução)
     var firstError = result.Errors.FirstOrDefault();
     if (firstError != null)
     {
