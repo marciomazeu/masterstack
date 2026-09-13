@@ -160,7 +160,7 @@ namespace MasterStack.Controllers
         // ==========================================
         [HttpPost("UpdateProfile")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,User,Author")]
+        [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> UpdateProfile([FromRoute] string culture, ProfileViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
