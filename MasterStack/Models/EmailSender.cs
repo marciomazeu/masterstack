@@ -1,57 +1,71 @@
 using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MimeKit;
-using System.Net;
-using System.Net.Mail;
+using System;
+using System.Threading.Tasks;
 
-namespace MasterStack.Services // Ajuste para seu namespace
+namespace MasterStack.Services
 {
     public class EmailSender : IEmailSender
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<EmailSender> _logger;
 
-        public EmailSender(IConfiguration config)
+        public EmailSender(IConfiguration config, ILogger<EmailSender> logger)
         {
             _config = config;
+            _logger = logger;
         }
 
-    public async Task SendEmailAsync(string email, string subject, string htmlMessage)
-    {
-        var smtpHost = _config["EmailSettings:Host"];
-        var smtpPort = int.Parse(_config["EmailSettings:Port"] ?? "587");
-        var smtpUser = _config["EmailSettings:Username"];
-        var smtpPass = _config["EmailSettings:Password"];
-
-        var message = new MimeMessage();
-        // O e-mail de "From" DEVE ser o e-mail que você validou no SendGrid (Sender Identity)
-        message.From.Add(new MailboxAddress("MasterStack", "marciomazeu@hotmail.com"));
-        message.To.Add(new MailboxAddress("", email.Trim()));
-        message.Subject = subject;
-        message.Body = new TextPart("html") { Text = htmlMessage };
-
-        using var client = new MailKit.Net.Smtp.SmtpClient();
-        try
+        public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            // Aceita qualquer certificado (evita erro de SSL em desenvolvimento no Mac)
-            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+            // Busca aceitando tanto a chave Username/Host quanto SmtpUser/SmtpServer
+            var smtpHost = _config["EmailSettings:Host"] 
+                ?? _config["EmailSettings:SmtpServer"] 
+                ?? "email-smtp.us-east-2.amazonaws.com";
 
-            // Se porta 465 use SslOnConnect, se 587 use StartTls
-            var options = smtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+            var smtpPortStr = _config["EmailSettings:Port"] ?? _config["EmailSettings:SmtpPort"] ?? "587";
+            var smtpPort = int.Parse(smtpPortStr);
 
-            await client.ConnectAsync(smtpHost, smtpPort, options);
-            await client.AuthenticateAsync(smtpUser, smtpPass);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            var smtpUser = _config["EmailSettings:Username"] ?? _config["EmailSettings:SmtpUser"];
+            var smtpPass = _config["EmailSettings:Password"] ?? _config["EmailSettings:SmtpPass"];
+
+            _logger.LogInformation(">>> SMTP CONNECT: Host={Host}, Port={Port}, UserLength={UserLen}", 
+                smtpHost, smtpPort, smtpUser?.Length ?? 0);
+
+            var message = new MimeMessage();
             
-            Console.WriteLine(">>> E-mail enviado com sucesso!");
+            // O e-mail de remetente DEVE corresponder a um domínio/e-mail verificado no AWS SES
+            message.From.Add(new MailboxAddress("MasterStack", "marciomazeu@hotmail.com"));
+            message.To.Add(new MailboxAddress("", email.Trim()));
+            message.Subject = subject;
+            message.Body = new TextPart("html") { Text = htmlMessage };
+
+            using var client = new MailKit.Net.Smtp.SmtpClient();
+            try
+            {
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                var options = smtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+
+                await client.ConnectAsync(smtpHost, smtpPort, options);
+                await client.AuthenticateAsync(smtpUser, smtpPass);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                _logger.LogInformation(">>> E-MAIL ENVIADO COM SUCESSO PARA: {Email}", email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[ERRO SMTP]: {Message}", ex.Message);
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError("[DETALHE INNER]: {Message}", ex.InnerException.Message);
+                }
+                throw;
+            }
         }
-        catch (Exception ex)
-        {
-            // Se cair aqui, o erro aparecerá no terminal do VS Code / Visual Studio
-            Console.WriteLine($"[ERRO SMTP]: {ex.Message}");
-            if (ex.InnerException != null) Console.WriteLine($"[DETALHE]: {ex.InnerException.Message}");
-            throw; 
-        }
-    }
     }
 }
