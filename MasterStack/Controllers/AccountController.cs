@@ -65,79 +65,73 @@ namespace MasterStack.Controllers
     }
 
         [HttpPost]
-        [HttpPost("Login")]
-        [HttpPost("/Account/Login")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
-        {
-            string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
+[HttpPost("Login")]
+[HttpPost("/Account/Login")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
+{
+    string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
 
-            _logger.LogInformation(">>> TENTATIVA DE LOGIN: Input={Input}", username);
+    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+    {
+        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+        return View();
+    }
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            {
-                ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-                return View();
-            }
+    var cleanInput = username.Trim().ToLower();
 
-            var cleanInput = username.Trim().ToLower();
+    var user = await _userManager.FindByEmailAsync(cleanInput) 
+            ?? await _userManager.FindByNameAsync(cleanInput)
+            ?? _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanInput.ToUpper() || u.NormalizedUserName == cleanInput.ToUpper());
 
-            // Busca manual flexível
-            var user = await _userManager.FindByEmailAsync(cleanInput) 
-                    ?? await _userManager.FindByNameAsync(cleanInput)
-                    ?? _context.Users.FirstOrDefault(u => u.NormalizedEmail == cleanInput.ToUpper() || u.NormalizedUserName == cleanInput.ToUpper());
+    if (user == null)
+    {
+        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+        return View();
+    }
 
-            if (user == null)
-            {
-                _logger.LogWarning(">>> LOGIN FALHOU: Usuário não encontrado para a busca '{Input}'", cleanInput);
-                ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-                return View();
-            }
+    // 1. Garante que o e-mail do usuário esteja marcado como confirmado
+    if (!user.EmailConfirmed)
+    {
+        _logger.LogInformation(">>> EMAIL NÃO CONFIRMADO. Forçando EmailConfirmed=true para o usuário {Email}", user.Email);
+        user.EmailConfirmed = true;
+        await _userManager.UpdateAsync(user);
+    }
 
-            _logger.LogInformation(">>> USUÁRIO ENCONTRADO: Id={Id}, UserName={UserName}, Email={Email}, LockoutEnd={LockoutEnd}", 
-                user.Id, user.UserName, user.Email, user.LockoutEnd);
+    // 2. Valida a senha diretamente com o UserManager
+    var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
+    _logger.LogInformation(">>> CHECAGEM DE SENHA (CheckPasswordAsync): {IsValid}", isPasswordValid);
 
-            // Se estiver bloqueado por tentativas anteriores, desativa o bloqueio para testar
-            if (await _userManager.IsLockedOutAsync(user))
-            {
-                _logger.LogWarning(">>> CONTA BLOQUEADA POR LOCKOUT! Destravando para teste...");
-                await _userManager.SetLockoutEndDateAsync(user, null);
-            }
+    if (!isPasswordValid)
+    {
+        _logger.LogWarning(">>> SENHA INCORRETA para o usuário {Email}", user.Email);
+        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+        return View();
+    }
 
-            // Tenta autenticar usando o UserName oficial
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, password, isPersistent: false, lockoutOnFailure: false);
+    // 3. Efetua o login pelo SignInManager (sem verificar o lockout novamente)
+    await _signInManager.SignInAsync(user, isPersistent: false);
 
-            _logger.LogInformation(">>> RESULTADO DO SIGNIN: Succeeded={Succeeded}, LockedOut={IsLockedOut}, Requires2FA={Requires2FA}", 
-                result.Succeeded, result.IsLockedOut, result.RequiresTwoFactor);
+    _logger.LogInformation(">>> LOGIN REALIZADO COM SUCESSO PARA {Email}", user.Email);
 
-            if (result.RequiresTwoFactor)
-            {
-                return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
-            }
+    // Redirecionamentos de acordo com a Role
+    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+    {
+        return Redirect(returnUrl);
+    }
 
-            if (result.Succeeded)
-            {
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                {
-                    return Redirect(returnUrl);
-                }
+    if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+    {
+        return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+    }
 
-                if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
-                {
-                    return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-                }
+    if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+    {
+        return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+    }
 
-                if (await _userManager.IsInRoleAsync(user, "Recruiter"))
-                {
-                    return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
-                }
-
-                return RedirectToAction("Index", "Home", new { culture = currentCulture });
-            }
-
-            ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-            return View();
-        }
+    return RedirectToAction("Index", "Home", new { culture = currentCulture });
+}
 
     // 1. GET do Login com 2FA
 [   HttpGet("LoginWith2FA")]
