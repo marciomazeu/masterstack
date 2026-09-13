@@ -6,7 +6,7 @@ using MimeKit;
 using System;
 using System.Threading.Tasks;
 
-namespace MasterStack.Services
+namespace MasterStack.Models // Mantido na pasta Models
 {
     public class EmailSender : IEmailSender
     {
@@ -21,7 +21,7 @@ namespace MasterStack.Services
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            // Busca aceitando tanto a chave Username/Host quanto SmtpUser/SmtpServer
+            // Tenta ler com a sintaxe Host/Username/Password ou SmtpServer/SmtpUser/SmtpPass
             var smtpHost = _config["EmailSettings:Host"] 
                 ?? _config["EmailSettings:SmtpServer"] 
                 ?? "email-smtp.us-east-2.amazonaws.com";
@@ -36,8 +36,6 @@ namespace MasterStack.Services
                 smtpHost, smtpPort, smtpUser?.Length ?? 0);
 
             var message = new MimeMessage();
-            
-            // O e-mail de remetente DEVE corresponder a um domínio/e-mail verificado no AWS SES
             message.From.Add(new MailboxAddress("MasterStack", "marciomazeu@hotmail.com"));
             message.To.Add(new MailboxAddress("", email.Trim()));
             message.Subject = subject;
