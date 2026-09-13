@@ -200,6 +200,7 @@ namespace MasterStack.Controllers
                 user.ProfileImageUrl = "/uploads/profiles/" + fileName;
             }
 
+            user.DisplayName = model.DisplayName;
             user.FacebookUrl = model.FacebookUrl;
             user.InstagramUrl = model.InstagramUrl;
             user.TwitterUrl = model.TwitterUrl;
