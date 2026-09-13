@@ -678,7 +678,7 @@
     <comment/>
   </data>
   <data name="EmailConfirmationSubject" xml:space="preserve">
-    <value>Confirmez votre compte - MasterStack</value>
+    <value>Confirmez votre courriel</value>
     <comment/>
   </data>
   <data name="EmailGreeting" xml:space="preserve">
@@ -690,7 +690,7 @@
     <comment/>
   </data>
   <data name="ConfirmLinkText" xml:space="preserve">
-    <value>Confirmer mon compte</value>
+    <value>Confirmer le courriel</value>
     <comment/>
   </data>
   <data name="EmailFooter" xml:space="preserve">
@@ -702,7 +702,7 @@
     <comment/>
   </data>
   <data name="ResetPasswordSubject" xml:space="preserve">
-    <value>Réinitialiser le mot de passe</value>
+    <value>Réinitialisation do mot de passe</value>
     <comment/>
   </data>
   <data name="SendResetLink" xml:space="preserve">
@@ -2427,6 +2427,22 @@
   </data>
   <data name="Home_Blog_ViewAll" xml:space="preserve">
     <value>Voir Tous les Emplois</value>
+    <comment/>
+  </data>
+  <data name="CheckEmailTitle" xml:space="preserve">
+    <value>Vérification du courriel</value>
+    <comment/>
+  </data>
+  <data name="CheckEmailHeading" xml:space="preserve">
+    <value>Vérifiez votre courriel</value>
+    <comment/>
+  </data>
+  <data name="CheckEmailMessage" xml:space="preserve">
+    <value>Si o courriel fourni est enregistré, vous recevrez sous peu un lien pour réinitialiser votre mot de passe.</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordButtonText" xml:space="preserve">
+    <value>Réinitialiser mon mot de passe</value>
     <comment/>
   </data>
 </root>
