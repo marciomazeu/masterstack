@@ -64,67 +64,75 @@ namespace MasterStack.Controllers
         return View();
     }
 
-    [HttpPost]
-    [HttpPost("Login")]
-    [HttpPost("/Account/Login")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
-    {
-        // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
-        string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
-
-        // 1. Executa a tentativa de login (lockoutOnFailure ativado)
-        var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: true);
-
-        // 🔒 INTERCOPTAÇÃO DO 2FA: Se o usuário ativou o 2FA, ele cai aqui!
-        if (result.RequiresTwoFactor)
+        [HttpPost]
+        [HttpPost("Login")]
+        [HttpPost("/Account/Login")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
         {
-            // Redirecionamos para a tela de digitação do código do celular
-            // Passamos a cultura para manter o idioma na próxima tela
-            return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
-        }
+            // Garante que 'culture' tenha um valor padrão se vier nulo ou vazio
+            string currentCulture = string.IsNullOrEmpty(culture) ? "pt-BR" : culture;
 
-        if (result.Succeeded)
-        {
-            
-            var user = await _userManager.FindByEmailAsync(username) ?? await _userManager.FindByNameAsync(username);
-            if (user == null) 
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
                 ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
                 return View();
             }
 
-            // Se houver uma ReturnUrl válida (ex: página que o usuário tentou acessar antes), redireciona para ela
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            var cleanInput = username.Trim();
+
+            // 1. Busca o usuário primeiro por E-mail, e se não achar, por Nome de Usuário
+            var user = await _userManager.FindByEmailAsync(cleanInput) 
+                    ?? await _userManager.FindByNameAsync(cleanInput);
+
+            if (user == null)
             {
-                return Redirect(returnUrl);
+                ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
+                return View();
             }
 
-            // Se for Admin ou Autor, manda para o Dashboard
-            if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+            // 2. Executa o login usando o UserName REAL encontrado no banco de dados
+            var result = await _signInManager.PasswordSignInAsync(user.UserName, password, isPersistent: false, lockoutOnFailure: true);
+
+            // 🔒 INTERCEPTAÇÃO DO 2FA
+            if (result.RequiresTwoFactor)
             {
-                return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+                return RedirectToAction("LoginWith2FA", "Account", new { culture = currentCulture, returnUrl = returnUrl });
             }
 
-            // Se for Recrutador
-            if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+            if (result.Succeeded)
             {
-                return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+                // Se houver uma ReturnUrl válida, redireciona para ela
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
+
+                // Se for Admin ou Autor, manda para o Dashboard
+                if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "Author"))
+                {
+                    return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
+                }
+
+                // Se for Recrutador
+                if (await _userManager.IsInRoleAsync(user, "Recruiter"))
+                {
+                    return RedirectToAction("Index", "Recruiter", new { culture = currentCulture });
+                }
+
+                // Caso contrário, redireciona para a Home
+                return RedirectToAction("Index", "Home", new { culture = currentCulture });
             }
 
-            // Caso contrário (Candidate/User comum), redireciona para a Home
-            return RedirectToAction("Index", "Home", new { culture = currentCulture });
-        }
+            if (result.IsLockedOut)
+            {
+                ViewBag.Error = _localizer["AccountLocked"].Value; 
+                return View();
+            }
 
-        if (result.IsLockedOut)
-        {
-            ViewBag.Error = _localizer["AccountLocked"].Value; 
+            ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
             return View();
         }
-
-        ViewBag.Error = _localizer["InvalidLoginAttempt"].Value;
-        return View();
-    }
 
     // 1. GET do Login com 2FA
 [   HttpGet("LoginWith2FA")]
