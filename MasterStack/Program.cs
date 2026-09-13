@@ -291,6 +291,40 @@ try
             }
         }
     }
+    // 🔐 Promoção de Usuário para Admin no Startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        // 1. Garante que a Role "Admin" existe no banco
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        // 2. Busca o usuário pelo e-mail
+        var adminEmail = "marciomazeu@hotmail.com";
+        var user = await userManager.FindByEmailAsync(adminEmail);
+
+        if (user != null)
+        {
+            // 3. Adiciona o usuário à Role Admin se ainda não tiver
+            if (!await userManager.IsInRoleAsync(user, "Admin"))
+            {
+                await userManager.AddToRoleAsync(user, "Admin");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Erro ao atribuir Role de Admin.");
+    }
+}
 
     app.Run();
 }
