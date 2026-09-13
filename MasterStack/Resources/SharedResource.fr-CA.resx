@@ -2457,4 +2457,36 @@
     <value>Si le bouton ci-dessus ne fonctionne pas, copiez et collez le lien suivant dans votre navigateur :</value>
     <comment/>
   </data>
+  <data name="Enable2FATitle" xml:space="preserve">
+    <value>Activer l'authentification 2FA</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAHeader" xml:space="preserve">
+    <value>Activer l'authentification à deux facteurs (2FA)</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAStepsTitle" xml:space="preserve">
+    <value>Suivez les étapes ci-dessous pour sécuriser votre compte :</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAStep1" xml:space="preserve">
+    <value>Ouvrez l'application d'authentification sur votre téléphone (Google Authenticator, etc.).</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAStep2" xml:space="preserve">
+    <value>Numérisez le code QR ci-dessous :</value>
+    <comment/>
+  </data>
+  <data name="ManualKeyLabel" xml:space="preserve">
+    <value>Clé manuelle si vous ne pouvez pas numériser</value>
+    <comment/>
+  </data>
+  <data name="EnterCodeLabel" xml:space="preserve">
+    <value>Entrez les 6 chiffres générés sur votre téléphone :</value>
+    <comment/>
+  </data>
+  <data name="VerifyAndSaveButton" xml:space="preserve">
+    <value>Vérifier et enregistrer</value>
+    <comment/>
+  </data>
 </root>

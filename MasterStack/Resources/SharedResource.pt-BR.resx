@@ -2461,4 +2461,36 @@
     <value>Caso o botão acima não funcione, copie e cole o link a seguir no seu navegador:</value>
     <comment/>
   </data>
+  <data name="Enable2FATitle" xml:space="preserve">
+    <value>Ativar Autenticação 2FA</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAHeader" xml:space="preserve">
+    <value>Ativar Autenticação em Dois Fatores (2FA)</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAStepsTitle" xml:space="preserve">
+    <value>Siga os passos abaixo para proteger sua conta:</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAStep1" xml:space="preserve">
+    <value>Abra o aplicativo autenticador no seu celular (Google Authenticator, etc).</value>
+    <comment/>
+  </data>
+  <data name="Enable2FAStep2" xml:space="preserve">
+    <value>Escaneie o QR Code abaixo:</value>
+    <comment/>
+  </data>
+  <data name="ManualKeyLabel" xml:space="preserve">
+    <value>Chave Manual se não conseguir escanear</value>
+    <comment/>
+  </data>
+  <data name="EnterCodeLabel" xml:space="preserve">
+    <value>Digite os 6 dígitos gerados no celular:</value>
+    <comment/>
+  </data>
+  <data name="VerifyAndSaveButton" xml:space="preserve">
+    <value>Verificar e Gravar no Banco</value>
+    <comment/>
+  </data>
 </root>
