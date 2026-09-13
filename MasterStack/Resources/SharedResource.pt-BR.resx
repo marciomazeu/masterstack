@@ -2449,4 +2449,16 @@
     <value>Redefinir Minha Senha</value>
     <comment/>
   </data>
+  <data name="ResetPasswordBodyText" xml:space="preserve">
+    <value>Recebemos uma solicitação para redefinir a senha da sua conta na MasterStack. Clique no botão abaixo para prosseguir:</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordWarningText" xml:space="preserve">
+    <value>Se você não solicitou essa alteração, nenhuma ação é necessária e sua senha permanecerá a mesma.</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordLinkFallback" xml:space="preserve">
+    <value>Caso o botão acima não funcione, copie e cole o link a seguir no seu navegador:</value>
+    <comment/>
+  </data>
 </root>

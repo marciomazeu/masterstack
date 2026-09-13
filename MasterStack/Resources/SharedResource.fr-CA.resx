@@ -2445,4 +2445,16 @@
     <value>Réinitialiser mon mot de passe</value>
     <comment/>
   </data>
+  <data name="ResetPasswordBodyText" xml:space="preserve">
+    <value>Nous avons reçu une demande de réinitialisation du mot de passe de votre compte MasterStack. Cliquez sur le bouton ci-dessous pour continuer :</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordWarningText" xml:space="preserve">
+    <value>Si vous n'avez pas demandé cette modification, aucune action n'est requise et votre mot de passe restera le même.</value>
+    <comment/>
+  </data>
+  <data name="ResetPasswordLinkFallback" xml:space="preserve">
+    <value>Si le bouton ci-dessus ne fonctionne pas, copiez et collez le lien suivant dans votre navigateur :</value>
+    <comment/>
+  </data>
 </root>
