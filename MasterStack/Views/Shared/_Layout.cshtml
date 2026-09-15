@@ -327,7 +327,13 @@
                     inactivityTimer = setTimeout(showInactivityModal, timeoutInMs);
                 }
 
-                function showInactivityModal() {
+               function showInactivityModal() {
+                    // 1. Bloqueia imediatamente a execução se estiver em página de Erro
+                    if (window.location.pathname.toLowerCase().includes('/error') || 
+                        document.title.toLowerCase().includes('error')) {
+                        return;
+                    }
+
                     isModalShown = true;
                     const modalElement = document.getElementById('inactivityModal');
                     

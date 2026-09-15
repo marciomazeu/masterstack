@@ -139,7 +139,7 @@
                 <p class="text-muted small mb-0">@Localizer["Home_Jobs_Section_Subtitle"]</p>
             </div>
             
-            <a href="@(User.Identity?.IsAuthenticated == true ? $"/{currentCulture}/Jobs" : $"/{currentCulture}/Account/Login?returnUrl=/{currentCulture}/Jobs")" 
+            <a href="@(User.Identity?.IsAuthenticated == true ? $"/{currentCulture}/Jobs/Enterprises" : $"/{currentCulture}/Account/Login?returnUrl=/{currentCulture}/Jobs")" 
                class="btn btn-outline-primary btn-sm rounded-pill fw-bold">
                 @Localizer["Home_Jobs_ViewAll"] <i class="bi bi-arrow-right ms-1"></i>
             </a>
