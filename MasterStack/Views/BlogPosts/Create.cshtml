@@ -7,6 +7,9 @@
 @{
     ViewData["Title"] = Localizer["CreatePageTitle"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+    
+    // 💡 Sincroniza a cultura padrão do formulário com a cultura ativa da página (se não foi definida anteriormente)
+    var selectedCultureValue = Model?.SelectedCulture ?? currentCulture;
 }
 
 <style>
@@ -143,10 +146,11 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label asp-for="SelectedCulture" class="form-label small">Idioma da Publicação</label>
+                                <!-- 🔥 O valor pré-selecionado é sincronizado dinamicamente com o idioma da rota atual -->
                                 <select asp-for="SelectedCulture" class="form-select">
-                                    <option value="pt-BR">🇧🇷 Português</option>
-                                    <option value="en-US">🇺🇸 Inglês</option>
-                                    <option value="fr-CA">🇫🇷 Francais</option>
+                                    <option value="pt-BR" selected="@(selectedCultureValue == "pt-BR")">🇧🇷 Português</option>
+                                    <option value="en-US" selected="@(selectedCultureValue == "en-US")">🇺🇸 Inglês</option>
+                                    <option value="fr-CA" selected="@(selectedCultureValue == "fr-CA")">🇫🇷 Français</option>
                                 </select>
                             </div>
                         </div>
@@ -425,7 +429,8 @@
 
             if (!topic) return alert('O tema não pode estar vazio!');
 
-            const culture = '@currentCulture';
+            const selectedCultureEl = document.querySelector('select[name="SelectedCulture"]');
+            const culture = selectedCultureEl ? selectedCultureEl.value : '@currentCulture';
             const length = lengthEl ? lengthEl.value : 'médio (cerca de 800 a 1000 palavras)';
             const opinion = opinionEl ? opinionEl.value.trim() : '';
 
@@ -475,7 +480,8 @@
             if(!opinionEl) return;
             
             const opinion = opinionEl.value.trim();
-            const culture = '@currentCulture';
+            const selectedCultureEl = document.querySelector('select[name="SelectedCulture"]');
+            const culture = selectedCultureEl ? selectedCultureEl.value : '@currentCulture';
 
             const currentTitle = titleInput ? titleInput.value : '';
             const currentSlug = slugInput ? slugInput.value : '';

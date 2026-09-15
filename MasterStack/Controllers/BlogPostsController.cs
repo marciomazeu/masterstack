@@ -49,7 +49,7 @@ namespace MasterStack.Controllers
            var query = _context.BlogPosts
             .AsNoTracking()
             .Include(p => p.Author) // <--- ADICIONE ESTA LINHA AQUI
-            .Include(p => p.Translations)
+            .Include(p => p.Translations.Where(t => t.Culture == currentCulture && t.IsPublished))
             .Where(p => p.Translations.Any(t => t.Culture == currentCulture && t.IsPublished))
             .AsQueryable(); // Importante para permitir adicionar filtros depois
 
