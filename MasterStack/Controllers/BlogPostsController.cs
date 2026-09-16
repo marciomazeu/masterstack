@@ -21,15 +21,21 @@ namespace MasterStack.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IStringLocalizer<BlogPostsController> _localizer; // Adicione esta linha
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<BlogPostsController> _logger;
         
 
-        public BlogPostsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStringLocalizer<BlogPostsController> localizer, UserManager<ApplicationUser> userManager)
+        public BlogPostsController(
+            ApplicationDbContext context, 
+            IWebHostEnvironment webHostEnvironment, 
+            IStringLocalizer<BlogPostsController> localizer, 
+            UserManager<ApplicationUser> userManager, 
+            ILogger<BlogPostsController> logger)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _localizer = localizer; // Atribua ao campo privado
             _userManager = userManager;
-            
+            _logger = logger;            
         }
 
         // GET: /pt-BR/BlogPosts
@@ -165,89 +171,98 @@ namespace MasterStack.Controllers
         // POST: BlogPosts/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-[ValidateAntiForgeryToken]
-[RequestSizeLimit(52428800)] // 50MB
-public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture)
-{
-    if (!ModelState.IsValid) return View(model);
-
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) return RedirectToAction("Login", "Account");
-
-    // Processa a imagem ANTES da transação para ter o caminho
-    string? imagePath = await ProcessAndSaveWebP(model.ImageFile);
-
-    using var transaction = await _context.Database.BeginTransactionAsync();
-    try
-    {
-        // Higienização robusta
-        var sanitizer = new HtmlSanitizer();
-        sanitizer.AllowedAttributes.Add("class"); // Mantém formatação do Quill
-        string cleanHtml = sanitizer.Sanitize(model.Content);
-
-        string uniqueSlug = await GetUniqueSlugAsync(model.Title, culture ?? "pt-BR");
-
-        var post = new BlogPost 
-        { 
-            //CreatedAt = DateTime.Now,
-            CreatedAt = DateTime.UtcNow, // Use sempre UtcNow no PostgreSQL
-            AuthorId = user.Id 
-        };
-        
-        _context.BlogPosts.Add(post);
-        await _context.SaveChangesAsync();
-
-        var currentCulture = culture ?? model.SelectedCulture ?? "pt-BR";
-
-        var translation = new BlogPostTranslation
+       [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(52428800)] // 50MB
+        public async Task<IActionResult> Create([FromRoute] string culture, BlogPostCreateViewModel model)
         {
-            BlogPostId = post.Id,
-            Culture = currentCulture,
-            Title = model.Title,
-            Content = cleanHtml,
-            MetaDescription = model.MetaDescription,
-            MetaKeywords = model.MetaKeywords,
-            Slug = uniqueSlug,
-            ImageUrl = imagePath ?? "/uploads/blog/default-post.jpg"
-        }; 
+            // 1. Se a model estiver inválida, retorna a View imediatamente
+            if (!ModelState.IsValid) 
+            {
+                return View(model);
+            }
 
-        _context.BlogPostTranslations.Add(translation);
-        await _context.SaveChangesAsync();
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) 
+            {
+                return RedirectToAction("Login", "Account", new { culture = culture });
+            }
 
-        await transaction.CommitAsync();
+            // 2. Processa o Upload do arquivo
+            string? imagePath = null;
+            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            {
+                imagePath = await ProcessAndSaveWebP(model.ImageFile);
+            }
 
-        TempData["Success"] = "Post criado com sucesso!";
-        return RedirectToAction("Dashboard", "Admin", new { culture = currentCulture });
-    }
-    catch (Exception ex)
-    {
-        // await transaction.RollbackAsync();
-        
-        // // Limpeza de segurança: Se deu erro no banco, deleta a imagem física
-        // if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
-        // {
-        //     var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
-        //     if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
-        // }
+            // 3. Define a cultura correta: DÁ PRIORIDADE ao idioma escolhido no dropdown do formulário
+            var postCulture = !string.IsNullOrWhiteSpace(model.SelectedCulture) ? model.SelectedCulture : culture;
 
-        // ModelState.AddModelError("", "Erro técnico ao salvar. O arquivo foi removido e os dados protegidos.");
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 4. Higienização do HTML enviado pelo Quill
+                var sanitizer = new HtmlSanitizer();
+                sanitizer.AllowedAttributes.Add("class");
+                string cleanHtml = sanitizer.Sanitize(model.Content ?? string.Empty);
 
-        await transaction.RollbackAsync();//temporario
-    
-    // Deleta a imagem (mantém sua lógica de limpeza)
-    if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
-    {
-        var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
-        if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
-    }
+                // 5. Gera Slug único
+                string baseSlug = !string.IsNullOrWhiteSpace(model.Slug) ? model.Slug : model.Title;
+                string uniqueSlug = await GetUniqueSlugAsync(baseSlug, postCulture);
 
-    // EXIBE O ERRO REAL NA TELA PARA VOCÊ CONSERTAR
-    var realError = ex.InnerException?.Message ?? ex.Message;
-    ModelState.AddModelError("", $"Erro Real: {realError}");
-        return View(model);
-    }
-}
+                // 6. Entidade Pai (BlogPost)
+                var post = new BlogPost 
+                { 
+                    CreatedAt = DateTime.UtcNow,
+                    AuthorId = user.Id 
+                };
+                
+                _context.BlogPosts.Add(post);
+                await _context.SaveChangesAsync();
+
+                // 7. Entidade Tradução (BlogPostTranslation)
+                var translation = new BlogPostTranslation
+                {
+                    BlogPostId = post.Id,
+                    Culture = postCulture,
+                    Title = model.Title,
+                    Content = cleanHtml,
+                    MetaDescription = model.MetaDescription,
+                    MetaKeywords = model.MetaKeywords,
+                    Slug = uniqueSlug,
+                    IsPublished = model.IsPublished,
+                    ImageUrl = !string.IsNullOrEmpty(imagePath) ? imagePath : "/uploads/blog/default-post.jpg"
+                }; 
+
+                _context.BlogPostTranslations.Add(translation);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                TempData["Success"] = "Post criado com sucesso!";
+                return RedirectToAction("Index", "BlogPosts", new { culture = postCulture });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+            
+                // Limpeza física do arquivo salvo se houve erro no banco
+                if (!string.IsNullOrEmpty(imagePath) && imagePath != "/uploads/blog/default-post.jpg")
+                {
+                    var physicalPath = Path.Combine(_webHostEnvironment.WebRootPath, imagePath.TrimStart('/'));
+                    if (System.IO.File.Exists(physicalPath)) 
+                    {
+                        System.IO.File.Delete(physicalPath);
+                    }
+                }
+
+                var realError = ex.InnerException?.Message ?? ex.Message;
+                _logger.LogError(ex, "Erro ao criar BlogPost");
+                ModelState.AddModelError("", $"Erro Real ao Salvar: {realError}");
+                
+                return View(model);
+            }
+        }
         private string GenerateSlug(string phrase)
 {
     // 1. Remove acentos (Transforma 'ã' em 'a', 'é' em 'e')
@@ -752,61 +767,67 @@ public async Task<IActionResult> EditTranslation(int id)
             return Content(sb.ToString(), "application/xml");
         }
 
-        private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
+       private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
 {
     if (imageFile == null || imageFile.Length == 0) return null;
 
     try
     {
-        string fileName = Guid.NewGuid().ToString() + ".webp";
+        string fileName = $"{Guid.NewGuid()}.webp";
         string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
 
-        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+        if (!Directory.Exists(uploadsFolder)) 
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
         string physicalPath = Path.Combine(uploadsFolder, fileName);
 
-        using (var inputStream = imageFile.OpenReadStream())
-        using (var managedStream = new SKManagedStream(inputStream))
-        using (var bitmap = SKBitmap.Decode(managedStream))
+        using var inputStream = imageFile.OpenReadStream();
+        using var managedStream = new SKManagedStream(inputStream);
+        
+        using var originalBitmap = SKBitmap.Decode(managedStream);
+        if (originalBitmap == null) return null;
+
+        SKBitmap workingBitmap = originalBitmap;
+        bool isResized = false;
+
+        if (originalBitmap.Width > 1200)
         {
-            if (bitmap == null) return null;
+            int newWidth = 1200;
+            int newHeight = (int)(originalBitmap.Height * (1200.0 / originalBitmap.Width));
+            
+            workingBitmap = originalBitmap.Resize(new SKImageInfo(newWidth, newHeight), SKFilterQuality.High);
+            isResized = true;
+        }
 
-            // 1. Decidir se redimensiona ou usa o original
-            SKBitmap finalBitmap = bitmap;
-            bool wasResized = false;
+        try
+        {
+            using var image = SKImage.FromBitmap(workingBitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
 
-            if (bitmap.Width > 1200)
+            if (data == null) return null;
+
+            // 💡 Gravando de forma síncrona diretamente no FileStream
+            using (var outputStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                int newWidth = 1200;
-                int newHeight = (int)(bitmap.Height * (1200.0 / bitmap.Width));
-                finalBitmap = bitmap.Resize(new SKImageInfo(newWidth, newHeight), SKFilterQuality.High);
-                wasResized = true;
+                data.SaveTo(outputStream); // 👈 USAR SaveTo (SEM ASYNC)
+                await outputStream.FlushAsync();
             }
-
-            try 
+        }
+        finally
+        {
+            if (isResized)
             {
-                // 2. Encode e Salvamento (Fora do IF, para pegar todas as imagens)
-                using (var image = SKImage.FromBitmap(finalBitmap))
-                using (var data = image.Encode(SKEncodedImageFormat.Webp, 80))
-                {
-                    using (var outputStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        data.SaveTo(outputStream);
-                        await outputStream.FlushAsync(); 
-                    }
-                }
-            }
-            finally
-            {
-                // Limpa a memória do bitmap redimensionado se ele foi criado
-                if (wasResized) finalBitmap.Dispose();
+                workingBitmap.Dispose();
             }
         }
 
-        return "/uploads/blog/" + fileName;
+        return $"/uploads/blog/{fileName}";
     }
     catch (Exception ex)
     {
-        Console.WriteLine("ERRO NO UPLOAD: " + ex.Message);
+        _logger.LogError(ex, "Erro no processamento da imagem de capa com SkiaSharp");
         return null;
     }
 }

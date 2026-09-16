@@ -266,130 +266,122 @@ namespace MasterStack.Controllers
 
             return Ok(nearbyCompanies);
         }
+// GET: /{culture}/Jobs/FetchNearbyCompaniesFromOSM
+[AllowAnonymous] // 👈 Permite que visitantes anônimos também consultem o OSM
+[HttpGet("FetchNearbyCompaniesFromOSM")]
+[HttpGet("/{culture}/Jobs/FetchNearbyCompaniesFromOSM")]
+public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
+{
+    var user = await _userManager.GetUserAsync(User);
 
-        // GET: /{culture}/Jobs/FetchNearbyCompaniesFromOSM
-        [HttpGet("FetchNearbyCompaniesFromOSM")]
-        public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
+    // 1. Coordenadas: Usa o perfil do usuário ou assume Québec/CA como padrão para anônimos
+    double lat = user?.Latitude ?? 46.8138;
+    double lon = user?.Longitude ?? -71.2080;
+
+    int radiusKm = (user != null && user.SearchRadiusKm > 0) ? Math.Min(user.SearchRadiusKm, 10) : 10;
+    int radiusMeters = radiusKm * 1000;
+
+    string latStr = lat.ToString(CultureInfo.InvariantCulture);
+    string lonStr = lon.ToString(CultureInfo.InvariantCulture);
+
+    string overpassQuery = $"[out:json][timeout:10];node(around:{radiusMeters},{latStr},{lonStr})[\"office\"];out 30;";
+
+    var endpoints = new[]
+    {
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+        "https://overpass-api.de/api/interpreter"
+    };
+
+    var httpClient = _httpClientFactory.CreateClient("OsmClient");
+    httpClient.Timeout = TimeSpan.FromSeconds(12);
+
+    string? jsonResponse = null;
+
+    foreach (var endpoint in endpoints)
+    {
+        try
         {
-            if (!User.Identity.IsAuthenticated)
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{endpoint}?data={Uri.EscapeDataString(overpassQuery)}");
+            request.Headers.Add("User-Agent", "MasterStackApp/1.0 (contato@masterstack.com)");
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+            var response = await httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
             {
-                return Unauthorized(new { success = false, message = _localizer["Osm_SessionExpired"].Value });
-            }
-
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user == null || !user.Latitude.HasValue || !user.Longitude.HasValue)
-            {
-                return BadRequest(new { success = false, message = _localizer["Osm_InvalidCoordinatesOrUser"].Value });
-            }
-
-            double lat = user.Latitude.Value;
-            double lon = user.Longitude.Value;
-
-            int radiusKm = user.SearchRadiusKm > 0 ? Math.Min(user.SearchRadiusKm, 10) : 10;
-            int radiusMeters = radiusKm * 1000;
-
-            string latStr = lat.ToString(CultureInfo.InvariantCulture);
-            string lonStr = lon.ToString(CultureInfo.InvariantCulture);
-
-            string overpassQuery = $"[out:json][timeout:10];node(around:{radiusMeters},{latStr},{lonStr})[\"office\"];out 30;";
-
-            var endpoints = new[]
-            {
-                "https://overpass.kumi.systems/api/interpreter",
-                "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-                "https://overpass-api.de/api/interpreter"
-            };
-
-            var httpClient = _httpClientFactory.CreateClient("OsmClient");
-            httpClient.Timeout = TimeSpan.FromSeconds(12);
-
-            string? jsonResponse = null;
-
-            foreach (var endpoint in endpoints)
-            {
-                try
-                {
-                    using var request = new HttpRequestMessage(HttpMethod.Get, $"{endpoint}?data={Uri.EscapeDataString(overpassQuery)}");
-                    request.Headers.Add("User-Agent", "MasterStackApp/1.0 (contato@masterstack.com)");
-                    request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-                    var response = await httpClient.SendAsync(request);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        jsonResponse = await response.Content.ReadAsStringAsync();
-                        break;
-                    }
-                }
-                catch
-                {
-                    continue;
-                }
-            }
-
-            if (string.IsNullOrEmpty(jsonResponse))
-            {
-                return StatusCode(503, new { success = false, message = _localizer["Osm_ServerUnstable"].Value });
-            }
-
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(jsonResponse);
-                var root = doc.RootElement;
-                var companies = new List<CompanyDto>();
-
-                if (root.TryGetProperty("elements", out var elements))
-                {
-                    foreach (var element in elements.EnumerateArray())
-                    {
-                        double companyLat = 0;
-                        double companyLon = 0;
-
-                        if (element.TryGetProperty("lat", out var latProp))
-                        {
-                            companyLat = latProp.GetDouble();
-                            companyLon = element.GetProperty("lon").GetDouble();
-                        }
-                        else if (element.TryGetProperty("center", out var centerProp))
-                        {
-                            companyLat = centerProp.GetProperty("lat").GetDouble();
-                            companyLon = centerProp.GetProperty("lon").GetDouble();
-                        }
-
-                        string defaultName = _localizer["Osm_UnnamedCompany"].Value;
-                        string defaultOffice = _localizer["Osm_Office"].Value;
-
-                        string name = defaultName;
-                        string officeType = defaultOffice;
-
-                        if (element.TryGetProperty("tags", out var tags))
-                        {
-                            if (tags.TryGetProperty("name", out var nameProp))
-                                name = nameProp.GetString() ?? name;
-
-                            if (tags.TryGetProperty("office", out var officeProp))
-                                officeType = officeProp.GetString() ?? officeType;
-                        }
-
-                        companies.Add(new CompanyDto
-                        {
-                            Id = element.GetProperty("id").GetInt64(),
-                            Name = name,
-                            OfficeType = officeType,
-                            Latitude = companyLat,
-                            Longitude = companyLon
-                        });
-                    }
-                }
-
-                return Ok(companies);
-            }
-            catch (System.Text.Json.JsonException)
-            {
-                return StatusCode(500, new { success = false, message = _localizer["Osm_ErrorProcessingMapData"].Value });
+                jsonResponse = await response.Content.ReadAsStringAsync();
+                break;
             }
         }
+        catch
+        {
+            continue;
+        }
+    }
+
+    if (string.IsNullOrEmpty(jsonResponse))
+    {
+        return StatusCode(503, new { success = false, message = _localizer["Osm_ServerUnstable"].Value });
+    }
+
+    try
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(jsonResponse);
+        var root = doc.RootElement;
+        var companies = new List<CompanyDto>();
+
+        if (root.TryGetProperty("elements", out var elements))
+        {
+            foreach (var element in elements.EnumerateArray())
+            {
+                double companyLat = 0;
+                double companyLon = 0;
+
+                if (element.TryGetProperty("lat", out var latProp))
+                {
+                    companyLat = latProp.GetDouble();
+                    companyLon = element.GetProperty("lon").GetDouble();
+                }
+                else if (element.TryGetProperty("center", out var centerProp))
+                {
+                    companyLat = centerProp.GetProperty("lat").GetDouble();
+                    companyLon = centerProp.GetProperty("lon").GetDouble();
+                }
+
+                string defaultName = _localizer["Osm_UnnamedCompany"].Value;
+                string defaultOffice = _localizer["Osm_Office"].Value;
+
+                string name = defaultName;
+                string officeType = defaultOffice;
+
+                if (element.TryGetProperty("tags", out var tags))
+                {
+                    if (tags.TryGetProperty("name", out var nameProp))
+                        name = nameProp.GetString() ?? name;
+
+                    if (tags.TryGetProperty("office", out var officeProp))
+                        officeType = officeProp.GetString() ?? officeType;
+                }
+
+                companies.Add(new CompanyDto
+                {
+                    Id = element.GetProperty("id").GetInt64(),
+                    Name = name,
+                    OfficeType = officeType,
+                    Latitude = companyLat,
+                    Longitude = companyLon
+                });
+            }
+        }
+
+        return Ok(companies);
+    }
+    catch (System.Text.Json.JsonException)
+    {
+        return StatusCode(500, new { success = false, message = _localizer["Osm_ErrorProcessingMapData"].Value });
+    }
+}
 
         // GET: /{culture}/Jobs/FetchTechJobsNearby
         [HttpGet("FetchTechJobsNearby")]
@@ -482,23 +474,32 @@ namespace MasterStack.Controllers
             return RedirectToAction("Enterprises", new { culture });
         }
 
-        // POST: /{culture}/Jobs/UpdatePreferences
-        [HttpPost("UpdatePreferences")]
-        [HttpPost("UpdateSearchPreferences")]
+       // POST: /{culture}/Jobs/UpdatePreferences
+        [AllowAnonymous] // 👈 Garante que a requisição seja capturada para fazermos o redirect correto
+        [HttpPost("UpdatePreferences")] // 👈 Mantém apenas UMA rota para evitar o erro de AmbiguousMatchException
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdatePreferences([FromRoute] string culture, int searchRadiusKm, string preferredJobTitle, bool includeRemoteCanada = false)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user != null)
-            {
-                user.SearchRadiusKm = searchRadiusKm > 0 ? searchRadiusKm : 25;
-                user.PreferredJobTitle = string.IsNullOrWhiteSpace(preferredJobTitle) ? "developer" : preferredJobTitle.Trim();
 
-                await _userManager.UpdateAsync(user);
-                TempData["Success"] = _localizer["Preferences_SaveSuccess"].Value;
+            // 🔒 1. Se o usuário estiver deslogado, redireciona para o Login PRESERVANDO o idioma da URL
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account", new { 
+                    culture = culture, 
+                    returnUrl = Url.Action("Enterprises", "Jobs", new { culture = culture }) 
+                });
             }
 
-            return RedirectToAction("Enterprises", new { culture });
+            // 2. Atualiza as preferências do usuário autenticado
+            user.SearchRadiusKm = searchRadiusKm > 0 ? searchRadiusKm : 25;
+            user.PreferredJobTitle = string.IsNullOrWhiteSpace(preferredJobTitle) ? "developer" : preferredJobTitle.Trim();
+
+            await _userManager.UpdateAsync(user);
+            TempData["Success"] = _localizer["Preferences_SaveSuccess"].Value;
+
+            // 3. Redireciona de volta para a tela de Empresas mantendo a cultura atual
+            return RedirectToAction("Enterprises", "Jobs", new { culture = culture });
         }
 
         [HttpGet("GetCities/{countryCode}")]

@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using MasterStack.Services.JobProviders;
 using MasterStack.Services.Providers;
-using MasterStack.Services;
 
 // --- CONFIGURAÇÃO INICIAL DO LOGGING (SERILOG) ---
 Log.Logger = new LoggerConfiguration()
@@ -29,14 +28,34 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Substitui o provedor padrão de log pelo Serilog
     builder.Host.UseSerilog();
 
-    // --- 1. BANCO DE DADOS ---
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // --- 1. BANCO DE DADOS (CONFIGURAÇÃO ÚNICA E TRATADA) ---
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-    // --- 2. IDENTITY & COOKIES SECURITY CONFIG ---
+    if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
+    {
+        var databaseUri = new Uri(connectionString);
+        var userInfo = databaseUri.UserInfo.Split(':');
+
+        var builderConn = new Npgsql.NpgsqlConnectionStringBuilder
+        {
+            Host = databaseUri.Host,
+            Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+            Username = userInfo[0],
+            Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "",
+            Database = databaseUri.LocalPath.TrimStart('/'),
+            SslMode = Npgsql.SslMode.Require,
+            TrustServerCertificate = true
+        };
+
+        connectionString = builderConn.ToString();
+    }
+
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(connectionString));
+
+    // --- 2. IDENTITY & COOKIES SECURITY CONFIG (COM PRESERVAÇÃO DE CULTURA NO REDIRECT) ---
     builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
         options.SignIn.RequireConfirmedAccount = true;
     })
@@ -44,7 +63,6 @@ try
     .AddDefaultTokenProviders();
 
     builder.Services.ConfigureApplicationCookie(options => {
-        options.LoginPath = "/Account"; 
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
         
@@ -53,9 +71,18 @@ try
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
         options.SlidingExpiration = true;
+
+        // 🔥 Preserva o prefixo da cultura na URL ao redirecionar para a página de Login
+        options.Events.OnRedirectToLogin = context =>
+        {
+            var culture = context.Request.RouteValues["culture"]?.ToString() ?? "fr-CA";
+            var returnUrl = Uri.EscapeDataString(context.Request.Path + context.Request.QueryString);
+            context.Response.Redirect($"/{culture}/Account/Login?returnUrl={returnUrl}");
+            return Task.CompletedTask;
+        };
     });
 
-    // --- 3. LOCALIZAÇÃO (CONFIGURAÇÃO) ---
+    // --- 3. LOCALIZAÇÃO ---
     builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
     var supportedCultures = new[] {
@@ -86,33 +113,8 @@ try
 
     builder.Services.AddRazorPages();
 
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-    // Converte a URL do PostgreSQL da DigitalOcean/Heroku para o formato padrão do Npgsql se necessário
-    if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
-    {
-        var databaseUri = new Uri(connectionString);
-        var userInfo = databaseUri.UserInfo.Split(':');
-
-        var builderConn = new Npgsql.NpgsqlConnectionStringBuilder
-        {
-            Host = databaseUri.Host,
-            Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
-            Username = userInfo[0],
-            Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "",
-            Database = databaseUri.LocalPath.TrimStart('/'),
-            SslMode = Npgsql.SslMode.Require,
-            TrustServerCertificate = true
-        };
-
-        connectionString = builderConn.ToString();
-    }
-
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseNpgsql(connectionString));
-
     // --- 5. SERVIÇOS EXTRAS E INJEÇÃO DE DEPENDÊNCIA ---
-    builder.Services.AddMemoryCache(); // CORREÇÃO: Registrado no container DI ANTES do builder.Build()
+    builder.Services.AddMemoryCache();
 
     builder.Services.AddScoped<GeminiAiService>();
     builder.Services.AddScoped<ILocationService, LocationService>();
@@ -129,36 +131,23 @@ try
         options.MinimumSameSitePolicy = SameSiteMode.Lax;
     });
 
-    // --- REGISTRO CORRETO DO JSEARCHJOBPROVIDER ---
-   builder.Services.AddHttpClient<JSearchJobProvider>(client =>
-{
-    client.BaseAddress = new Uri("https://jsearch.p.rapidapi.com/");
-
-    var apiKey = builder.Configuration["RapidAPI:Key"];
-
-    if (string.IsNullOrWhiteSpace(apiKey))
-    {
-        Log.Warning("A chave RapidAPI:Key não foi encontrada nas configurações!");
-    }
-    else
-    {
-        client.DefaultRequestHeaders.TryAddWithoutValidation("x-rapidapi-key", apiKey);
-    }
-
-    client.DefaultRequestHeaders.TryAddWithoutValidation("x-rapidapi-host", "jsearch.p.rapidapi.com");
-});
-    // Injeta o HttpClient tipado para o JSearchJobProvider
-    builder.Services.AddHttpClient<IJobProvider, JSearchJobProvider>(client =>
+    // --- REGISTRO DOS PROVEDORES DE VAGAS ---
+    builder.Services.AddHttpClient<JSearchJobProvider>(client =>
     {
         client.BaseAddress = new Uri("https://jsearch.p.rapidapi.com/");
         client.Timeout = TimeSpan.FromSeconds(10);
+        
+        var apiKey = builder.Configuration["RapidAPI:Key"];
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            client.DefaultRequestHeaders.TryAddWithoutValidation("x-rapidapi-key", apiKey);
+        }
+        client.DefaultRequestHeaders.TryAddWithoutValidation("x-rapidapi-host", "jsearch.p.rapidapi.com");
     });
-    // Registra o HttpClient para o Remotive
+    builder.Services.AddScoped<IJobProvider, JSearchJobProvider>(sp => sp.GetRequiredService<JSearchJobProvider>());
+
     builder.Services.AddHttpClient<RemotiveJobProvider>();
-    // Registra como IJobProvider
-    builder.Services.AddScoped<IJobProvider, RemotiveJobProvider>();
-    // Registra a interface resolvendo através da classe concreta do HttpClient
-    builder.Services.AddTransient<IJobProvider>(sp => sp.GetRequiredService<JSearchJobProvider>());
+    builder.Services.AddScoped<IJobProvider, RemotiveJobProvider>(sp => sp.GetRequiredService<RemotiveJobProvider>());
 
     builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
 
@@ -189,7 +178,7 @@ try
         });
     }
 
-    // Ignora chamadas automáticas de DevTools do Chrome para não poluir os logs com 404
+    // Ignora chamadas automáticas de DevTools do Chrome
     app.Use(async (context, next) =>
     {
         if (context.Request.Path.StartsWithSegments("/.well-known"))
@@ -197,7 +186,6 @@ try
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             return;
         }
-
         await next();
     });
 
@@ -211,19 +199,15 @@ try
         await next();
     });
 
-    var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
-    app.UseRequestLocalization(localizationOptions);
-
+    // Redirecionamento da raiz sem idioma para o idioma padrão /fr-CA
     app.Use(async (context, next) =>
     {
         var path = context.Request.Path.Value;
-
         if (string.IsNullOrEmpty(path) || path == "/")
         {
             context.Response.Redirect("/fr-CA");
             return;
         }
-
         await next();
     });
 
@@ -240,14 +224,16 @@ try
 
     app.UseRouting();
 
-    var locOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>();
-    app.UseRequestLocalization(locOptions.Value);
+    // Aplicação da Localização uma única vez
+    var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
+    app.UseRequestLocalization(localizationOptions);
 
     app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
 
     app.UseAuthentication();
     app.UseAuthorization();
 
+    // Endpoints rápidos para Logout mantendo/restaurando a cultura
     app.MapGet("/{culture}/Account/Logout", async (string culture, SignInManager<ApplicationUser> signInManager) =>
     {
         await signInManager.SignOutAsync();
@@ -257,10 +243,10 @@ try
     app.MapGet("/Account/Logout", async (SignInManager<ApplicationUser> signInManager) =>
     {
         await signInManager.SignOutAsync();
-        return Results.Redirect("/pt-BR/Account/Login");
+        return Results.Redirect("/fr-CA/Account/Login");
     });
 
-    // --- 7. ROTAS ---
+    // --- 7. ROTAS MAPPING ---
     app.MapControllerRoute(
         name: "culture-route",
         pattern: "{culture}/{controller=Home}/{action=Index}/{id?}");
@@ -271,60 +257,40 @@ try
 
     app.MapRazorPages();
 
-    // --- 8. SEED DATA E MIGRATIONS ---
+    // --- 8. SEED DATA & MIGRATIONS ---
     if (!EF.IsDesignTime)
     {
-        using (var scope = app.Services.CreateScope())
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        try
         {
-            var services = scope.ServiceProvider;
-            try
+            var db = services.GetRequiredService<ApplicationDbContext>();
+            await db.Database.MigrateAsync(); 
+            
+            await SeedData.SeedLanguagesAndRolesAsync(services);
+
+            // Garantia de Role Admin
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+            if (!await roleManager.RoleExistsAsync("Admin"))
             {
-                var db = services.GetRequiredService<ApplicationDbContext>();
-                await db.Database.MigrateAsync(); 
-                
-                // Chamada limpa utilizando a classe SeedData isolada:
-                await SeedData.SeedLanguagesAndRolesAsync(services);
+                await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
-            catch (Exception ex)
+
+            var adminEmail = "marciomazeu@hotmail.com";
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+            if (adminUser != null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
             {
-                Log.Error(ex, "Erro na execução do seed.");
-            }
-        }
-    }
-    // 🔐 Promoção de Usuário para Admin no Startup
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-
-        // 1. Garante que a Role "Admin" existe no banco
-        if (!await roleManager.RoleExistsAsync("Admin"))
-        {
-            await roleManager.CreateAsync(new IdentityRole("Admin"));
-        }
-
-        // 2. Busca o usuário pelo e-mail
-        var adminEmail = "marciomazeu@hotmail.com";
-        var user = await userManager.FindByEmailAsync(adminEmail);
-
-        if (user != null)
-        {
-            // 3. Adiciona o usuário à Role Admin se ainda não tiver
-            if (!await userManager.IsInRoleAsync(user, "Admin"))
-            {
-                await userManager.AddToRoleAsync(user, "Admin");
+                await userManager.AddToRoleAsync(adminUser, "Admin");
             }
         }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Erro no Seed/Migração durante a inicialização.");
+        }
     }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Erro ao atribuir Role de Admin.");
-    }
-}
 
     app.Run();
 }

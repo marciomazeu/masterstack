@@ -19,8 +19,8 @@
     bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
     
     // Filtro de prévia para usuários anônimos
-    var displayedLocalJobs = isAuthenticated ? Model.LocalJobs : Model.LocalJobs.Take(3).ToList();
-    var displayedExternalJobs = isAuthenticated ? Model.JobPosting : Model.JobPosting.Take(3).ToList();
+    var displayedLocalJobs = isAuthenticated ? Model.LocalJobs : Model.LocalJobs.Take(10).ToList();
+    var displayedExternalJobs = isAuthenticated ? Model.JobPosting : Model.JobPosting.Take(10).ToList();
 }
 
 @if (TempData["Warning"] != null)
@@ -373,6 +373,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="UpdatePreferences" asp-controller="Jobs" asp-route-culture="@currentCulture" method="post">
+                @Html.AntiForgeryToken()
                 <div class="modal-body py-3">
                     <p class="small text-muted mb-3">@Localizer["ModalSubtitle"]</p>
                     
@@ -626,40 +627,39 @@
     }
 
     document.getElementById('btnUpdateOsm')?.addEventListener('click', async function () {
-        const btn = this;
-        const originalText = btn.innerHTML;
+    const btn = this;
+    const originalText = btn.innerHTML;
 
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> @Localizer["SearchingStatus"]...`;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> @Html.Raw(Localizer["SearchingStatus"].Value)...`;
 
-        try {
-            const culture = '@currentCulture';
-            const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`);
+    try {
+        const culture = '@currentCulture';
+        const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`);
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                showToast(`@Localizer["OsmErrorText"]: ${errorText}`, false, 'danger');
-                return;
-            }
+        const data = await response.json();
 
-            const companies = await response.json();
-
-            if (companies.length === 0) {
-                showToast("@Localizer["OsmNoCompaniesText"]", false, 'warning');
-                return;
-            }
-
-            showToast(`@Localizer["OsmSuccessText"]`, false, 'success');
-            location.reload(); 
-
-        } catch (error) {
-            console.error("OSM Error:", error);
-            showToast("@Localizer["OsmConnectionErrorText"]", false, 'danger');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
+        if (!response.ok) {
+            showToast(data.message || "@Html.Raw(Localizer["OsmErrorText"].Value)", false, 'danger');
+            return;
         }
-    });
+
+        if (!data || data.length === 0) {
+            showToast("@Html.Raw(Localizer["OsmNoCompaniesText"].Value)", false, 'warning');
+            return;
+        }
+
+        showToast("@Html.Raw(Localizer["OsmSuccessText"].Value)", false, 'success');
+        location.reload(); 
+
+    } catch (error) {
+        console.error("OSM Error:", error);
+        showToast("@Html.Raw(Localizer["OsmConnectionErrorText"].Value)", false, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
 
     function showToast(message, isLoading = false, type = 'dark') {
         const toastEl = document.getElementById('jobSyncToast');
