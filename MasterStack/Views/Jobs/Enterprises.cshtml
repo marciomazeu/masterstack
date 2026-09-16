@@ -15,11 +15,17 @@
     var currentCulture = ViewContext.RouteData.Values["culture"]?.ToString() 
         ?? System.Threading.Thread.CurrentThread.CurrentUICulture.Name 
         ?? "pt-BR";
+
+    bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    
+    // Filtro de prévia para usuários anônimos
+    var displayedLocalJobs = isAuthenticated ? Model.LocalJobs : Model.LocalJobs.Take(3).ToList();
+    var displayedExternalJobs = isAuthenticated ? Model.JobPosting : Model.JobPosting.Take(3).ToList();
 }
 
 @if (TempData["Warning"] != null)
 {
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Warning"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
@@ -52,12 +58,23 @@
             <span class="badge bg-info text-dark p-2 fs-6">
                 <i class="bi bi-geo-alt-fill"></i> @Localizer["CenteredAt"]: @userLocation (@searchRadius km)
             </span>
-            <a asp-action="Profile" asp-controller="User" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-pencil"></i> @Localizer["ChangeLocation"]
-            </a>
+            
+            @if (isAuthenticated)
+            {
+                <a asp-action="Profile" asp-controller="User" asp-route-culture="@currentCulture" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-pencil"></i> @Localizer["ChangeLocation"]
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> @Localizer["ChangeLocation"]
+                </a>
+            }
         </div>
     </div>
-<!-- Barra de Consulta Pública -->
+
+    <!-- BARRA DE CONSULTA PÚBLICA -->
     <div class="card shadow-sm border-0 mb-4 bg-light">
         <div class="card-body p-4">
             <form asp-controller="Jobs" 
@@ -87,6 +104,7 @@
             </form>
         </div>
     </div>
+
     <!-- 3. BARRA DE FERRAMENTAS E FILTROS -->
     <div class="d-flex justify-content-start align-items-center gap-2 mb-3 flex-wrap">
         <button id="btnUpdateOsm" class="btn btn-outline-secondary btn-sm">
@@ -97,9 +115,18 @@
             <i class="bi bi-sliders"></i> @string.Format(Localizer["RadiusLabel"].Value, searchRadius)
         </button>
 
-        <a asp-action="FetchTechJobsNearby" asp-controller="Jobs" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
-            <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
-        </a>
+        @if (isAuthenticated)
+        {
+            <a asp-action="FetchTechJobsNearby" asp-controller="Jobs" asp-route-culture="@currentCulture" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
+            </a>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
+            </a>
+        }
     </div>
 
     <div class="row g-3">
@@ -107,21 +134,21 @@
         <div class="col-lg-5 col-md-6">
             <div class="card border-0 shadow-sm p-3" style="max-height: 75vh; display: flex; flex-direction: column;">
                 
-                <!-- MENU DE NAVEGAÇÃO POR ABAS (3 ABAS) -->
+                <!-- MENU DE NAVEGAÇÃO POR ABAS -->
                 <ul class="nav nav-pills nav-justified mb-3 small" id="exploreTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold px-2" id="local-jobs-tab" data-bs-toggle="pill" data-bs-target="#local-jobs-panel" type="button" role="tab">
-                            <i class="fas fa-star text-warning me-1"></i> Vagas Próprias (@Model.LocalJobs.Count)
+                            <i class="fas fa-star text-warning me-1"></i> @Localizer["Tab_LocalJobs"] (@Model.LocalJobs.Count)
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold px-2" id="external-jobs-tab" data-bs-toggle="pill" data-bs-target="#external-jobs-panel" type="button" role="tab">
-                            <i class="fas fa-briefcase text-success me-1"></i> Parceiros (@Model.JobPosting.Count)
+                            <i class="fas fa-briefcase text-success me-1"></i> @Localizer["Tab_PartnerJobs"] (@Model.JobPosting.Count)
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold px-2" id="companies-tab" data-bs-toggle="pill" data-bs-target="#companies-panel" type="button" role="tab">
-                            <i class="fas fa-building text-primary me-1"></i> Empresas (@Model.Companies.Count)
+                            <i class="fas fa-building text-primary me-1"></i> @Localizer["Tab_Companies"] (@Model.Companies.Count)
                         </button>
                     </li>
                 </ul>
@@ -134,10 +161,11 @@
                         {
                             <div class="text-center py-4 text-muted">
                                 <i class="fas fa-folder-open fa-2x mb-2 text-secondary"></i>
-                                <p class="mb-0">Nenhuma vaga direta cadastrada na plataforma no momento.</p>
+                                <p class="mb-0">@Localizer["NoLocalJobsMessage"]</p>
                             </div>
                         }
-                        @foreach (var job in Model.LocalJobs)
+                        
+                        @foreach (var job in displayedLocalJobs)
                         {
                             <div class="card border border-primary-subtle shadow-sm mb-3 item-card job-card">
                                 <div class="card-body p-3">
@@ -149,7 +177,9 @@
                                     </div>
 
                                     <h6 class="fw-bold mb-1 text-primary mt-1">@job.Title</h6>
-                                    <p class="small mb-2 fw-medium text-dark"><i class="fas fa-building text-muted me-1"></i> @(string.IsNullOrEmpty(job.CompanyName) ? "Empresa Local" : job.CompanyName)</p>
+                                    <p class="small mb-2 fw-medium text-dark">
+                                        <i class="fas fa-building text-muted me-1"></i> @(string.IsNullOrEmpty(job.CompanyName) ? Localizer["CompanyLabel"].Value : job.CompanyName)
+                                    </p>
                                     
                                     <div class="d-flex justify-content-between align-items-center mt-2">
                                         <button type="button" 
@@ -158,19 +188,46 @@
                                             📍 @Localizer["ViewOnMapBtn"]
                                         </button>
                                         
-                                        <a asp-controller="Jobs" 
-                                        asp-action="Details" 
-                                        asp-route-id="@job.Id" 
-                                        class="btn btn-sm btn-primary fw-bold">
-                                            Candidatar-se / Ver Detalhes
-                                        </a>
+                                        @if (isAuthenticated)
+                                        {
+                                            <a asp-controller="Jobs" 
+                                               asp-action="Details" 
+                                               asp-route-id="@job.Id" 
+                                               asp-route-culture="@currentCulture" 
+                                               class="btn btn-sm btn-primary fw-bold">
+                                                @Localizer["ApplyBtn"]
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Account" 
+                                               asp-action="Login" 
+                                               asp-route-culture="@currentCulture" 
+                                               asp-route-returnUrl="@Context.Request.Path" 
+                                               class="btn btn-sm btn-outline-primary fw-bold">
+                                                @Localizer["LoginToViewJob"]
+                                            </a>
+                                        }
                                     </div>
                                 </div>
                             </div>
                         }
+
+                        <!-- BANNER DE BLOQUEIO / CONVITE LOGIN ABA 1 -->
+                        @if (!isAuthenticated && Model.LocalJobs.Count > 3)
+                        {
+                            <div class="card bg-light border-primary mb-3 text-center p-3 shadow-sm">
+                                <i class="fas fa-lock fa-2x text-primary mb-2"></i>
+                                <h6 class="fw-bold mb-1">@Localizer["UnlockMoreJobsTitle"]</h6>
+                                <p class="small text-muted mb-3">@string.Format(Localizer["UnlockMoreJobsDesc"].Value, Model.LocalJobs.Count)</p>
+                                <a asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary btn-sm fw-bold">
+                                    <i class="fas fa-sign-in-alt me-1"></i> @Localizer["LoginBtn"]
+                                </a>
+                            </div>
+                        }
                     </div>
 
-                    <!-- ABA 2: VAGAS DE PARCEIROS (APIs EXTERNAS) -->
+                    <!-- ABA 2: VAGAS DE PARCEIROS -->
                     <div class="tab-pane fade" id="external-jobs-panel" role="tabpanel">
                         @if (!Model.JobPosting.Any())
                         {
@@ -179,7 +236,8 @@
                                 <p class="mb-0">@Html.Raw(Localizer["NoJobsFound"].Value)</p>
                             </div>
                         }
-                        @foreach (var job in Model.JobPosting)
+
+                        @foreach (var job in displayedExternalJobs)
                         {
                             <div class="card border border-light-subtle shadow-sm mb-3 item-card job-card">
                                 <div class="card-body p-3">
@@ -209,7 +267,9 @@
                                     </div>
 
                                     <h6 class="fw-bold mb-1 text-primary mt-1">@job.Title</h6>
-                                    <p class="small mb-2 fw-medium text-dark"><i class="fas fa-building text-muted me-1"></i> @(string.IsNullOrEmpty(job.CompanyName) ? "Empresa Externa" : job.CompanyName)</p>
+                                    <p class="small mb-2 fw-medium text-dark">
+                                        <i class="fas fa-building text-muted me-1"></i> @(string.IsNullOrEmpty(job.CompanyName) ? Localizer["CompanyLabel"].Value : job.CompanyName)
+                                    </p>
                                     
                                     <div class="d-flex justify-content-between align-items-center mt-2">
                                         <button type="button" 
@@ -218,14 +278,36 @@
                                             📍 @Localizer["ViewOnMapBtn"]
                                         </button>
                                         
-                                        @if (!string.IsNullOrEmpty(job.RedirectUrl))
+                                        @if (isAuthenticated)
                                         {
-                                            <a href="@job.RedirectUrl" target="_blank" class="btn btn-sm btn-success fw-bold">
-                                                @Localizer["ApplyBtn"] <i class="fas fa-external-link-alt ms-1"></i>
+                                            @if (!string.IsNullOrEmpty(job.RedirectUrl))
+                                            {
+                                                <a href="@job.RedirectUrl" target="_blank" class="btn btn-sm btn-success fw-bold">
+                                                    @Localizer["ApplyBtn"] <i class="fas fa-external-link-alt ms-1"></i>
+                                                </a>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-outline-primary fw-bold">
+                                                @Localizer["LoginToViewJob"]
                                             </a>
                                         }
                                     </div>
                                 </div>
+                            </div>
+                        }
+
+                        <!-- BANNER DE BLOQUEIO / CONVITE LOGIN ABA 2 -->
+                        @if (!isAuthenticated && Model.JobPosting.Count > 3)
+                        {
+                            <div class="card bg-light border-primary mb-3 text-center p-3 shadow-sm">
+                                <i class="fas fa-lock fa-2x text-primary mb-2"></i>
+                                <h6 class="fw-bold mb-1">@Localizer["UnlockMoreJobsTitle"]</h6>
+                                <p class="small text-muted mb-3">@string.Format(Localizer["UnlockMoreJobsDesc"].Value, Model.JobPosting.Count)</p>
+                                <a asp-controller="Account" asp-action="Login" asp-route-culture="@currentCulture" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary btn-sm fw-bold">
+                                    <i class="fas fa-sign-in-alt me-1"></i> @Localizer["LoginBtn"]
+                                </a>
                             </div>
                         }
                     </div>
@@ -273,7 +355,7 @@
             </div>
         </div>
 
-        <!-- COLUNA DA DIREITA: MAPA -->
+        <!-- COLUNA DA DIREITA: MAPA LEAFLET -->
         <div class="col-lg-7 col-md-6">
             <div class="card border-0 shadow-sm p-2">
                 <div id="map" style="width: 100%; height: 75vh; border-radius: 8px;"></div>
@@ -282,7 +364,7 @@
     </div>
 </div>
 
-<!-- MODAL DE PREFERÊNCIAS -->
+<!-- MODAL DE PREFERÊNCIAS DE BUSCA -->
 <div class="modal fade" id="searchPreferencesModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -290,7 +372,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>@Localizer["ModalTitle"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form asp-action="UpdatePreferences" asp-controller="Jobs" method="post">
+            <form asp-action="UpdatePreferences" asp-controller="Jobs" asp-route-culture="@currentCulture" method="post">
                 <div class="modal-body py-3">
                     <p class="small text-muted mb-3">@Localizer["ModalSubtitle"]</p>
                     
@@ -348,9 +430,8 @@
     const companyMarkers = {};
     let activeRegionCircle = null;
 
-    // Concatenação de Vagas Próprias + Parceiros para marcação integral no Mapa Leaflet
-    const localJobs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.LocalJobs ?? new List<MasterStack.Models.JobPosting>()));
-    const externalJobs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.JobPosting ?? new List<MasterStack.Models.JobPosting>()));
+    const localJobs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(displayedLocalJobs));
+    const externalJobs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(displayedExternalJobs));
     const allJobPostings = [...localJobs, ...externalJobs];
 
     const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.Companies ?? new List<MasterStack.ViewModels.CompanyDistanceViewModel>()));
@@ -552,7 +633,7 @@
         btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> @Localizer["SearchingStatus"]...`;
 
         try {
-            const culture = document.documentElement.lang || 'pt-BR';
+            const culture = '@currentCulture';
             const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`);
 
             if (!response.ok) {

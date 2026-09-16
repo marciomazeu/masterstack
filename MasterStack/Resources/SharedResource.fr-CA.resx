@@ -2154,7 +2154,7 @@
     <comment/>
   </data>
   <data name="Tab_LocalJobs" xml:space="preserve">
-    <value>Emplois Directs</value>
+    <value>Offres Directes</value>
     <comment/>
   </data>
   <data name="Tab_PartnerJobs" xml:space="preserve">
@@ -2503,6 +2503,26 @@
   </data>
   <data name="2FAEmailBody" xml:space="preserve">
     <value>Votre code de vérification à deux facteurs est :</value>
+    <comment/>
+  </data>
+  <data name="NoLocalJobsMessage" xml:space="preserve">
+    <value>Aucun poste vacant directement inscrit sur la plateforme pour le moment.</value>
+    <comment/>
+  </data>
+  <data name="LoginToViewJob" xml:space="preserve">
+    <value>Se connecter pour voir l'offre</value>
+    <comment/>
+  </data>
+  <data name="UnlockMoreJobsTitle" xml:space="preserve">
+    <value>Voulez-vous voir toutes les offres ?</value>
+    <comment/>
+  </data>
+  <data name="UnlockMoreJobsDesc" xml:space="preserve">
+    <value>Affichage de 3 sur {0} offres. Connectez-vous pour accéder à la liste complète.</value>
+    <comment/>
+  </data>
+  <data name="LoginBtn" xml:space="preserve">
+    <value>Se connecter</value>
     <comment/>
   </data>
 </root>

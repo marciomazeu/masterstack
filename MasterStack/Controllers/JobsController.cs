@@ -112,131 +112,123 @@ namespace MasterStack.Controllers
 
         // GET: /{culture}/Jobs/Enterprises
         [AllowAnonymous]
-[HttpGet("Enterprises")]
-public async Task<IActionResult> Enterprises(string culture, [FromQuery] string? searchTerm)
-{
-    var user = await _userManager.GetUserAsync(User);
-    
-    // 1. Geolocalização e busca de Empresas no raio
-    double userLat = user?.Latitude ?? 0;
-    double userLng = user?.Longitude ?? 0;
-    int radiusKm = (user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50;
-
-    if (user != null && (!user.Latitude.HasValue || !user.Longitude.HasValue))
-    {
-        TempData["Warning"] = _localizer["Enterprises_ProfileLocationRequired"].Value;
-    }
-    string[]? searchTokens = null;
-
-    if (!string.IsNullOrWhiteSpace(searchTerm))
-    {
-        // Divide "game developer" em ["game", "developer"]
-        searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-    }
-
-    // Bounding box para filtro no SQL
-    double latDelta = radiusKm / 111.0;
-    double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
-
-    double minLat = userLat - latDelta;
-    double maxLat = userLat + latDelta;
-    double minLon = userLng - lonDelta;
-    double maxLon = userLng + lonDelta;
-
-    // Normaliza o termo de busca para comparação case-insensitive se informado
-    string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
-
-    // --- CONSULTA 1: EMPRESAS ---
-    var companiesQuery = _context.Companies
-        .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
-                    c.Latitude >= minLat && c.Latitude <= maxLat &&
-                    c.Longitude >= minLon && c.Longitude <= maxLon);
-                    
-
-    if (cleanSearch != null)
-    {
-        companiesQuery = companiesQuery.Where(c => 
-            c.Name.ToLower().Contains(cleanSearch) || 
-            (c.City != null && c.City.ToLower().Contains(cleanSearch)) ||
-            (c.Description != null && c.Description.ToLower().Contains(cleanSearch)));
-    }
-
-    var companiesFromDb = await _context.Companies
-    .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
-                c.Latitude >= minLat && c.Latitude <= maxLat &&
-                c.Longitude >= minLon && c.Longitude <= maxLon)
-    .ToListAsync();
-
-    var companiesList = companiesFromDb
-        .Select(c => new CompanyDistanceViewModel
+        [HttpGet("Enterprises")]
+        public async Task<IActionResult> Enterprises(string culture, [FromQuery] string? searchTerm)
         {
-            Id = c.Id,
-            Name = c.Name,
-            Description = c.Description,
-            City = c.City,
-            Latitude = c.Latitude!.Value,
-            Longitude = c.Longitude!.Value,
-            DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
-        })
-        .Where(c => c.DistanceInKm <= radiusKm)
-        .OrderBy(c => c.DistanceInKm)
-        .ToList();
-
-    // --- CONSULTA 2: VAGAS PRÓPRIAS ---
-    var localJobsQuery = _context.JobPostings
-        .Include(j => j.Company)
-        .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
-
-    if (cleanSearch != null)
-    {
-        localJobsQuery = localJobsQuery.Where(j => 
-            j.Title.ToLower().Contains(cleanSearch) || 
-            (j.CompanyName != null && j.CompanyName.ToLower().Contains(cleanSearch)) || 
-            (j.Location != null && j.Location.ToLower().Contains(cleanSearch)) ||
-            (j.Description != null && j.Description.ToLower().Contains(cleanSearch)));
-    }
-
-    var localJobsList = await localJobsQuery
-        .OrderByDescending(j => j.CreatedAt)
-        .Take(50)
-        .ToListAsync();
-
-    // --- CONSULTA 3: VAGAS EXTERNAS / PARCEIROS ---
-    var externalJobsQuery = _context.JobPostings
-    .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
-
-    if (searchTokens != null && searchTokens.Length > 0)
-    {
-        foreach (var token in searchTokens)
-        {
-            string pattern = $"%{token}%";
+            var user = await _userManager.GetUserAsync(User);
             
-            // Exige que CADA palavra digitada esteja em PELO MENOS UM dos campos do registro
-            externalJobsQuery = externalJobsQuery.Where(j =>
-                (j.Title != null && EF.Functions.Like(j.Title.ToLower(), pattern)) ||
-                (j.CompanyName != null && EF.Functions.Like(j.CompanyName.ToLower(), pattern)) ||
-                (j.Location != null && EF.Functions.Like(j.Location.ToLower(), pattern)) ||
-                (j.Description != null && EF.Functions.Like(j.Description.ToLower(), pattern))
-            );
+            // 1. Geolocalização: Se o usuário estiver deslogado ou sem coordenadas, usa Québec, CA como centro padrão
+            double userLat = user?.Latitude ?? 46.8138;
+            double userLng = user?.Longitude ?? -71.2080;
+            int radiusKm = (user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50;
+
+            if (user != null && (!user.Latitude.HasValue || !user.Longitude.HasValue))
+            {
+                TempData["Warning"] = _localizer["Enterprises_ProfileLocationRequired"].Value;
+            }
+
+            string[]? searchTokens = null;
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            }
+
+            // Bounding box para filtro no SQL
+            double latDelta = radiusKm / 111.0;
+            double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
+
+            double minLat = userLat - latDelta;
+            double maxLat = userLat + latDelta;
+            double minLon = userLng - lonDelta;
+            double maxLon = userLng + lonDelta;
+
+            string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
+
+            // --- CONSULTA 1: EMPRESAS ---
+            var companiesQuery = _context.Companies
+                .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
+                            c.Latitude >= minLat && c.Latitude <= maxLat &&
+                            c.Longitude >= minLon && c.Longitude <= maxLon);
+
+            if (cleanSearch != null)
+            {
+                companiesQuery = companiesQuery.Where(c => 
+                    c.Name.ToLower().Contains(cleanSearch) || 
+                    (c.City != null && c.City.ToLower().Contains(cleanSearch)) ||
+                    (c.Description != null && c.Description.ToLower().Contains(cleanSearch)));
+            }
+
+            var companiesFromDb = await companiesQuery.ToListAsync();
+
+            var companiesList = companiesFromDb
+                .Select(c => new CompanyDistanceViewModel
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    City = c.City,
+                    Latitude = c.Latitude!.Value,
+                    Longitude = c.Longitude!.Value,
+                    DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
+                })
+                .Where(c => c.DistanceInKm <= radiusKm)
+                .OrderBy(c => c.DistanceInKm)
+                .ToList();
+
+            // --- CONSULTA 2: VAGAS PRÓPRIAS ---
+            var localJobsQuery = _context.JobPostings
+                .Include(j => j.Company)
+                .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
+
+            if (cleanSearch != null)
+            {
+                localJobsQuery = localJobsQuery.Where(j => 
+                    j.Title.ToLower().Contains(cleanSearch) || 
+                    (j.CompanyName != null && j.CompanyName.ToLower().Contains(cleanSearch)) || 
+                    (j.Location != null && j.Location.ToLower().Contains(cleanSearch)) ||
+                    (j.Description != null && j.Description.ToLower().Contains(cleanSearch)));
+            }
+
+            var localJobsList = await localJobsQuery
+                .OrderByDescending(j => j.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            // --- CONSULTA 3: VAGAS EXTERNAS / PARCEIROS ---
+            var externalJobsQuery = _context.JobPostings
+                .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
+
+            if (searchTokens != null && searchTokens.Length > 0)
+            {
+                foreach (var token in searchTokens)
+                {
+                    string pattern = $"%{token}%";
+                    
+                    externalJobsQuery = externalJobsQuery.Where(j =>
+                        (j.Title != null && EF.Functions.Like(j.Title.ToLower(), pattern)) ||
+                        (j.CompanyName != null && EF.Functions.Like(j.CompanyName.ToLower(), pattern)) ||
+                        (j.Location != null && j.Location.ToLower().Contains(pattern)) ||
+                        (j.Description != null && j.Description.ToLower().Contains(pattern))
+                    );
+                }
+            }
+
+            var externalJobsList = await externalJobsQuery
+                .OrderByDescending(j => j.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            // 4. Montagem limpa da ViewModel
+            var viewModel = new EnterprisesPageViewModel
+            {
+                User = user,
+                Companies = companiesList,
+                LocalJobs = localJobsList,
+                JobPosting = externalJobsList
+            };
+
+            return View(viewModel);
         }
-    }
-
-    var externalJobsList = await externalJobsQuery
-        .OrderByDescending(j => j.CreatedAt)
-        .Take(50)
-        .ToListAsync();
-
-    // 4. Montagem limpa da ViewModel
-    var viewModel = new EnterprisesPageViewModel
-    {
-        User = user,
-        Companies = companiesList,
-        LocalJobs = localJobsList,
-        JobPosting = externalJobsList
-    };
-
-    return View(viewModel);
-}
         
 
         // GET: /{culture}/Jobs/CompaniesNearby

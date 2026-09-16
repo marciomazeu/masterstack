@@ -2509,4 +2509,24 @@
     <value>Seu código de verificação em duas etapas é:</value>
     <comment/>
   </data>
+  <data name="NoLocalJobsMessage" xml:space="preserve">
+    <value>Nenhuma vaga direta cadastrada na plataforma no momento.</value>
+    <comment/>
+  </data>
+  <data name="LoginToViewJob" xml:space="preserve">
+    <value>Entrar para ver vaga</value>
+    <comment/>
+  </data>
+  <data name="UnlockMoreJobsTitle" xml:space="preserve">
+    <value>Quer ver todas as vagas disponíveis?</value>
+    <comment/>
+  </data>
+  <data name="UnlockMoreJobsDesc" xml:space="preserve">
+    <value>Exibindo 3 de {0} vagas. Faça login para acessar a lista completa no mapa.</value>
+    <comment/>
+  </data>
+  <data name="LoginBtn" xml:space="preserve">
+    <value>Fazer Login</value>
+    <comment/>
+  </data>
 </root>

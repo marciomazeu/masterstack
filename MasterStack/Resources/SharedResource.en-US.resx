@@ -2505,4 +2505,24 @@
     <value>Your two-factor verification code is:</value>
     <comment/>
   </data>
+  <data name="NoLocalJobsMessage" xml:space="preserve">
+    <value>No direct vacancies registered on the platform at the moment.</value>
+    <comment/>
+  </data>
+  <data name="LoginToViewJob" xml:space="preserve">
+    <value>Log in to view job</value>
+    <comment/>
+  </data>
+  <data name="UnlockMoreJobsTitle" xml:space="preserve">
+    <value>Want to see all available jobs?</value>
+    <comment/>
+  </data>
+  <data name="UnlockMoreJobsDesc" xml:space="preserve">
+    <value>Displaying 3 of {0} jobs. Log in to access the full list.</value>
+    <comment/>
+  </data>
+  <data name="LoginBtn" xml:space="preserve">
+    <value>Log In</value>
+    <comment/>
+  </data>
 </root>
