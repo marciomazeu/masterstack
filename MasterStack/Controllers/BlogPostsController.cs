@@ -762,67 +762,83 @@ public async Task<IActionResult> EditTranslation(int id)
             return Content(sb.ToString(), "application/xml");
         }
 
-       private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
+      private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
 {
     if (imageFile == null || imageFile.Length == 0) return null;
 
     try
     {
-        string fileName = $"{Guid.NewGuid()}.webp";
         string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
-
         if (!Directory.Exists(uploadsFolder)) 
         {
             Directory.CreateDirectory(uploadsFolder);
         }
 
+        string fileName = $"{Guid.NewGuid()}.webp";
         string physicalPath = Path.Combine(uploadsFolder, fileName);
 
-        using var inputStream = imageFile.OpenReadStream();
-        using var managedStream = new SKManagedStream(inputStream);
-        
-        using var originalBitmap = SKBitmap.Decode(managedStream);
-        if (originalBitmap == null) return null;
-
-        SKBitmap workingBitmap = originalBitmap;
-        bool isResized = false;
-
-        if (originalBitmap.Width > 1200)
-        {
-            int newWidth = 1200;
-            int newHeight = (int)(originalBitmap.Height * (1200.0 / originalBitmap.Width));
-            
-            workingBitmap = originalBitmap.Resize(new SKImageInfo(newWidth, newHeight), SKFilterQuality.High);
-            isResized = true;
-        }
-
+        // 1. Tenta processar e otimizar via SkiaSharp
         try
         {
-            using var image = SKImage.FromBitmap(workingBitmap);
-            using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
+            using var inputStream = imageFile.OpenReadStream();
+            using var managedStream = new SKManagedStream(inputStream);
+            using var originalBitmap = SKBitmap.Decode(managedStream);
 
-            if (data == null) return null;
-
-            // 💡 Gravando de forma síncrona diretamente no FileStream
-            using (var outputStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            if (originalBitmap != null)
             {
-                data.SaveTo(outputStream); // 👈 USAR SaveTo (SEM ASYNC)
-                await outputStream.FlushAsync();
+                SKBitmap workingBitmap = originalBitmap;
+                bool isResized = false;
+
+                if (originalBitmap.Width > 1200)
+                {
+                    int newWidth = 1200;
+                    int newHeight = (int)(originalBitmap.Height * (1200.0 / originalBitmap.Width));
+                    workingBitmap = originalBitmap.Resize(new SKImageInfo(newWidth, newHeight), SKFilterQuality.High);
+                    isResized = true;
+                }
+
+                try
+                {
+                    using var image = SKImage.FromBitmap(workingBitmap);
+                    using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
+
+                    if (data != null)
+                    {
+                        using var outputStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                        data.SaveTo(outputStream);
+                        await outputStream.FlushAsync();
+
+                        return $"/uploads/blog/{fileName}";
+                    }
+                }
+                finally
+                {
+                    if (isResized) workingBitmap.Dispose();
+                }
             }
         }
-        finally
+        catch (Exception skiaEx)
         {
-            if (isResized)
-            {
-                workingBitmap.Dispose();
-            }
+            _logger.LogWarning(skiaEx, "SkiaSharp nativo não encontrado no Linux. Executando salvamento direto sem otimização.");
         }
 
-        return $"/uploads/blog/{fileName}";
+        // 2. Fallback de Segurança: Salva o arquivo original diretamente se a libSkiaSharp.so falhar
+        var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension)) extension = ".jpg";
+
+        string fallbackFileName = $"{Guid.NewGuid()}{extension}";
+        string fallbackPath = Path.Combine(uploadsFolder, fallbackFileName);
+
+        using (var fallbackStream = new FileStream(fallbackPath, FileMode.Create))
+        {
+            await imageFile.CopyToAsync(fallbackStream);
+        }
+
+        return $"/uploads/blog/{fallbackFileName}";
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, "Erro no processamento da imagem de capa com SkiaSharp");
+        _logger.LogError(ex, "Erro de I/O ao salvar imagem de capa.");
         return null;
     }
 }

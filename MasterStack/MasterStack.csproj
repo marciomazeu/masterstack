@@ -37,6 +37,7 @@
   
   <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
   <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.9" />
   <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
 </ItemGroup>
