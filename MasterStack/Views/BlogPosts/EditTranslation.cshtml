@@ -56,6 +56,7 @@
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="TranslationId" />
         <input type="hidden" asp-for="Culture" />
+        <input type="hidden" asp-for="CurrentImageUrl" />
 
         <div class="row">
             <div class="col-lg-8">
@@ -101,7 +102,7 @@
                                 </button>
                             </div>
                         </div>
-                         <div class="mb-3">
+                        <div class="mb-3">
                             <label asp-for="MetaKeywords" class="form-label small fw-bold">Palavras-chave (Separadas por vírgula)</label>
                             <input asp-for="MetaKeywords" class="form-control form-control-sm" placeholder="ex: dotnet, tutorial, aspnet" />
                             <span asp-validation-for="MetaKeywords" class="text-danger small"></span>
@@ -141,31 +142,33 @@
                             }
 
                             <label class="form-label small fw-bold">Trocar Imagem</label>
-                            <div class="image-preview-wrapper" onclick="document.getElementById('NewImageInput').click();">
+                            <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
                                 <div id="uploadPlaceholder">
                                     <i class="fas fa-sync-alt fa-2x mb-2 text-muted"></i>
-                                    <div class="small text-muted">Clique para selecionar nova</div>
+                                    <div class="small text-muted" id="uploadText">Clique para selecionar nova</div>
                                 </div>
                                 <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
                             </div>
-                            <input asp-for="NewImage" type="file" class="d-none" id="NewImageInput" accept="image/*" />
+                            <!-- 🔥 Corrigido para associar com a propriedade ImageFile -->
+                            <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
+                            <span asp-validation-for="ImageFile" class="text-danger small"></span>
                         </div>
                     </div>
 
-<div class="card mb-4">
-    <div class="card-header bg-white fw-bold">Status</div>
-    <div class="card-body">
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
-            <label class="form-check-label fw-bold" for="publishSwitch">
-                <span id="statusLabel" class="text-danger">Rascunho</span>
-            </label>
-        </div>
-        <small class="text-muted d-block mt-2">
-            Se desmarcado, o post não aparecerá na listagem pública.
-        </small>
-    </div>
-</div>
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Status</div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
+                                <label class="form-check-label fw-bold" for="publishSwitch">
+                                    <span id="statusLabel" class="text-danger">Rascunho</span>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Se desmarcado, o post não aparecerá na listagem pública.
+                            </small>
+                        </div>
+                    </div>
                     <div class="card">
                         <div class="card-body">
                             <button type="submit" class="btn btn-primary w-100 mb-2 py-2 fw-bold">
@@ -192,7 +195,6 @@
             }
         });
 
-        // Funções de SEO (Mesma lógica do Create)
         const titleInput = document.getElementById('Title');
         const slugInput = document.getElementById('Slug');
         const descField = document.getElementById('MetaDescription');
@@ -226,34 +228,42 @@
         slugInput.addEventListener('input', updateGooglePreview);
         descField.addEventListener('input', () => { updateCounter(); updateGooglePreview(); });
 
-        // Preview da Nova Imagem
-        document.getElementById('NewImageInput').onchange = evt => {
-            const [file] = evt.target.files;
-            if (file) {
-                document.getElementById('imagePreview').src = URL.createObjectURL(file);
-                document.getElementById('imagePreview').style.display = 'block';
-                document.getElementById('uploadPlaceholder').style.display = 'none';
-                if(document.getElementById('currentImageWrapper')) document.getElementById('currentImageWrapper').style.opacity = '0.4';
-            }
-        };
+        // 🔥 Preview de Seleção da Nova Imagem
+        const imageInput = document.getElementById('ImageInput');
+        if (imageInput) {
+            imageInput.onchange = evt => {
+                const [file] = evt.target.files;
+                if (file) {
+                    const preview = document.getElementById('imagePreview');
+                    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+
+                    preview.src = URL.createObjectURL(file);
+                    preview.style.display = 'block';
+                    if (uploadPlaceholder) uploadPlaceholder.style.display = 'none';
+                }
+            };
+        }
 
         document.getElementById('editForm').onsubmit = function() {
             document.getElementById('quill-content').value = quill.root.innerHTML;
             return true;
         };
 
-        window.onload = () => { updateCounter(); updateGooglePreview(); };
+        const sw = document.getElementById('publishSwitch');
+        const label = document.getElementById('statusLabel');
+        
+        const updateLabel = () => {
+            if(!sw || !label) return;
+            label.innerText = sw.checked ? "Publicado" : "Rascunho";
+            label.className = sw.checked ? "text-success fw-bold" : "text-danger fw-bold";
+        };
 
-        // Script simples para mudar a cor e o texto do status dinamicamente
-    const sw = document.getElementById('publishSwitch');
-    const label = document.getElementById('statusLabel');
-    
-    const updateLabel = () => {
-        label.innerText = sw.checked ? "Publicado" : "Rascunho";
-        label.className = sw.checked ? "text-success fw-bold" : "text-danger fw-bold";
-    };
+        if (sw) sw.addEventListener('change', updateLabel);
 
-    sw.addEventListener('change', updateLabel);
-    window.addEventListener('load', updateLabel);
+        window.addEventListener('load', () => {
+            updateCounter();
+            updateGooglePreview();
+            updateLabel();
+        });
     </script>
 }

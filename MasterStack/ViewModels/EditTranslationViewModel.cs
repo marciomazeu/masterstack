@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using MasterStack.Attributes;
 
 namespace MasterStack.ViewModels
 {
@@ -23,7 +24,10 @@ namespace MasterStack.ViewModels
         // ---------------------------
 
         public string? CurrentImageUrl { get; set; }
-        public IFormFile? NewImage { get; set; } // Imagem específica deste idioma
+        
+        [MaxFileSize(5 * 1024 * 1024)]
+        [AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".webp" })]
+        public IFormFile? ImageFile { get; set; }
         public bool IsPublished { get; set; } // Novo campo para status de publicação
     }
 }

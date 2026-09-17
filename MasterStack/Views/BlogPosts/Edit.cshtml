@@ -89,34 +89,25 @@
             <div class="col-lg-4">
                 <div class="sticky-sidebar">
                     <div class="card mb-4">
-                        <div class="card-header bg-white fw-bold">@Localizer["Imagem de Capa"]</div>
-                        <div class="card-body text-center">
-                            @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
-                            {
-                                <div class="mb-3">
-                                    <p class="small text-muted mb-1">Atual:</p>
-                                    <img src="@Model.CurrentImageUrl" class="img-fluid current-image" alt="Atual" />
-                                </div>
-                            }
-
-                            <div class="image-preview-wrapper" onclick="document.getElementById('NewImageInput').click();">
-                                <i class="fas fa-exchange-alt fa-2x mb-2 text-muted"></i>
-                                <div id="uploadText" class="small text-muted">@Localizer["Trocar Imagem"]</div>
-                                <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
+                    <div class="card-header bg-white fw-bold">@Localizer["Imagem de Capa"]</div>
+                    <div class="card-body text-center">
+                        @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                        {
+                            <div class="mb-3">
+                                <p class="small text-muted mb-1">Atual:</p>
+                                <img src="@Model.CurrentImageUrl" class="img-fluid current-image" alt="Atual" />
                             </div>
+                        }
 
-                            <input asp-for="NewImage" type="file" class="d-none" id="NewImageInput" accept="image/*" />
-                            <span asp-validation-for="NewImage" class="text-danger small"></span>
+                        <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
+                            <i class="fas fa-exchange-alt fa-2x mb-2 text-muted"></i>
+                            <div id="uploadText" class="small text-muted">@Localizer["Trocar Imagem"]</div>
+                            <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
                         </div>
-                    </div>
 
-                    <div class="card">
-                        <div class="card-body">
-                            <button type="submit" onclick="if(typeof tinymce !== 'undefined') tinymce.triggerSave();" class="btn btn-primary w-100 mb-2 py-2">
-                                <i class="fas fa-check me-1"></i> @Localizer["Salvar Alterações"]
-                            </button>
-                            <a asp-action="Dashboard" asp-controller="Admin" class="btn btn-light w-100 btn-sm">@Localizer["Cancelar"]</a>
-                        </div>
+                        <!-- 💡 Alterado de NewImage para ImageFile (muda o ID para ImageInput) -->
+                        <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
+                        <span asp-validation-for="ImageFile" class="text-danger small"></span>
                     </div>
                 </div>
             </div>
@@ -134,14 +125,19 @@
     <script>
         // Preview da Nova Imagem
         document.getElementById('NewImageInput').onchange = evt => {
-            const [file] = evt.target.files;
-            if (file) {
-                const preview = document.getElementById('imagePreview');
-                const text = document.getElementById('uploadText');
+            const imageInput = document.getElementById('ImageInput');
+            if (imageInput) {
+                imageInput.onchange = evt => {
+                    const [file] = evt.target.files;
+                    if (file) {
+                        const preview = document.getElementById('imagePreview');
+                        const text = document.getElementById('uploadText');
 
-                preview.src = URL.createObjectURL(file);
-                preview.style.display = 'block';
-                text.innerText = "Nova imagem selecionada";
+                        preview.src = URL.createObjectURL(file);
+                        preview.style.display = 'block';
+                        if (text) text.innerText = "Nova imagem selecionada";
+                    }
+                };
             }
         }
 

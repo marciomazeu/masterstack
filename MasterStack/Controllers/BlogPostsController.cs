@@ -446,7 +446,7 @@ public async Task<IActionResult> EditTranslation(int id)
 
             if (translation == null) return NotFound();
 
-            // 2. Validação de Slug Único (Excelente lógica já implementada)
+            // 2. Validação de Slug Único
             var slugExists = await _context.BlogPostTranslations
                 .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
 
@@ -456,37 +456,33 @@ public async Task<IActionResult> EditTranslation(int id)
                 return View(model);
             }
 
-            // --- NOVIDADE: SANITIZAÇÃO (O "Pulo do Gato" para o Roadmap) ---
+            // 3. Sanitização de HTML e Meta Description
             var sanitizer = new Ganss.Xss.HtmlSanitizer();
-            
-            // Protege contra scripts maliciosos no editor Quill
             translation.Content = sanitizer.Sanitize(model.Content);
 
-            // Garante que a descrição do Google não tenha tags HTML residuais
             if (!string.IsNullOrEmpty(model.MetaDescription))
             {
                 translation.MetaDescription = System.Text.RegularExpressions.Regex
                     .Replace(model.MetaDescription, "<.*?>", string.Empty);
             }
-            // ---------------------------------------------------------------
 
-            // 3. Atualiza os campos
+            // 4. Atualiza os campos de texto
             translation.Title = model.Title;
             translation.Slug = model.Slug?.Trim().ToLower(); 
             translation.MetaKeywords = model.MetaKeywords;
             translation.IsPublished = model.IsPublished;
 
-            // 4. Lógica de Imagem (Mantive sua lógica de deleção física, que está correta)
-            if (model.NewImage != null && model.NewImage.Length > 0)
+            // 5. Lógica de Imagem (Usando model.ImageFile)
+            if (model.ImageFile != null && model.ImageFile.Length > 0) // 👈 Atualizado para ImageFile
             {
                 string? oldImageUrl = translation.ImageUrl;
-                string? newWebPPath = await ProcessAndSaveWebP(model.NewImage);
+                string? newWebPPath = await ProcessAndSaveWebP(model.ImageFile); // 👈 Atualizado para ImageFile
 
                 if (newWebPPath != null)
                 {
                     translation.ImageUrl = newWebPPath;
                     
-                    // Deleta o arquivo antigo para não entulhar o servidor
+                    // Deleta o arquivo antigo do disco para não acumular lixo
                     if (!string.IsNullOrEmpty(oldImageUrl))
                     {
                         var relativePath = oldImageUrl.TrimStart('/');
@@ -500,12 +496,12 @@ public async Task<IActionResult> EditTranslation(int id)
                 }
                 else
                 {
-                    ModelState.AddModelError("NewImage", "Erro ao processar a imagem.");
+                    ModelState.AddModelError("ImageFile", "Erro ao processar a imagem."); // 👈 Atualizado a chave do erro
                     return View(model);
                 }
             }
 
-            // 5. Persistência
+            // 6. Persistência no PostgreSQL
             try
             {
                 await _context.SaveChangesAsync();
@@ -518,7 +514,6 @@ public async Task<IActionResult> EditTranslation(int id)
                 return View(model);
             }
         }
-
         // GET: BlogPosts/Delete/5
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
