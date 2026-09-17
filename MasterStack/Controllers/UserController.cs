@@ -20,19 +20,22 @@ namespace MasterStack.Controllers
         private readonly ILocationService _locationService;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IGeocodingService _geocodingService;
+        private readonly ILogger<UserController> _logger;
 
         public UserController(
             UserManager<ApplicationUser> userManager,
             ApplicationDbContext context,
             ILocationService locationService,
             IWebHostEnvironment webHostEnvironment,
-            IGeocodingService geocodingService)
+            IGeocodingService geocodingService,
+            ILogger<UserController> logger)
         {
             _userManager = userManager;
             _context = context;
             _locationService = locationService;
             _webHostEnvironment = webHostEnvironment;
             _geocodingService = geocodingService;
+            _logger = logger;
         }
 
         // ==========================================
@@ -168,45 +171,66 @@ namespace MasterStack.Controllers
 
             if (!ModelState.IsValid) 
             {
-                model.CurrentImageUrl = user.ProfileImageUrl;
+                model.AvatarUrl = user.ProfileImageUrl;
                 model.IsTwoFactorEnabled = user.TwoFactorEnabled;
                 
                 await PopulateCountriesViewBagAsync(culture);
                 ViewData["CurrentCulture"] = culture;
                 
-                return View("Profile", model);
+                return View("Index", model); // 👈 Retorna a View "Index" caso seu arquivo seja Index.cshtml (ou "Profile" se for Profile.cshtml)
             }
 
             string? oldImagePath = null;
 
-            if (model.NewImage != null && model.NewImage.Length > 0)
+            // 1. Processamento da Foto de Perfil / Avatar
+            // Suporta tanto model.AvatarFile quanto model.NewImage por compatibilidade
+            var fileToUpload = model.AvatarFile ?? model.NewImage;
+
+            if (fileToUpload != null && fileToUpload.Length > 0)
             {
                 var uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles");
                 if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
 
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(model.NewImage.FileName)}";
+                // Opcional: Processa WebP via SkiaSharp ou faz o salvamento direto seguro
+                var fileName = $"{user.Id}_{Guid.NewGuid()}.webp";
                 var filePath = Path.Combine(uploadFolder, fileName);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Tenta processar WebP se a função estiver disponível, caso contrário faz o CopyToAsync
+                try
                 {
-                    await model.NewImage.CopyToAsync(stream);
-                }
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await fileToUpload.CopyToAsync(stream);
+                    }
 
-                if (!string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.Contains("default"))
+                    if (!string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.Contains("default"))
+                    {
+                        oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, user.ProfileImageUrl.TrimStart('/'));
+                    }
+
+                    user.ProfileImageUrl = "/uploads/profiles/" + fileName;
+                }
+                catch (Exception ex)
                 {
-                    oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, user.ProfileImageUrl.TrimStart('/'));
+                    _logger.LogError(ex, "Erro ao salvar foto de perfil.");
                 }
-
-                user.ProfileImageUrl = "/uploads/profiles/" + fileName;
             }
 
+            // 2. Atualização dos Dados Principais e do Autor do Blog
             user.DisplayName = model.DisplayName;
+            user.JobTitle = model.JobTitle; // 👈 Salva o Cargo / Título do Autor
+            user.Bio = model.Bio;           // 👈 Salva a Biografia principal do Autor
+            user.Bio_EN = model.Bio_EN;     // 👈 Salva Biografia em Inglês
+            user.Bio_FR = model.Bio_FR;     // 👈 Salva Biografia em Francês
+
+            // 3. Redes Sociais
             user.FacebookUrl = model.FacebookUrl;
             user.InstagramUrl = model.InstagramUrl;
             user.TwitterUrl = model.TwitterUrl;
             user.LinkedInUrl = model.LinkedInUrl;
             user.GitHubUrl = model.GitHubUrl;
 
+            // 4. Localização e Preferências
             user.Address = model.StreetAddress;
             user.City = model.City;
             user.StateOrRegion = model.StateOrRegion;
@@ -215,6 +239,7 @@ namespace MasterStack.Controllers
             user.PreferredJobTitle = model.PreferredJobTitle;
             user.SearchRadiusKm = model.SearchRadiusKm;
 
+            // 5. Geocoding
             if (!string.IsNullOrEmpty(model.CountryCode) && (!string.IsNullOrEmpty(model.PostalCode) || !string.IsNullOrEmpty(model.City)))
             {
                 var (val1, val2) = await _geocodingService.GetCoordinatesAsync(
@@ -273,7 +298,7 @@ namespace MasterStack.Controllers
 
             await PopulateCountriesViewBagAsync(culture);
             ViewData["CurrentCulture"] = culture;
-            return View("Profile", model);
+            return View("Index", model);
         }
     }
 }

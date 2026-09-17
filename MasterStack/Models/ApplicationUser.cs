@@ -7,6 +7,9 @@ namespace MasterStack.Models
         public string? DisplayName { get; set; }
         public string? ProfileImageUrl { get; set; }
         public string? Bio { get; set; }
+        public string? JobTitle { get; set; }
+        public string? Bio_EN { get; set; }
+        public string? Bio_FR { get; set; }
         public string? LinkedInUrl { get; set; }
         public string? TwitterUrl { get; set; }
         public string? GitHubUrl { get; set; }

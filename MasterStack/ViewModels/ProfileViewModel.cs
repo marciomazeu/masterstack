@@ -5,6 +5,9 @@ namespace MasterStack.ViewModels
 {
     public class ProfileViewModel
     {
+        [StringLength(100, ErrorMessage = "O cargo/título deve ter no máximo 100 caracteres.")]
+        public string? JobTitle { get; set; } // Ex: Senior Full-Stack Developer @ MasterStack
+        
         [Display(Name = "Nome Exibido")]
         public string? DisplayName { get; set; }
 
@@ -36,10 +39,12 @@ namespace MasterStack.ViewModels
         [Url(ErrorMessage = "Insira uma URL válida para o GitHub")]
         public string? GitHubUrl { get; set; }
 
-        public string? CurrentImageUrl { get; set; }
+        public string? AvatarUrl { get; set; }
+        public string? CurrentImageUrl { get => AvatarUrl; set => AvatarUrl = value; }
 
         [Display(Name = "Nova Imagem de Perfil")]
-        public IFormFile? NewImage { get; set; }
+        public IFormFile? AvatarFile { get; set; }
+        public IFormFile? NewImage { get => AvatarFile; set => AvatarFile = value; }
 
         public bool IsAuthorOrAdmin { get; set; }
         public bool IsTwoFactorEnabled { get; set; }
