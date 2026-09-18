@@ -215,15 +215,24 @@ try
     app.UseResponseCompression();
 
     // Define o caminho físico do diretório externo
-    var externalUploadsPath = builder.Environment.IsDevelopment()
-        ? Path.Combine(builder.Environment.WebRootPath, "uploads")
-        : "/var/masterstack/uploads";
-
-    if (!Directory.Exists(externalUploadsPath))
+    // Configuração segura de arquivos estáticos
+    // --- GARANTIA E CRIAÇÃO DAS PASTAS DE UPLOADS DA APLICAÇÃO ---
+    var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
+    if (!Directory.Exists(uploadsPath))
     {
-        Directory.CreateDirectory(externalUploadsPath);
+        try
+        {
+            Directory.CreateDirectory(uploadsPath);
+            Directory.CreateDirectory(Path.Combine(uploadsPath, "blog"));
+            Directory.CreateDirectory(Path.Combine(uploadsPath, "profiles"));
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Aviso ao criar diretório de uploads na inicialização.");
+        }
     }
 
+    // --- SERVIÇO ÚNICO DE ARQUIVOS ESTÁTICOS COM CACHE ---
     app.UseStaticFiles(new StaticFileOptions
     {
         OnPrepareResponse = ctx =>
