@@ -188,11 +188,13 @@ namespace MasterStack.Controllers
 
             if (fileToUpload != null && fileToUpload.Length > 0)
             {
-                var uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles");
+                var uploadFolder = _webHostEnvironment.IsDevelopment()
+                    ? Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles")
+                    : Path.Combine("/var/masterstack/uploads", "profiles");
                 if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
 
                 // Opcional: Processa WebP via SkiaSharp ou faz o salvamento direto seguro
-                var fileName = $"{user.Id}_{Guid.NewGuid()}.webp";
+                var fileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(fileToUpload.FileName)}";
                 var filePath = Path.Combine(uploadFolder, fileName);
 
                 // Tenta processar WebP se a função estiver disponível, caso contrário faz o CopyToAsync

@@ -213,6 +213,17 @@ try
 
     app.UseHttpsRedirection();
     app.UseResponseCompression();
+
+    // Define o caminho físico do diretório externo
+    var externalUploadsPath = builder.Environment.IsDevelopment()
+        ? Path.Combine(builder.Environment.WebRootPath, "uploads")
+        : "/var/masterstack/uploads";
+
+    if (!Directory.Exists(externalUploadsPath))
+    {
+        Directory.CreateDirectory(externalUploadsPath);
+    }
+
     app.UseStaticFiles(new StaticFileOptions
     {
         OnPrepareResponse = ctx =>

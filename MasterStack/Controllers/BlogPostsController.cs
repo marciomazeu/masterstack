@@ -768,7 +768,11 @@ public async Task<IActionResult> EditTranslation(int id)
 
     try
     {
-        string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
+        // 💡 Usa o diretório externo dinâmico
+        string uploadsFolder = _webHostEnvironment.IsDevelopment()
+            ? Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog")
+            : Path.Combine("/var/masterstack/uploads", "blog");
+
         if (!Directory.Exists(uploadsFolder)) 
         {
             Directory.CreateDirectory(uploadsFolder);
@@ -777,7 +781,7 @@ public async Task<IActionResult> EditTranslation(int id)
         string fileName = $"{Guid.NewGuid()}.webp";
         string physicalPath = Path.Combine(uploadsFolder, fileName);
 
-        // 1. Tenta processar e otimizar via SkiaSharp
+        // Tentativa 1: Otimização SkiaSharp
         try
         {
             using var inputStream = imageFile.OpenReadStream();
@@ -819,10 +823,10 @@ public async Task<IActionResult> EditTranslation(int id)
         }
         catch (Exception skiaEx)
         {
-            _logger.LogWarning(skiaEx, "SkiaSharp nativo não encontrado no Linux. Executando salvamento direto sem otimização.");
+            _logger.LogWarning(skiaEx, "SkiaSharp indisponível. Utilizando salvamento direto de imagem.");
         }
 
-        // 2. Fallback de Segurança: Salva o arquivo original diretamente se a libSkiaSharp.so falhar
+        // Fallback Seguro
         var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
         if (string.IsNullOrEmpty(extension)) extension = ".jpg";
 
@@ -838,7 +842,7 @@ public async Task<IActionResult> EditTranslation(int id)
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, "Erro de I/O ao salvar imagem de capa.");
+        _logger.LogError(ex, "Erro de I/O ao salvar imagem do post.");
         return null;
     }
 }
