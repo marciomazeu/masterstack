@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System.Globalization;
 
-public class CultureFilter : IAsyncActionFilter
+namespace MasterStack
+{
+    public class CultureFilter : ActionFilterAttribute
     {
-        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
             var culture = context.RouteData.Values["culture"]?.ToString() ?? "fr-CA";
             context.HttpContext.Items["CurrentCulture"] = culture;
@@ -16,6 +15,7 @@ public class CultureFilter : IAsyncActionFilter
                 controller.ViewData["CurrentCulture"] = culture;
             }
 
-            await next();
+            base.OnActionExecuting(context);
         }
     }
+}
