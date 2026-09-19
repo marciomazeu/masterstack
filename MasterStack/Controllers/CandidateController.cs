@@ -10,7 +10,7 @@ using MasterStack.Models;
 namespace MasterStack.Controllers
 {
     [Authorize(Roles = "Recruiter,Admin")]
-    [Microsoft.AspNetCore.Mvc.Route("{culture}/[controller]")]
+    [Microsoft.AspNetCore.Mvc.Route("{controller}")]
     public class CandidateController : Controller
     {
         private readonly ApplicationDbContext _context;

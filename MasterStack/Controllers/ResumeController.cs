@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 namespace MasterStack.Controllers
 {
     [Authorize]
-    [Route("{culture}/[controller]/[action]")]
+    [Route("{controller}/{action}")]
     public class ResumeController : Controller
     {
         private readonly ApplicationDbContext _context;

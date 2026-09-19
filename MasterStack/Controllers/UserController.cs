@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MasterStack.Controllers
 {
     [Authorize] // 🔒 Exige login para qualquer ação de usuário
-    [Route("{culture}/User")]
+    [Route("[controller]")]
     public class UserController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;

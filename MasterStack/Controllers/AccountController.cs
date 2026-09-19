@@ -17,7 +17,7 @@ using Serilog;
 
 namespace MasterStack.Controllers
 {
-    [Route("{culture}/[controller]")]
+    [Route("[controller]")]
     public class AccountController : Controller
     {
         private readonly SignInManager<ApplicationUser> _signInManager;

@@ -12,7 +12,7 @@ namespace MasterStack.Controllers
 {
    //[Authorize(Roles = "Candidate,Recruiter,Admin")]
    [Authorize]
-    [Route("{culture}/[controller]")]
+    [Route("[controller]")]
     public class ApplicationController : Controller
     {
         private readonly ApplicationDbContext _context;

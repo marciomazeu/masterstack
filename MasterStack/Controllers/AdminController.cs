@@ -13,7 +13,7 @@ using System.IO;
 namespace MasterStack.Controllers
 {
 [Authorize(Roles = "Admin,Author")]
-[Route("{culture?}/Admin")]
+[Route("{Admin")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;

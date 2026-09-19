@@ -19,7 +19,7 @@ using Microsoft.Extensions.Localization;
 namespace MasterStack.Controllers
 {
     [Authorize] // 🔒 Exige login para acessar o módulo de vagas
-    [Route("{culture}/[controller]")]
+    [Route("{controller}")]
     public class JobsController : Controller
     {
         private readonly ApplicationDbContext _context;

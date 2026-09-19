@@ -16,7 +16,7 @@ using Microsoft.Extensions.Localization;
 namespace MasterStack.Controllers
 {
     [Authorize(Roles = "Recruiter,Admin")]
-    [Route("{culture}/[controller]")]
+    [Route("{controller}")]
     public class RecruiterController : Controller
     {
         private readonly ApplicationDbContext _context;
