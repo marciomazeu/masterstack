@@ -178,7 +178,7 @@ try
         });
     }
 
-    // Ignora chamadas automáticas de DevTools do Chrome
+    // Ignora chamadas automáticas de DevTools
     app.Use(async (context, next) =>
     {
         if (context.Request.Path.StartsWithSegments("/.well-known"))
@@ -199,7 +199,40 @@ try
         await next();
     });
 
-    // Redirecionamento da raiz sem idioma para o idioma padrão /fr-CA
+    app.UseHttpsRedirection();
+    app.UseResponseCompression();
+
+    // 💡 PASSO CRÍTICO 1: CRIAÇÃO FÍSICA DOS DIRETÓRIOS ANTES DE REGISTAR OS FICHEIROS ESTÁTICOS
+    var uploadsFolder = Path.Combine(app.Environment.WebRootPath, "uploads");
+    var blogUploadsFolder = Path.Combine(uploadsFolder, "blog");
+    var profileUploadsFolder = Path.Combine(uploadsFolder, "profiles");
+
+    try
+    {
+        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+        if (!Directory.Exists(blogUploadsFolder)) Directory.CreateDirectory(blogUploadsFolder);
+        if (!Directory.Exists(profileUploadsFolder)) Directory.CreateDirectory(profileUploadsFolder);
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Aviso ao verificar/criar diretórios de uploads.");
+    }
+
+    // 💡 PASSO CRÍTICO 2: FICHEIROS ESTÁTICOS (REGISTO ÚNICO COM CACHE)
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");
+        }
+    });
+
+    app.UseCookiePolicy();
+
+    // 💡 PASSO CRÍTICO 3: ROTEAMENTO
+    app.UseRouting();
+
+    // Redirecionamento da raiz sem idioma
     app.Use(async (context, next) =>
     {
         var path = context.Request.Path.Value;
@@ -211,37 +244,12 @@ try
         await next();
     });
 
-    // --- SERVIÇO ÚNICO DE ARQUIVOS ESTÁTICOS COM CACHE ---
-   // 1. Redirecionamento HTTPS
-    app.UseHttpsRedirection();
-    app.UseResponseCompression();
-
-    // 2. ARQUIVOS ESTÁTICOS DEVE SER EXECUTADO AQUI (Antes de UseRouting e redirects)
-    app.UseStaticFiles();
-
-    // Garante existência dos diretórios
-    var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
-    if (!Directory.Exists(uploadsPath))
-    {
-        try
-        {
-            Directory.CreateDirectory(uploadsPath);
-            Directory.CreateDirectory(Path.Combine(uploadsPath, "blog"));
-            Directory.CreateDirectory(Path.Combine(uploadsPath, "profiles"));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Aviso: {ex.Message}");
-        }
-    }
-    app.UseCookiePolicy();
-
-    // 3. ROUTING (Apenas após os arquivos estáticos)
-    app.UseRouting();
-
-    // 4. LOCALIZAÇÃO E AUTENTICAÇÃO
+    // Aplicação da Localização
     var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
     app.UseRequestLocalization(localizationOptions);
+
+    // Tratamento de páginas não encontradas (Apenas após ficheiros estáticos e rotas)
+    app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
 
     app.UseAuthentication();
     app.UseAuthorization();

@@ -773,26 +773,25 @@ public async Task<IActionResult> EditTranslation(int id)
             return Content(sb.ToString(), "application/xml");
         }
 
-      private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
+ private async Task<string?> ProcessAndSaveWebP(IFormFile imageFile)
 {
     if (imageFile == null || imageFile.Length == 0) return null;
 
     try
     {
-        // 💡 Usa o diretório externo dinâmico
-        string uploadsFolder = _webHostEnvironment.IsDevelopment()
-            ? Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog")
-            : Path.Combine("/var/masterstack/uploads", "blog");
-
+        string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "blog");
         if (!Directory.Exists(uploadsFolder)) 
         {
             Directory.CreateDirectory(uploadsFolder);
         }
 
-        string fileName = $"{Guid.NewGuid()}.webp";
+        var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension)) extension = ".jpg";
+
+        string fileName = $"{Guid.NewGuid()}{extension}";
         string physicalPath = Path.Combine(uploadsFolder, fileName);
 
-        // Tentativa 1: Otimização SkiaSharp
+        // Otimização via SkiaSharp
         try
         {
             using var inputStream = imageFile.OpenReadStream();
@@ -812,6 +811,9 @@ public async Task<IActionResult> EditTranslation(int id)
                     isResized = true;
                 }
 
+                string webpFileName = $"{Guid.NewGuid()}.webp";
+                string webpPath = Path.Combine(uploadsFolder, webpFileName);
+
                 try
                 {
                     using var image = SKImage.FromBitmap(workingBitmap);
@@ -819,11 +821,13 @@ public async Task<IActionResult> EditTranslation(int id)
 
                     if (data != null)
                     {
-                        using var outputStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None);
-                        data.SaveTo(outputStream);
-                        await outputStream.FlushAsync();
+                        using (var outputStream = new FileStream(webpPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                        {
+                            data.SaveTo(outputStream);
+                            await outputStream.FlushAsync();
+                        }
 
-                        return $"/uploads/blog/{fileName}";
+                        return $"/uploads/blog/{webpFileName}";
                     }
                 }
                 finally
@@ -837,19 +841,14 @@ public async Task<IActionResult> EditTranslation(int id)
             _logger.LogWarning(skiaEx, "SkiaSharp indisponível. Utilizando salvamento direto de imagem.");
         }
 
-        // Fallback Seguro
-        var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
-        if (string.IsNullOrEmpty(extension)) extension = ".jpg";
-
-        string fallbackFileName = $"{Guid.NewGuid()}{extension}";
-        string fallbackPath = Path.Combine(uploadsFolder, fallbackFileName);
-
-        using (var fallbackStream = new FileStream(fallbackPath, FileMode.Create))
+        // Fallback Seguro com Flush
+        using (var fallbackStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
             await imageFile.CopyToAsync(fallbackStream);
+            await fallbackStream.FlushAsync();
         }
 
-        return $"/uploads/blog/{fallbackFileName}";
+        return $"/uploads/blog/{fileName}";
     }
     catch (Exception ex)
     {
