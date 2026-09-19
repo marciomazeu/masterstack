@@ -211,12 +211,15 @@ try
         await next();
     });
 
+    // --- SERVIÇO ÚNICO DE ARQUIVOS ESTÁTICOS COM CACHE ---
+   // 1. Redirecionamento HTTPS
     app.UseHttpsRedirection();
     app.UseResponseCompression();
 
-    // Define o caminho físico do diretório externo
-    // Configuração segura de arquivos estáticos
-    // --- GARANTIA E CRIAÇÃO DAS PASTAS DE UPLOADS DA APLICAÇÃO ---
+    // 2. ARQUIVOS ESTÁTICOS DEVE SER EXECUTADO AQUI (Antes de UseRouting e redirects)
+    app.UseStaticFiles();
+
+    // Garante existência dos diretórios
     var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
     if (!Directory.Exists(uploadsPath))
     {
@@ -228,27 +231,17 @@ try
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "Aviso ao criar diretório de uploads na inicialização.");
+            Console.WriteLine($"Aviso: {ex.Message}");
         }
     }
-
-    // --- SERVIÇO ÚNICO DE ARQUIVOS ESTÁTICOS COM CACHE ---
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        OnPrepareResponse = ctx =>
-        {
-            ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");
-        }
-    });
     app.UseCookiePolicy();
 
+    // 3. ROUTING (Apenas após os arquivos estáticos)
     app.UseRouting();
 
-    // Aplicação da Localização uma única vez
+    // 4. LOCALIZAÇÃO E AUTENTICAÇÃO
     var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
     app.UseRequestLocalization(localizationOptions);
-
-    app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
 
     app.UseAuthentication();
     app.UseAuthorization();

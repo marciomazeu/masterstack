@@ -434,17 +434,21 @@ public async Task<IActionResult> EditTranslation(int id)
     return View(model);
 }
 
-       [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
+      [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
-
             // 1. Busca a tradução
             var translation = await _context.BlogPostTranslations
                 .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
 
             if (translation == null) return NotFound();
+
+            if (!ModelState.IsValid) 
+            {
+                model.CurrentImageUrl = translation.ImageUrl; // 🛡️ Repreenche a URL da imagem para a View não quebrar o preview
+                return View(model);
+            }
 
             // 2. Validação de Slug Único
             var slugExists = await _context.BlogPostTranslations
@@ -452,6 +456,7 @@ public async Task<IActionResult> EditTranslation(int id)
 
             if (slugExists)
             {
+                model.CurrentImageUrl = translation.ImageUrl;
                 ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
                 return View(model);
             }
@@ -472,31 +477,36 @@ public async Task<IActionResult> EditTranslation(int id)
             translation.MetaKeywords = model.MetaKeywords;
             translation.IsPublished = model.IsPublished;
 
-            // 5. Lógica de Imagem (Usando model.ImageFile)
-            if (model.ImageFile != null && model.ImageFile.Length > 0) // 👈 Atualizado para ImageFile
+            // 5. Lógica de Imagem (Aceita tanto ImageFile como NewImage por compatibilidade)
+            var fileToProcess = model.ImageFile ?? model.ImageFile;
+
+            if (fileToProcess != null && fileToProcess.Length > 0)
             {
                 string? oldImageUrl = translation.ImageUrl;
-                string? newWebPPath = await ProcessAndSaveWebP(model.ImageFile); // 👈 Atualizado para ImageFile
+                string? newWebPPath = await ProcessAndSaveWebP(fileToProcess);
 
-                if (newWebPPath != null)
+                if (!string.IsNullOrEmpty(newWebPPath))
                 {
                     translation.ImageUrl = newWebPPath;
+                    ModelState.Remove("ImageFile");
+                    ModelState.Remove("NewImage");
                     
                     // Deleta o arquivo antigo do disco para não acumular lixo
-                    if (!string.IsNullOrEmpty(oldImageUrl))
+                    if (!string.IsNullOrEmpty(oldImageUrl) && !oldImageUrl.Contains("default"))
                     {
                         var relativePath = oldImageUrl.TrimStart('/');
                         var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
                         
                         if (System.IO.File.Exists(fullOldPath)) 
                         {
-                            System.IO.File.Delete(fullOldPath);
+                            try { System.IO.File.Delete(fullOldPath); } catch { }
                         }
                     }
                 }
                 else
                 {
-                    ModelState.AddModelError("ImageFile", "Erro ao processar a imagem."); // 👈 Atualizado a chave do erro
+                    model.CurrentImageUrl = translation.ImageUrl;
+                    ModelState.AddModelError("ImageFile", "Erro ao processar a imagem.");
                     return View(model);
                 }
             }
@@ -510,6 +520,7 @@ public async Task<IActionResult> EditTranslation(int id)
             }
             catch (DbUpdateConcurrencyException)
             {
+                model.CurrentImageUrl = translation.ImageUrl;
                 ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
                 return View(model);
             }
