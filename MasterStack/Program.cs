@@ -218,7 +218,20 @@ try
         Log.Warning(ex, "Aviso ao verificar/criar diretórios de uploads.");
     }
 
-    // 💡 PASSO CRÍTICO 2: FICHEIROS ESTÁTICOS (REGISTO ÚNICO COM CACHE)
+    // 💡 TRATAMENTO DE FICHEIROS RAIZ / SEO (Google Verification, Robots, Sitemap)
+    app.Use(async (context, next) =>
+    {
+        var path = context.Request.Path.Value?.ToLowerInvariant();
+
+        // Se for um ficheiro de verificação do Google na raiz, define o Content-Type correto e serve o ficheiro estático
+        if (!string.IsNullOrEmpty(path) && path.StartsWith("/google") && path.EndsWith(".html"))
+        {
+            context.Response.Headers.Append("Content-Type", "text/html; charset=utf-8");
+        }
+
+        await next();
+    });
+
     app.UseStaticFiles(new StaticFileOptions
     {
         OnPrepareResponse = ctx =>
@@ -229,10 +242,9 @@ try
 
     app.UseCookiePolicy();
 
-    // 💡 PASSO CRÍTICO 3: ROTEAMENTO
     app.UseRouting();
 
-    // Redirecionamento da raiz sem idioma
+    // Redirecionamento da raiz sem idioma (apenas se for exatamente "/" ou vazio)
     app.Use(async (context, next) =>
     {
         var path = context.Request.Path.Value;
