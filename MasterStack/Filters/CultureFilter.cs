@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Globalization;
 
-public class CultureFilter : IActionFilter
+public class CultureFilter : IAsyncActionFilter
 {
-    public void OnActionExecuting(ActionExecutingContext context)
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var httpContext = context.HttpContext;
         string? culture = context.RouteData.Values["culture"]?.ToString();

@@ -104,7 +104,7 @@ try
 
     // --- 4. MVC E RAZOR ---
     builder.Services.AddControllersWithViews(options => {
-        options.Filters.Add(typeof(CultureFilter));
+        options.Filters.AddService<CultureFilter>();
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
