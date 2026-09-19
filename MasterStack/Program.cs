@@ -30,7 +30,7 @@ try
 
     builder.Host.UseSerilog();
 
-    // --- 1. BANCO DE DADOS (CONFIGURAÇÃO ÚNICA E TRATADA) ---
+    // --- 1. BANCO DE DADOS ---
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
     if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
@@ -55,7 +55,7 @@ try
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseNpgsql(connectionString));
 
-    // --- 2. IDENTITY & COOKIES SECURITY CONFIG (COM PRESERVAÇÃO DE CULTURA NO REDIRECT) ---
+    // --- 2. IDENTITY & COOKIES SECURITY CONFIG ---
     builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
         options.SignIn.RequireConfirmedAccount = true;
     })
@@ -72,7 +72,6 @@ try
         options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
         options.SlidingExpiration = true;
 
-        // 🔥 Preserva o prefixo da cultura na URL ao redirecionar para a página de Login
         options.Events.OnRedirectToLogin = context =>
         {
             var culture = context.Request.RouteValues["culture"]?.ToString() ?? "fr-CA";
@@ -202,36 +201,24 @@ try
     app.UseHttpsRedirection();
     app.UseResponseCompression();
 
-    // 💡 PASSO CRÍTICO 1: CRIAÇÃO FÍSICA DOS DIRETÓRIOS ANTES DE REGISTAR OS FICHEIROS ESTÁTICOS
-    var uploadsFolder = Path.Combine(app.Environment.WebRootPath, "uploads");
+    // CRIAÇÃO SEGURA DOS DIRETÓRIOS DE UPLOADS
+    var webRoot = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+    var uploadsFolder = Path.Combine(webRoot, "uploads");
     var blogUploadsFolder = Path.Combine(uploadsFolder, "blog");
     var profileUploadsFolder = Path.Combine(uploadsFolder, "profiles");
 
     try
     {
-        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-        if (!Directory.Exists(blogUploadsFolder)) Directory.CreateDirectory(blogUploadsFolder);
-        if (!Directory.Exists(profileUploadsFolder)) Directory.CreateDirectory(profileUploadsFolder);
+        Directory.CreateDirectory(uploadsFolder);
+        Directory.CreateDirectory(blogUploadsFolder);
+        Directory.CreateDirectory(profileUploadsFolder);
     }
     catch (Exception ex)
     {
         Log.Warning(ex, "Aviso ao verificar/criar diretórios de uploads.");
     }
 
-    // 💡 TRATAMENTO DE FICHEIROS RAIZ / SEO (Google Verification, Robots, Sitemap)
-    app.Use(async (context, next) =>
-    {
-        var path = context.Request.Path.Value?.ToLowerInvariant();
-
-        // Se for um ficheiro de verificação do Google na raiz, define o Content-Type correto e serve o ficheiro estático
-        if (!string.IsNullOrEmpty(path) && path.StartsWith("/google") && path.EndsWith(".html"))
-        {
-            context.Response.Headers.Append("Content-Type", "text/html; charset=utf-8");
-        }
-
-        await next();
-    });
-
+    // ARQUIVOS ESTÁTICOS PADRÃO
     app.UseStaticFiles(new StaticFileOptions
     {
         OnPrepareResponse = ctx =>
@@ -244,7 +231,7 @@ try
 
     app.UseRouting();
 
-    // Redirecionamento da raiz sem idioma (apenas se for exatamente "/" ou vazio)
+    // Redirecionamento da raiz sem idioma
     app.Use(async (context, next) =>
     {
         var path = context.Request.Path.Value;
@@ -260,13 +247,12 @@ try
     var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
     app.UseRequestLocalization(localizationOptions);
 
-    // Tratamento de páginas não encontradas (Apenas após ficheiros estáticos e rotas)
     app.UseStatusCodePagesWithReExecute("/Home/NotFound/{0}");
 
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // Endpoints rápidos para Logout mantendo/restaurando a cultura
+    // Endpoints para Logout
     app.MapGet("/{culture}/Account/Logout", async (string culture, SignInManager<ApplicationUser> signInManager) =>
     {
         await signInManager.SignOutAsync();
@@ -301,7 +287,6 @@ try
             
             await SeedData.SeedLanguagesAndRolesAsync(services);
 
-            // Garantia de Roles Admin e Author
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
