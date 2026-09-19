@@ -113,7 +113,7 @@ try
     builder.Services.AddScoped<CultureFilter>();
 
     builder.Services.AddControllersWithViews(options => {
-        options.Filters.AddService<CultureFilter>();
+        //options.Filters.AddService<CultureFilter>();
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
