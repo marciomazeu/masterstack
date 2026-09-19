@@ -108,12 +108,12 @@ try
         options.RequestCultureProviders.Add(new AcceptLanguageHeaderRequestCultureProvider());
     });
 
-    // --- 4. MVC E RAZOR ---
-    // 💡 PASSO CRÍTICO: Registar o CultureFilter no container de DI para o AddService funcionar
+   // --- 4. MVC E RAZOR ---
+    // 💡 Registra o filtro no DI para que o AddService<CultureFilter>() funcione perfeitamente
     builder.Services.AddScoped<CultureFilter>();
 
     builder.Services.AddControllersWithViews(options => {
-        options.Filters.Add(typeof(CultureFilter));
+        options.Filters.AddService<CultureFilter>();
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
