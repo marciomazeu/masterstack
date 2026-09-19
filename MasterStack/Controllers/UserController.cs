@@ -72,12 +72,13 @@ namespace MasterStack.Controllers
         // ==========================================
         // 1. GET: Exibir Perfil
         // ==========================================
-        [HttpGet("Profile")]
+        [HttpGet("{culture}/Profile")]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> Profile([FromRoute] string culture)
         {
             var userId = _userManager.GetUserId(User);
-            if (userId == null) return RedirectToAction("Login", "Account", new { culture });
+            if (string.IsNullOrEmpty(userId)) 
+                return RedirectToAction("Login", "Account", new { culture });
 
             var user = await _context.Users
                 .Include(u => u.Translations)
@@ -85,42 +86,23 @@ namespace MasterStack.Controllers
 
             if (user == null) return NotFound();
 
-            var isAuthorOrAdmin = await _userManager.IsInRoleAsync(user, "Admin") || 
-                                  await _userManager.IsInRoleAsync(user, "Author");
+            // 1. Verifica permissões de Autor ou Admin
+            bool isAuthorOrAdmin = await _userManager.IsInRoleAsync(user, "Admin") || 
+                                await _userManager.IsInRoleAsync(user, "Author");
 
-            var selectedBio = user.Translations.FirstOrDefault(t => t.Culture == culture)?.Biography 
-                        ?? user.Translations.FirstOrDefault(t => t.Culture == "pt-BR")?.Biography 
-                        ?? "";
-
+            // 2. Prepara ViewBag e Culture
             await PopulateCountriesViewBagAsync(culture);
             ViewData["CurrentCulture"] = culture;
 
-            double? lat = user.Latitude;
-            double? lng = user.Longitude;
-            string countryCode = user.CountryCode ?? "CA";
-
-            var westernCountries = new[] { "CA", "US", "BR", "MX", "AR", "CL", "CO", "PE" };
-
-            if (lng.HasValue && westernCountries.Contains(countryCode.ToUpper()))
-            {
-                if (lng.Value > 0)
-                {
-                    lng = -lng.Value;
-                }
-
-                if (lat.HasValue && lat.Value < 0)
-                {
-                    double temp = lat.Value;
-                    lat = lng;
-                    lng = temp;
-                }
-            }
-
-            return View(new ProfileViewModel 
+            // 3. Monta e retorna a ViewModel
+            var model = new ProfileViewModel 
             { 
                 DisplayName = user.DisplayName, 
-                Bio = selectedBio,
-                CurrentImageUrl = user.ProfileImageUrl,
+                JobTitle = user.JobTitle,
+                Bio = user.Bio,
+                Bio_EN = user.Bio_EN,
+                Bio_FR = user.Bio_FR,
+                AvatarUrl = user.ProfileImageUrl,
                 IsAuthorOrAdmin = isAuthorOrAdmin,
                 IsTwoFactorEnabled = user.TwoFactorEnabled,
 
@@ -134,12 +116,13 @@ namespace MasterStack.Controllers
                 City = user.City,
                 StateOrRegion = user.StateOrRegion,
                 PostalCode = user.PostalCode,
-                CountryCode = countryCode,
-                Latitude = lat,
-                Longitude = lng
-            });
-        }
+                CountryCode = user.CountryCode ?? "CA",
+                Latitude = user.Latitude,
+                Longitude = user.Longitude
+            };
 
+            return View(model);
+        }
         // ==========================================
         // 2. GET: Helper de Cidades via AJAX
         // ==========================================
@@ -220,10 +203,10 @@ namespace MasterStack.Controllers
 
             // 2. Atualização dos Dados Principais e do Autor do Blog
             user.DisplayName = model.DisplayName;
-            user.JobTitle = model.JobTitle; // 👈 Salva o Cargo / Título do Autor
-            user.Bio = model.Bio;           // 👈 Salva a Biografia principal do Autor
-            user.Bio_EN = model.Bio_EN;     // 👈 Salva Biografia em Inglês
-            user.Bio_FR = model.Bio_FR;     // 👈 Salva Biografia em Francês
+            user.JobTitle = model.JobTitle;
+            user.Bio = model.Bio;
+            user.Bio_EN = model.Bio_EN;
+            user.Bio_FR = model.Bio_FR;   // 👈 Salva Biografia em Francês
 
             // 3. Redes Sociais
             user.FacebookUrl = model.FacebookUrl;

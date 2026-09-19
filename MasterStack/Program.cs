@@ -294,9 +294,14 @@ try
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-            if (!await roleManager.RoleExistsAsync("Admin"))
+           if (!await roleManager.RoleExistsAsync("Admin"))
             {
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
+            }
+
+            if (!await roleManager.RoleExistsAsync("Author"))
+            {
+                await roleManager.CreateAsync(new IdentityRole("Author"));
             }
 
             var adminEmail = "marciomazeu@hotmail.com";

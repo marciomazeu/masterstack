@@ -18,15 +18,24 @@
     }
 
     <div class="row g-4">
-        <!-- LADO ESQUERDO: Cartão de Perfil -->
+        <!-- LADO ESQUERDO: Cartão de Perfil com Avatar -->
         <div class="col-md-4">
             <div class="card border-0 shadow-sm text-center p-4 mb-4">
-                <div class="mb-3">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem;">
-                        @(string.IsNullOrEmpty(Model?.DisplayName) ? "U" : Model.DisplayName.Substring(0, 1).ToUpper())
-                    </div>
+                <div class="mb-3 position-relative d-inline-block mx-auto">
+                    @if (!string.IsNullOrEmpty(Model?.AvatarUrl))
+                    {
+                        <img src="@Url.Content(Model.AvatarUrl)" class="rounded-circle object-fit-cover border shadow-sm" style="width: 100px; height: 100px;" alt="Avatar" />
+                    }
+                    else
+                    {
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                            @(string.IsNullOrEmpty(Model?.DisplayName) ? "U" : Model.DisplayName.Substring(0, 1).ToUpper())
+                        </div>
+                    }
                 </div>
+
                 <h5 class="fw-bold mb-1">@(Model?.DisplayName ?? Localizer["Profile_DefaultUser"].Value)</h5>
+                <p class="text-muted small mb-2">@(Model?.JobTitle ?? "Autor MasterStack")</p>
                 
                 @if (Model?.Latitude != null && Model?.Longitude != null)
                 {
@@ -62,24 +71,69 @@
             </div>
         </div>
 
-        <!-- LADO DIREITO: Form de Perfil, Localização e Redes Sociais -->
+        <!-- LADO DIREITO: Form de Perfil, Autor, Localização e Redes Sociais -->
         <div class="col-md-8">
             <div class="card border-0 shadow-sm p-4">
                 <form asp-action="UpdateProfile" asp-controller="User" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="City" id="FinalCityInput" />
 
-                    <!-- SEÇÃO 1: INFORMAÇÕES BÁSICAS -->
+                    <!-- SEÇÃO 1: INFORMAÇÕES BÁSICAS E FOTO -->
                     <h5 class="fw-bold mb-3"><i class="fas fa-user text-primary me-2"></i>@Localizer["Profile_PersonalInfoSection"]</h5>
-                    <div class="mb-3">
-                        <label asp-for="DisplayName" class="form-label fw-bold">@Localizer["Profile_DisplayNameLabel"]</label>
-                        <input asp-for="DisplayName" class="form-control" placeholder="@Localizer["Profile_DisplayNamePlaceholder"]" />
-                        <span asp-validation-for="DisplayName" class="text-danger small"></span>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="DisplayName" class="form-label fw-bold">@Localizer["Profile_DisplayNameLabel"]</label>
+                            <input asp-for="DisplayName" class="form-control" placeholder="@Localizer["Profile_DisplayNamePlaceholder"]" />
+                            <span asp-validation-for="DisplayName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="AvatarFile" class="form-label fw-bold"><i class="fas fa-camera me-1 text-muted"></i> Foto de Perfil</label>
+                            <input asp-for="AvatarFile" type="file" class="form-control" accept="image/*" />
+                            <span asp-validation-for="AvatarFile" class="text-danger small"></span>
+                        </div>
                     </div>
 
                     <hr class="my-4">
 
-                    <!-- SEÇÃO 2: LOCALIZAÇÃO -->
+                   @* Exibe a Seção de Autor apenas se o usuário for Admin ou Author *@
+                    @if (User.IsInRole("Admin") || User.IsInRole("Author"))
+                    {
+                        <hr class="my-4">
+
+                        <!-- SEÇÃO 2: DADOS DO AUTOR (BLOG) -->
+                        <h5 class="fw-bold mb-3"><i class="fas fa-pen-nib text-primary me-2"></i>Perfil de Autor</h5>
+                        
+                        <div class="mb-3">
+                            <label asp-for="JobTitle" class="form-label fw-bold">Cargo / Título Profissional</label>
+                            <input asp-for="JobTitle" class="form-control" placeholder="Ex: Senior Software Engineer & Technical Writer" />
+                            <span asp-validation-for="JobTitle" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Bio" class="form-label fw-bold">Biografia (Português)</label>
+                            <textarea asp-for="Bio" class="form-control" rows="3" placeholder="Escreva um breve resumo sobre você para os leitores do blog..."></textarea>
+                            <span asp-validation-for="Bio" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Bio_EN" class="form-label fw-bold">Biografia (Inglês)</label>
+                                <textarea asp-for="Bio_EN" class="form-control" rows="3" placeholder="Author Bio in English..."></textarea>
+                                <span asp-validation-for="Bio_EN" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Bio_FR" class="form-label fw-bold">Biografia (Francês)</label>
+                                <textarea asp-for="Bio_FR" class="form-control" rows="3" placeholder="Biographie de l'auteur en français..."></textarea>
+                                <span asp-validation-for="Bio_FR" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    }
+
+                    <hr class="my-4">
+
+                    <!-- SEÇÃO 3: LOCALIZAÇÃO -->
                     <h5 class="fw-bold mb-3"><i class="fas fa-map-marker-alt text-primary me-2"></i>@Localizer["Profile_LocationSection"]</h5>
                     <p class="text-muted small mb-3">@Localizer["Profile_LocationDescription"]</p>
 
@@ -128,7 +182,7 @@
 
                     <hr class="my-4">
 
-                    <!-- SEÇÃO 3: REDES SOCIAIS -->
+                    <!-- SEÇÃO 4: REDES SOCIAIS -->
                     <h5 class="fw-bold mb-3"><i class="fas fa-share-alt text-primary me-2"></i>@Localizer["Profile_SocialSection"]</h5>
                     
                     <div class="row g-3 mb-4">
