@@ -110,10 +110,8 @@ try
 
    // --- 4. MVC E RAZOR ---
     // 💡 Registra o filtro no DI para que o AddService<CultureFilter>() funcione perfeitamente
-    builder.Services.AddScoped<CultureFilter>();
-
     builder.Services.AddControllersWithViews(options => {
-        options.Filters.Add(typeof(CultureFilter));
+        options.Filters.Add<CultureFilter>();
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
