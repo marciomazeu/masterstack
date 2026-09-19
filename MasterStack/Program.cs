@@ -279,9 +279,8 @@ try
     app.MapRazorPages();
 
     // --- 8. SEED DATA & MIGRATIONS ---
-    if (!EF.IsDesignTime)
+    using (var scope = app.Services.CreateScope())
     {
-        using var scope = app.Services.CreateScope();
         var services = scope.ServiceProvider;
         try
         {
@@ -290,11 +289,11 @@ try
             
             await SeedData.SeedLanguagesAndRolesAsync(services);
 
-            // Garantia de Role Admin
+            // Garantia de Roles Admin e Author
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-           if (!await roleManager.RoleExistsAsync("Admin"))
+            if (!await roleManager.RoleExistsAsync("Admin"))
             {
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
@@ -318,6 +317,7 @@ try
         }
     }
 
+    Log.Information("Iniciando escuta de requisições via app.Run()...");
     app.Run();
 }
 catch (Microsoft.Extensions.Hosting.HostAbortedException)
