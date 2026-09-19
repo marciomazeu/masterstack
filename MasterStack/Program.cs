@@ -28,6 +28,12 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    // Força o Kestrel a escutar nas portas exigidas pelos containers Linux / DigitalOcean
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(8080); // Porta de produção usada pela DigitalOcean
+    });
+
     builder.Host.UseSerilog();
 
     // --- 1. BANCO DE DADOS ---
