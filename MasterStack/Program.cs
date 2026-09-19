@@ -276,12 +276,18 @@ try
 
     app.MapRazorPages();
 
-    // --- 8. SEED DATA & MIGRATIONS ---
-    using (var scope = app.Services.CreateScope())
+    // --- 8. SEED DATA & MIGRATIONS (EXECUTADO EM BACKGROUND SEM BLOQUEAR A PORTA HTTP) ---
+    _ = Task.Run(async () =>
     {
+        // Aguarda 2 segundos para garantir que a porta HTTP já respondeu ao Health Check da DigitalOcean
+        await Task.Delay(2000);
+
+        using var scope = app.Services.CreateScope();
         var services = scope.ServiceProvider;
         try
         {
+            Log.Information("Iniciando migrações e Seed Data em background...");
+            
             var db = services.GetRequiredService<ApplicationDbContext>();
             await db.Database.MigrateAsync(); 
             
@@ -307,12 +313,14 @@ try
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
             }
+
+            Log.Information("Migrações e Seed Data concluídos com sucesso.");
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Erro no Seed/Migração durante a inicialização.");
+            Log.Error(ex, "Erro ao executar Migrações/Seed em background.");
         }
-    }
+    });
 
     Log.Information("Iniciando escuta de requisições via app.Run()...");
     app.Run();
