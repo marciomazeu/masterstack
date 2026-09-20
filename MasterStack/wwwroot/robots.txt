@@ -1,1 +1,11 @@
-Sitemap: https://masterstack.com/sitemap.xml
+User-agent: *
+Allow: /
+
+# Bloqueia páginas administrativas e de autenticação da indexação
+Disallow: /Account/
+Disallow: /*/Account/
+Disallow: /Admin/
+Disallow: /*/Admin/
+
+# Aponta a localização do Sitemap
+Sitemap: https://masterstackjobs.com/sitemap.xml
