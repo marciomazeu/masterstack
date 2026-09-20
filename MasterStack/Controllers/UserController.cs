@@ -160,44 +160,47 @@ namespace MasterStack.Controllers
                 await PopulateCountriesViewBagAsync(culture);
                 ViewData["CurrentCulture"] = culture;
                 
-                return View("Index", model); // 👈 Retorna a View "Index" caso seu arquivo seja Index.cshtml (ou "Profile" se for Profile.cshtml)
+                return View("Index", model);
             }
 
             string? oldImagePath = null;
 
             // 1. Processamento da Foto de Perfil / Avatar
-            // Suporta tanto model.AvatarFile quanto model.NewImage por compatibilidade
             var fileToUpload = model.AvatarFile ?? model.NewImage;
 
             if (fileToUpload != null && fileToUpload.Length > 0)
             {
-                var uploadFolder = _webHostEnvironment.IsDevelopment()
-                    ? Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profiles")
-                    : Path.Combine("/var/masterstack/uploads", "profiles");
-                if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+                // 💡 Garante o uso seguro do wwwroot do container em Produção e Desenvolvimento
+                var webRoot = _webHostEnvironment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                var uploadFolder = Path.Combine(webRoot, "uploads", "profiles");
 
-                // Opcional: Processa WebP via SkiaSharp ou faz o salvamento direto seguro
-                var fileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(fileToUpload.FileName)}";
-                var filePath = Path.Combine(uploadFolder, fileName);
-
-                // Tenta processar WebP se a função estiver disponível, caso contrário faz o CopyToAsync
                 try
                 {
+                    if (!Directory.Exists(uploadFolder)) 
+                    {
+                        Directory.CreateDirectory(uploadFolder);
+                    }
+
+                    var fileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(fileToUpload.FileName)}";
+                    var filePath = Path.Combine(uploadFolder, fileName);
+
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await fileToUpload.CopyToAsync(stream);
                     }
 
+                    // Guarda o caminho completo do ficheiro antigo para eliminar se necessário
                     if (!string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.Contains("default"))
                     {
-                        oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, user.ProfileImageUrl.TrimStart('/'));
+                        oldImagePath = Path.Combine(webRoot, user.ProfileImageUrl.TrimStart('/'));
                     }
 
                     user.ProfileImageUrl = "/uploads/profiles/" + fileName;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao salvar foto de perfil.");
+                    _logger.LogError(ex, "Erro ao salvar foto de perfil para o utilizador {UserId}", user.Id);
+                    ModelState.AddModelError(string.Empty, "Erro ao processar o upload da imagem de perfil.");
                 }
             }
 
@@ -206,7 +209,7 @@ namespace MasterStack.Controllers
             user.JobTitle = model.JobTitle;
             user.Bio = model.Bio;
             user.Bio_EN = model.Bio_EN;
-            user.Bio_FR = model.Bio_FR;   // 👈 Salva Biografia em Francês
+            user.Bio_FR = model.Bio_FR;
 
             // 3. Redes Sociais
             user.FacebookUrl = model.FacebookUrl;
@@ -227,40 +230,47 @@ namespace MasterStack.Controllers
             // 5. Geocoding
             if (!string.IsNullOrEmpty(model.CountryCode) && (!string.IsNullOrEmpty(model.PostalCode) || !string.IsNullOrEmpty(model.City)))
             {
-                var (val1, val2) = await _geocodingService.GetCoordinatesAsync(
-                    model.StreetAddress ?? "", 
-                    model.City ?? "", 
-                    model.CountryCode, 
-                    model.PostalCode ?? ""
-                );
-
-                if (val1.HasValue && val2.HasValue)
+                try
                 {
-                    double lat = val1.Value;
-                    double lon = val2.Value;
+                    var (val1, val2) = await _geocodingService.GetCoordinatesAsync(
+                        model.StreetAddress ?? "", 
+                        model.City ?? "", 
+                        model.CountryCode, 
+                        model.PostalCode ?? ""
+                    );
 
-                    if (Math.Abs(lat) > 90)
+                    if (val1.HasValue && val2.HasValue)
                     {
-                        double temp = lat;
-                        lat = lon;
-                        lon = temp;
-                    }
+                        double lat = val1.Value;
+                        double lon = val2.Value;
 
-                    string country = model.CountryCode.ToUpper();
+                        if (Math.Abs(lat) > 90)
+                        {
+                            double temp = lat;
+                            lat = lon;
+                            lon = temp;
+                        }
 
-                    if (country == "CA" || country == "US")
-                    {
-                        lat = Math.Abs(lat);     
-                        lon = -Math.Abs(lon);    
-                    }
-                    else if (country == "BR")
-                    {
-                        lat = -Math.Abs(lat);    
-                        lon = -Math.Abs(lon);    
-                    }
+                        string country = model.CountryCode.ToUpper();
 
-                    user.Latitude = lat;
-                    user.Longitude = lon;
+                        if (country == "CA" || country == "US")
+                        {
+                            lat = Math.Abs(lat);     
+                            lon = -Math.Abs(lon);    
+                        }
+                        else if (country == "BR")
+                        {
+                            lat = -Math.Abs(lat);    
+                            lon = -Math.Abs(lon);    
+                        }
+
+                        user.Latitude = lat;
+                        user.Longitude = lon;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Falha ao obter coordenadas do Geocoding service.");
                 }
             }
 
