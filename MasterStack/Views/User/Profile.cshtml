@@ -74,7 +74,11 @@
         <!-- LADO DIREITO: Form de Perfil, Autor, Localização e Redes Sociais -->
         <div class="col-md-8">
             <div class="card border-0 shadow-sm p-4">
-                <form asp-action="UpdateProfile" asp-controller="User" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data">
+                <form asp-controller="User" 
+      asp-action="UpdateProfile" 
+      asp-route-culture="@(ViewData["CurrentCulture"] ?? "fr-CA")" 
+      method="post" 
+      enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="City" id="FinalCityInput" />
 

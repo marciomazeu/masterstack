@@ -144,7 +144,7 @@ namespace MasterStack.Controllers
         // ==========================================
         // 3. POST: Atualizar Perfil & Localização
         // ==========================================
-        [HttpPost("UpdateProfile")]
+        [HttpPost("{culture}/User/UpdateProfile")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> UpdateProfile([FromRoute] string culture, ProfileViewModel model)
