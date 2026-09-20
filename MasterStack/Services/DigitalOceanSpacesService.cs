@@ -20,11 +20,17 @@ namespace MasterStack.Services
 
             var accessKey = _configuration["DigitalOceanSpaces:AccessKey"];
             var secretKey = _configuration["DigitalOceanSpaces:SecretKey"];
-            var serviceUrl = _configuration["DigitalOceanSpaces:ServiceUrl"];
-            var bucketName = _configuration["DigitalOceanSpaces:BucketName"];
+            var serviceUrl = _configuration["DigitalOceanSpaces:ServiceUrl"]; // ex: https://tor1.digitaloceanspaces.com
+            var bucketName = _configuration["DigitalOceanSpaces:BucketName"]; // ex: masterstackjobs-images
             var cdnUrl = _configuration["DigitalOceanSpaces:CdnUrl"];
 
-            var s3Config = new AmazonS3Config { ServiceURL = serviceUrl };
+            // 💡 Configuração crítica para compatibilidade S3 com DigitalOcean Spaces
+            var s3Config = new AmazonS3Config
+            {
+                ServiceURL = serviceUrl,
+                ForcePathStyle = true // Obriga o SDK a formatar a URL corretamente para o Spaces
+            };
+
             using var client = new AmazonS3Client(accessKey, secretKey, s3Config);
 
             var fileName = $"{folderName}/{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
@@ -36,7 +42,7 @@ namespace MasterStack.Services
                 Key = fileName,
                 InputStream = stream,
                 ContentType = file.ContentType,
-                CannedACL = S3CannedACL.PublicRead
+                DisablePayloadSigning = true // Evita falhas de assinatura em uploads mutipart/stream
             };
 
             var response = await client.PutObjectAsync(request);
@@ -48,7 +54,7 @@ namespace MasterStack.Services
                     : $"{cdnUrl.TrimEnd('/')}/{fileName}";
             }
 
-            _logger.LogError("Falha ao enviar arquivo para o DigitalOcean Spaces.");
+            _logger.LogError("Falha ao enviar arquivo para o DigitalOcean Spaces. HttpStatusCode: {StatusCode}", response.HttpStatusCode);
             throw new Exception("Erro ao salvar o arquivo no armazenamento em nuvem.");
         }
 
@@ -66,7 +72,12 @@ namespace MasterStack.Services
                 var uri = new Uri(fileUrl);
                 var key = uri.AbsolutePath.TrimStart('/');
 
-                var s3Config = new AmazonS3Config { ServiceURL = serviceUrl };
+                var s3Config = new AmazonS3Config 
+                { 
+                    ServiceURL = serviceUrl,
+                    ForcePathStyle = true 
+                };
+                
                 using var client = new AmazonS3Client(accessKey, secretKey, s3Config);
 
                 await client.DeleteObjectAsync(new DeleteObjectRequest
