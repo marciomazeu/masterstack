@@ -1,18 +1,33 @@
-/* --- 1. CONFIGURA��ES GLOBAIS E RESET --- */
+/* --- 1. CONFIGURAÇÕES GLOBAIS E RESET --- */
 html {
-    scroll-padding-top: 75px; /* Ajuste para sua Navbar fixa */
+    scroll-padding-top: 75px; /* Ajuste para Navbar fixa */
     position: relative;
     min-height: 100%;
+}
+
+html, body {
+    overflow-x: hidden;
+    width: 100%;
 }
 
 body {
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
     color: #212529; /* Melhor contraste global */
 }
 
-/* --- 2. NAVEGA��O --- */
+/* --- 2. NAVEGAÇÃO E NAVBAR --- */
+.navbar {
+    height: auto !important;
+    min-height: 56px;
+    overflow: visible !important;
+}
+
+.navbar .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
 .navbar-brand {
     letter-spacing: 1px;
     font-size: 1.5rem;
@@ -23,38 +38,84 @@ body {
     transition: color 0.2s ease;
 }
 
-    .nav-link:hover {
-        color: #4dabff !important; /* Azul de alto contraste */
-    }
+.nav-link:hover {
+    color: #4dabff !important;
+}
 
-/* Dropdown de idiomas */
+.nav-item.dropdown {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-collapse {
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+.navbar form {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.navbar .input-group {
+    max-width: 150px;
+}
+
 #langDrop {
     border-radius: 20px;
     padding: 5px 15px;
     transition: all 0.3s ease;
 }
 
-    #langDrop:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-    }
+#langDrop:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
 
-/* --- 3. COMPONENTES E ANIMA��ES --- */
+/* Ajustes de busca na Navbar */
+.input-group input[name="searchTerm"] {
+    transition: all 0.3s ease;
+}
+
+.input-group input[name="searchTerm"]:focus {
+    max-width: 250px !important;
+    background-color: #fff !important;
+    color: #000 !important;
+    border-color: #4dabff !important;
+}
+
+/* Media Queries para Navbar Responsiva */
+@media (max-width: 1200px) {
+    .navbar-nav .nav-link {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .input-group input[name="searchTerm"] {
+        max-width: 100% !important;
+    }
+}
+
+/* --- 3. COMPONENTES E ANIMAÇÕES --- */
 .transition-hover {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-    .transition-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
-    }
+.transition-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+}
 
 img.shadow-lg {
     transition: transform 0.3s ease;
 }
 
-    img.shadow-lg:hover {
-        transform: scale(1.02);
-    }
+img.shadow-lg:hover {
+    transform: scale(1.02);
+}
 
 .object-fit-cover {
     object-fit: cover;
@@ -62,10 +123,10 @@ img.shadow-lg {
 
 /* Foco para Acessibilidade */
 .btn:focus, .form-control:focus {
-    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow: 0 0 0 0.1rem #ffffff, 0 0 0 0.25rem #258cfb;
 }
 
-/* --- 4. SE��O FEATURES (HOME) --- */
+/* --- 4. SEÇÃO FEATURES (HOME) --- */
 #features .card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     border-radius: 1rem;
@@ -73,10 +134,10 @@ img.shadow-lg {
     border: none;
 }
 
-    #features .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
-    }
+#features .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+}
 
 .feature {
     height: 4rem;
@@ -87,16 +148,18 @@ img.shadow-lg {
     flex-shrink: 0;
     margin: 0 auto;
 }
+
 .hover-shadow {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 .hover-shadow:hover {
     transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1) !important;
 }
 
-/* --- 5. BLOG (LISTA E DETALHES) --- */
-/* Limita texto a 3 linhas e limpa lixo do editor HTML */
+/* --- 5. BLOG (LISTAS E CORPO DO ARTIGO) --- */
+/* Resumo na lista de posts */
 .post-excerpt, .card-text-custom, .line-clamp {
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -106,28 +169,36 @@ img.shadow-lg {
     line-height: 1.5;
 }
 
-    .post-excerpt * {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: inherit !important;
-        font-weight: normal !important;
-    }
-
-    .post-excerpt img {
-        display: none; /* N�o mostra imagens do editor no card da lista */
-    }
-
-.post-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
+.post-excerpt * {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+    font-weight: normal !important;
 }
-.blog-content img {
+
+.post-excerpt img {
+    display: none; /* Oculta imagens dentro do resumo nos cards */
+}
+
+/* 📱 CORREÇÃO RESPONSIVA DAS IMAGENS DOS ARTIGOS (MOBILE/DESKTOP) */
+.post-content img, .blog-content img {
     max-width: 100% !important;
     height: auto !important;
     display: block;
     margin: 1.5rem auto;
     border-radius: 8px;
+    object-fit: cover;
+}
+
+.post-content {
+    line-height: 1.8;
+    color: #2d3436;
+    font-size: 1.15rem;
+    word-wrap: break-word; /* Evita que links longos quebrem a tela no mobile */
+}
+
+.post-content p {
+    margin-bottom: 1.5rem;
 }
 
 /* --- 6. FOOTER (ACESSIBILIDADE 100%) --- */
@@ -139,22 +210,42 @@ footer p, footer a {
     color: #e0e0e0 !important;
 }
 
-    footer a:hover {
-        color: #ffffff !important;
-        text-decoration: underline;
-    }
+footer a:hover {
+    color: #ffffff !important;
+    text-decoration: underline;
+}
 
-/* --- 7. UTILIT�RIOS --- */
+/* --- 7. UTILITÁRIOS E GRID --- */
 .bg-light {
     background-color: #f8f9fa !important;
 }
 
 .table-responsive {
-    overflow: visible !important; /* Permite dropdowns dentro de tabelas */
+    overflow: visible !important;
 }
-/* Customiza��o da Pagina��o */
+
+.content-area {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: left;
+}
+
+#postTitleToDelete {
+    word-wrap: break-word;
+    max-height: 100px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Estilos de Paginação */
 .pagination .page-link {
-    color: #4dabff; /* Aquele azul de alto contraste que definimos */
+    color: #4dabff;
     border-radius: 5px;
     margin: 0 3px;
 }
@@ -162,7 +253,7 @@ footer p, footer a {
 .pagination .page-item.active .page-link {
     background-color: #0d6efd;
     border-color: #0d6efd;
-    color: white !important;
+    color: #ffffff !important;
 }
 
 .pagination .page-item.disabled .page-link {
@@ -170,101 +261,7 @@ footer p, footer a {
     color: #6c757d;
 }
 
-/* Estilo para a busca na Navbar */
-.input-group input[name="searchTerm"] {
-    transition: all 0.3s ease;
-}
-
-    /* Efeito de expans�o ao focar (opcional, d� um toque premium) */
-    .input-group input[name="searchTerm"]:focus {
-        max-width: 250px !important;
-        background-color: #fff !important;
-        color: #000 !important;
-        border-color: #4dabff !important;
-    }
-
-/* Ajuste para mobile: na navbar colapsada, a busca ocupa 100% */
-@media (max-width: 991.98px) {
-    .input-group input[name="searchTerm"] {
-        max-width: 100% !important;
-    }
-}
-#postTitleToDelete {
-    word-wrap: break-word;
-    max-height: 100px;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Limita a 2 linhas e coloca retic�ncias */
-    -webkit-box-orient: vertical;
-}
-
-/* 1. Mata o scroll horizontal no site todo */
-html, body {
-    overflow-x: hidden;
-    width: 100%;
-}
-
-/* 2. Ajusta o dropdown de idiomas para não ocupar espaço extra */
-.nav-item.dropdown {
-    display: flex;
-    align-items: center;
-}
-
-/* 3. Reduz o espaçamento entre itens do menu APENAS em telas menores */
-@media (max-width: 1200px) {
-    .navbar-nav .nav-link {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-        font-size: 0.9rem; /* Diminui a fonte levemente antes de virar o menu hambúrguer */
-    }
-}
-
-/* 4. Força a barra de busca a encolher se o espaço acabar */
-.navbar .input-group {
-    max-width: 150px;
-}
-.navbar-collapse {
-    overflow: visible; /* Garante que o dropdown de idioma não seja cortado */
-}
-
-/* Evita que o botão de login fique muito colado na borda da tela */
-.navbar .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-
-/* 1. Remove qualquer scroll acidental na Navbar */
-.navbar {
-    height: auto !important;      /* Garante que a altura cresça com o conteúdo */
-    min-height: 56px;             /* Altura padrão do Bootstrap */
-    overflow: visible !important; /* Permite que os dropdowns flutuem sem criar scroll */
-}
-
-/* 2. Garante que o menu colapsável não tenha altura fixa */
-.navbar-collapse {
-    max-height: none !important;
-    overflow: visible !important;
-}
-
-/* 3. Ajuste para o formulário de busca não empurrar a altura */
-.navbar form {
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
-
-.content-area {
-  max-width: 900px; /* Largura ideal para leitura */
-    margin: 0 auto;
-    padding: 2rem;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Um leve destaque do fundo */
-    text-align: left;
-}
-
-
-/* Estilo do Rótulo Flutuante no Mapa */
+/* Mapa e Empresas */
 .company-map-label {
     background-color: #0d6efd;
     color: #ffffff;
@@ -273,11 +270,11 @@ html, body {
     font-size: 11px;
     font-weight: 600;
     padding: 2px 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .company-map-label::before {
-    border-top-color: #0d6efd !important; /* Seta apontando para o pino */
+    border-top-color: #0d6efd !important;
 }
 
 .empresas-grid {
@@ -297,7 +294,7 @@ html, body {
 
 .empresa-card h3 {
     margin-top: 0;
-    color: #333;
+    color: #333333;
     font-size: 1.1rem;
 }
 
@@ -306,7 +303,7 @@ html, body {
     margin-top: 10px;
     padding: 6px 12px;
     background-color: #007bff;
-    color: white;
+    color: #ffffff;
     text-decoration: none;
     border-radius: 4px;
     font-size: 0.85rem;
