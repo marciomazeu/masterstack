@@ -1,6 +1,7 @@
 ﻿using Ganss.Xss;
 using MasterStack.Data; // Ajuste para o seu namespace de dados
 using MasterStack.Models;
+using MasterStack.Services;
 using MasterStack.ViewModels;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -22,6 +23,7 @@ namespace MasterStack.Controllers
         private readonly IStringLocalizer<BlogPostsController> _localizer; // Adicione esta linha
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<BlogPostsController> _logger;
+        private readonly ICloudStorageService _cloudStorageService;
         
 
         public BlogPostsController(
@@ -29,12 +31,14 @@ namespace MasterStack.Controllers
             IWebHostEnvironment webHostEnvironment, 
             IStringLocalizer<BlogPostsController> localizer, 
             UserManager<ApplicationUser> userManager, 
+            ICloudStorageService cloudStorageService,
             ILogger<BlogPostsController> logger)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _localizer = localizer; // Atribua ao campo privado
             _userManager = userManager;
+            _cloudStorageService = cloudStorageService;
             _logger = logger;            
         }
 
@@ -434,97 +438,103 @@ public async Task<IActionResult> EditTranslation(int id)
     return View(model);
 }
 
-      [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
+     [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
+{
+    // 1. Busca a tradução
+    var translation = await _context.BlogPostTranslations
+        .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
+
+    if (translation == null) return NotFound();
+
+    if (!ModelState.IsValid) 
+    {
+        model.CurrentImageUrl = translation.ImageUrl; // Repreenche a URL para a View
+        return View(model);
+    }
+
+    // 2. Validação de Slug Único
+    var slugExists = await _context.BlogPostTranslations
+        .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
+
+    if (slugExists)
+    {
+        model.CurrentImageUrl = translation.ImageUrl;
+        ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
+        return View(model);
+    }
+
+    // 3. Sanitização de HTML e Meta Description
+    var sanitizer = new Ganss.Xss.HtmlSanitizer();
+    translation.Content = sanitizer.Sanitize(model.Content);
+
+    if (!string.IsNullOrEmpty(model.MetaDescription))
+    {
+        translation.MetaDescription = System.Text.RegularExpressions.Regex
+            .Replace(model.MetaDescription, "<.*?>", string.Empty);
+    }
+
+    // 4. Atualiza os campos de texto
+    translation.Title = model.Title;
+    translation.Slug = model.Slug?.Trim().ToLower(); 
+    translation.MetaKeywords = model.MetaKeywords;
+    translation.IsPublished = model.IsPublished;
+
+    // 5. Lógica de Imagem enviada para o DigitalOcean Spaces
+    var fileToProcess = model.ImageFile ?? model.ImageFile;
+
+    if (fileToProcess != null && fileToProcess.Length > 0)
+    {
+        string? oldImageUrl = translation.ImageUrl;
+
+        try
         {
-            // 1. Busca a tradução
-            var translation = await _context.BlogPostTranslations
-                .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
+            // Upload direto para a pasta "blog" no DigitalOcean Spaces (S3)
+            var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
 
-            if (translation == null) return NotFound();
-
-            if (!ModelState.IsValid) 
+            if (!string.IsNullOrEmpty(uploadedUrl))
             {
-                model.CurrentImageUrl = translation.ImageUrl; // 🛡️ Repreenche a URL da imagem para a View não quebrar o preview
-                return View(model);
-            }
+                translation.ImageUrl = uploadedUrl;
+                ModelState.Remove("ImageFile");
+                ModelState.Remove("NewImage");
 
-            // 2. Validação de Slug Único
-            var slugExists = await _context.BlogPostTranslations
-                .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
-
-            if (slugExists)
-            {
-                model.CurrentImageUrl = translation.ImageUrl;
-                ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
-                return View(model);
-            }
-
-            // 3. Sanitização de HTML e Meta Description
-            var sanitizer = new Ganss.Xss.HtmlSanitizer();
-            translation.Content = sanitizer.Sanitize(model.Content);
-
-            if (!string.IsNullOrEmpty(model.MetaDescription))
-            {
-                translation.MetaDescription = System.Text.RegularExpressions.Regex
-                    .Replace(model.MetaDescription, "<.*?>", string.Empty);
-            }
-
-            // 4. Atualiza os campos de texto
-            translation.Title = model.Title;
-            translation.Slug = model.Slug?.Trim().ToLower(); 
-            translation.MetaKeywords = model.MetaKeywords;
-            translation.IsPublished = model.IsPublished;
-
-            // 5. Lógica de Imagem (Aceita tanto ImageFile como NewImage por compatibilidade)
-            var fileToProcess = model.ImageFile ?? model.ImageFile;
-
-            if (fileToProcess != null && fileToProcess.Length > 0)
-            {
-                string? oldImageUrl = translation.ImageUrl;
-                string? newWebPPath = await ProcessAndSaveWebP(fileToProcess);
-
-                if (!string.IsNullOrEmpty(newWebPPath))
+                // Elimina a imagem antiga do Spaces se for uma URL guardada no CDN
+                if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.Contains("digitaloceanspaces.com"))
                 {
-                    translation.ImageUrl = newWebPPath;
-                    ModelState.Remove("ImageFile");
-                    ModelState.Remove("NewImage");
-                    
-                    // Deleta o arquivo antigo do disco para não acumular lixo
-                    if (!string.IsNullOrEmpty(oldImageUrl) && !oldImageUrl.Contains("default"))
-                    {
-                        var relativePath = oldImageUrl.TrimStart('/');
-                        var fullOldPath = Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
-                        
-                        if (System.IO.File.Exists(fullOldPath)) 
-                        {
-                            try { System.IO.File.Delete(fullOldPath); } catch { }
-                        }
-                    }
-                }
-                else
-                {
-                    model.CurrentImageUrl = translation.ImageUrl;
-                    ModelState.AddModelError("ImageFile", "Erro ao processar a imagem.");
-                    return View(model);
+                    _ = _cloudStorageService.DeleteFileAsync(oldImageUrl);
                 }
             }
-
-            // 6. Persistência no PostgreSQL
-            try
-            {
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Tradução atualizada com sucesso!";
-                return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
-            }
-            catch (DbUpdateConcurrencyException)
+            else
             {
                 model.CurrentImageUrl = translation.ImageUrl;
-                ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
+                ModelState.AddModelError("ImageFile", "Erro ao processar o upload da imagem na nuvem.");
                 return View(model);
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao enviar a imagem da tradução {TranslationId} para o DigitalOcean Spaces.", translation.Id);
+            model.CurrentImageUrl = translation.ImageUrl;
+            ModelState.AddModelError("ImageFile", "Falha na comunicação com o servidor de armazenamento em nuvem.");
+            return View(model);
+        }
+    }
+
+    // 6. Persistência no PostgreSQL
+    try
+    {
+        await _context.SaveChangesAsync();
+        TempData["Success"] = "Tradução atualizada com sucesso!";
+        return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        model.CurrentImageUrl = translation.ImageUrl;
+        ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
+        return View(model);
+    }
+}
         // GET: BlogPosts/Delete/5
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -875,8 +885,5 @@ public async Task<IActionResult> UploadEditorImage(IFormFile image)
     return BadRequest("Falha ao processar imagem.");
 }
     }
-
-    
-
 
     }
