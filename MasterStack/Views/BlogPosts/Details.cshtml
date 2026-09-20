@@ -12,25 +12,20 @@
     var t = ViewBag.CurrentTranslation as BlogPostTranslation;
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     bool isFallback = ViewBag.TranslationWarning ?? false;
-    var imageFileName = "/uploads/default-post.jpg";
     
+    // 💡 Definição segura da URL da imagem do post
+    var imageFileName = "/images/default-post.jpg";
+
+    if (t != null && !string.IsNullOrWhiteSpace(t.ImageUrl))
+    {
+        imageFileName = t.ImageUrl.StartsWith("/") ? t.ImageUrl : "/" + t.ImageUrl;
+    }
+
     string parsedContent = string.Empty;
     if (t != null)
     {
-        parsedContent = await AffiliateRenderService.ParseAffiliateShortcodesAsync(t.Content, currentCulture);
-
+        parsedContent = await AffiliateRenderService.ParseAffiliateShortcodesAsync(t.Content ?? string.Empty, currentCulture);
         ViewData["Title"] = t.Title;
-
-        if (!string.IsNullOrEmpty(t.ImageUrl))
-        {
-            var relativePath = t.ImageUrl.TrimStart('~').TrimStart('/');
-            var physicalPath = System.IO.Path.Combine(_webHostEnvironment.WebRootPath, relativePath);
-
-            if (System.IO.File.Exists(physicalPath))
-            {
-                imageFileName = t.ImageUrl;
-            }
-        }
 
         ViewBag.FinalImagePath = imageFileName;
         ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
@@ -40,7 +35,7 @@
         ViewData["MetaDescription"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
     }
 
-    // 🌐 Lógica Global de Seleção da Biografia do Autor Dinâmica
+    // 🌐 Localização das variáveis do Autor
     string authorBio = string.Empty;
     if (Model.Author != null)
     {
@@ -52,7 +47,6 @@
         } ?? string.Empty;
     }
 
-    // Rótulo localizado para o cabeçalho do autor
     string writtenByLabel = currentCulture switch
     {
         "en-US" => "Written by",
@@ -114,9 +108,13 @@
             <i class="far fa-clock me-2"></i> @SharedLocalizer["ReadingTime", "5 min"]
         </div>
 
-        <div class="mb-5">
-            <img src="@Url.Content(t.ImageUrl ?? "/uploads/default-post.jpg")" class="img-fluid rounded-4 shadow-sm w-100" 
-                 style="max-height: 500px; object-fit: cover;" fetchpriority="high" alt="@t.Title" />
+        <div class="mb-5 text-center">
+            <img src="@imageFileName" 
+                class="img-fluid rounded-4 shadow-sm w-100" 
+                style="max-height: 500px; object-fit: cover;" 
+                fetchpriority="high" 
+                alt="@(t?.Title ?? "Blog Post Image")" 
+                onerror="this.onerror=null;this.src='/images/default-post.jpg';" />
         </div>
 
         <div class="post-content mb-5">
@@ -132,7 +130,8 @@
                 <img src="@(string.IsNullOrEmpty(Model.Author?.ProfileImageUrl) ? "/images/default-avatar.png" : Model.Author.ProfileImageUrl)" 
                     alt="@Model.Author?.DisplayName" 
                     class="rounded-circle me-3 img-fluid" 
-                    style="width: 80px; height: 80px; object-fit: cover;" />
+                    style="width: 80px; height: 80px; object-fit: cover;"
+                    onerror="this.onerror=null;this.src='/images/default-avatar.png';" />
                 
                 <div class="flex-grow-1">
                     <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@writtenByLabel</span>
