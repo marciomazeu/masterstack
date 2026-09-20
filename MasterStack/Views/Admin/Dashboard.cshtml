@@ -144,10 +144,10 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/images/default-post.jpg" : t.ImageUrl)" 
+                                        <img src="@(string.IsNullOrEmpty(t.ImageUrl) ? "/img/home/default-post.jpg" : t.ImageUrl)" 
                                             class="rounded me-3 img-thumbnail-custom shadow-sm" 
                                             alt="Thumb" 
-                                            onerror="this.onerror=null;this.src='/images/default-post.jpg';" />
+                                            onerror="this.onerror=null;this.src='/img/home/default-post.jpg';" />
                                         <div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="badge @badgeColor badge-lang">@t.Culture.ToUpper()</span>
