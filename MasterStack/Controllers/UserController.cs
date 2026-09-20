@@ -21,6 +21,7 @@ namespace MasterStack.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IGeocodingService _geocodingService;
         private readonly ILogger<UserController> _logger;
+        private readonly ICloudStorageService _cloudStorageService;
 
         public UserController(
             UserManager<ApplicationUser> userManager,
@@ -28,7 +29,8 @@ namespace MasterStack.Controllers
             ILocationService locationService,
             IWebHostEnvironment webHostEnvironment,
             IGeocodingService geocodingService,
-            ILogger<UserController> logger)
+            ILogger<UserController> logger,
+            ICloudStorageService cloudStorageService)
         {
             _userManager = userManager;
             _context = context;
@@ -36,6 +38,7 @@ namespace MasterStack.Controllers
             _webHostEnvironment = webHostEnvironment;
             _geocodingService = geocodingService;
             _logger = logger;
+            _cloudStorageService = cloudStorageService;
         }
 
         // ==========================================
@@ -163,44 +166,33 @@ namespace MasterStack.Controllers
                 return View("Index", model);
             }
 
-            string? oldImagePath = null;
+            string? oldImageUrl = user.ProfileImageUrl;
 
-            // 1. Processamento da Foto de Perfil / Avatar
+            // 1. Processamento da Foto de Perfil via DigitalOcean Spaces (S3)
             var fileToUpload = model.AvatarFile ?? model.NewImage;
 
             if (fileToUpload != null && fileToUpload.Length > 0)
             {
-                // 💡 Garante o uso seguro do wwwroot do container em Produção e Desenvolvimento
-                var webRoot = _webHostEnvironment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                var uploadFolder = Path.Combine(webRoot, "uploads", "profiles");
-
                 try
                 {
-                    if (!Directory.Exists(uploadFolder)) 
+                    // Upload direto para a pasta "profiles" no DigitalOcean Spaces
+                    var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToUpload, "profiles");
+
+                    if (!string.IsNullOrEmpty(uploadedUrl))
                     {
-                        Directory.CreateDirectory(uploadFolder);
+                        user.ProfileImageUrl = uploadedUrl;
+
+                        // Elimina a imagem antiga do Spaces se for uma imagem armazenada na nuvem
+                        if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.Contains("digitaloceanspaces.com"))
+                        {
+                            _ = _cloudStorageService.DeleteFileAsync(oldImageUrl);
+                        }
                     }
-
-                    var fileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(fileToUpload.FileName)}";
-                    var filePath = Path.Combine(uploadFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await fileToUpload.CopyToAsync(stream);
-                    }
-
-                    // Guarda o caminho completo do ficheiro antigo para eliminar se necessário
-                    if (!string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.Contains("default"))
-                    {
-                        oldImagePath = Path.Combine(webRoot, user.ProfileImageUrl.TrimStart('/'));
-                    }
-
-                    user.ProfileImageUrl = "/uploads/profiles/" + fileName;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao salvar foto de perfil para o utilizador {UserId}", user.Id);
-                    ModelState.AddModelError(string.Empty, "Erro ao processar o upload da imagem de perfil.");
+                    _logger.LogError(ex, "Erro ao enviar a foto de perfil para o DigitalOcean Spaces do utilizador {UserId}", user.Id);
+                    ModelState.AddModelError(string.Empty, "Erro ao processar o upload da imagem na nuvem.");
                 }
             }
 
@@ -277,11 +269,6 @@ namespace MasterStack.Controllers
             var result = await _userManager.UpdateAsync(user);
             if (result.Succeeded) 
             {
-                if (oldImagePath != null && System.IO.File.Exists(oldImagePath))
-                {
-                    try { System.IO.File.Delete(oldImagePath); } catch { }
-                }
-
                 TempData["Success"] = GetLocalizedSuccessMessage(culture);
                 return RedirectToAction(nameof(Profile), new { culture });
             }

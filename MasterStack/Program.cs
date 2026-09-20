@@ -161,6 +161,7 @@ try
     builder.Services.AddHostedService<JobCleanupService>();
     builder.Services.AddScoped<IAffiliateRenderService, AffiliateRenderService>();
     builder.Services.AddScoped<JobAggregatorService>();
+    builder.Services.AddScoped<ICloudStorageService, DigitalOceanSpacesService>();
 
     // --- CONSTRUÇÃO DO APP ---
     var app = builder.Build();
