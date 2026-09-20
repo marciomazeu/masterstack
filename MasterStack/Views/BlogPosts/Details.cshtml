@@ -50,12 +50,13 @@
             _ => Model.Author.Bio
         } ?? string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(Model.Author.ProfileImageUrl))
-        {
-            authorAvatarUrl = (Model.Author.ProfileImageUrl.StartsWith("http://") || Model.Author.ProfileImageUrl.StartsWith("https://") || Model.Author.ProfileImageUrl.StartsWith("/"))
-                ? Model.Author.ProfileImageUrl
-                : "/" + Model.Author.ProfileImageUrl;
-        }
+        if (Model.Author != null && !string.IsNullOrWhiteSpace(Model.Author.ProfileImageUrl))
+            {
+                var url = Model.Author.ProfileImageUrl;
+                authorAvatarUrl = (url.StartsWith("http://") || url.StartsWith("https://") || url.StartsWith("/"))
+                    ? url
+                    : "/" + url;
+            }
     }
 
     string writtenByLabel = currentCulture switch
@@ -135,51 +136,51 @@
 
     @* Bloco do Autor Limpo e Dinâmico *@
     <section class="author-card p-4 bg-light rounded-4 border-0 shadow-sm my-5">
-        <div class="d-flex align-items-center">
-            @if (Model.Author != null)
-            {
-                <img src="@authorAvatarUrl" 
-                    alt="@Model.Author?.DisplayName" 
-                    class="rounded-circle me-3 img-fluid" 
-                    style="width: 80px; height: 80px; object-fit: cover;"
-                    onerror="this.onerror=null;this.src='/images/default-avatar.png';" />
+    <div class="d-flex align-items-center">
+        @if (Model.Author != null)
+        {
+            <img src="@authorAvatarUrl" 
+                alt="@Model.Author?.DisplayName" 
+                class="rounded-circle me-3 img-fluid" 
+                style="width: 80px; height: 80px; object-fit: cover;"
+                onerror="this.onerror=null;this.src='/images/default-avatar.png';" />
+            
+            <div class="flex-grow-1">
+                <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@writtenByLabel</span>
+                <h5 class="mb-1 fw-bold">@(Model.Author?.DisplayName ?? Model.Author?.UserName)</h5>
                 
-                <div class="flex-grow-1">
-                    <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@writtenByLabel</span>
-                    <h5 class="mb-1 fw-bold">@(Model.Author?.DisplayName ?? Model.Author?.UserName)</h5>
-                    
-                    @if (!string.IsNullOrEmpty(Model.Author?.JobTitle))
-                    {
-                        <p class="text-primary small mb-1">@Model.Author.JobTitle</p>
-                    }
+                @if (!string.IsNullOrEmpty(Model.Author?.JobTitle))
+                {
+                    <p class="text-primary small mb-1">@Model.Author.JobTitle</p>
+                }
 
-                    @if (!string.IsNullOrEmpty(authorBio))
-                    {
-                        <p class="mb-0 text-secondary small">@authorBio</p>
-                    }
+                @if (!string.IsNullOrEmpty(authorBio))
+                {
+                    <p class="mb-0 text-secondary small">@authorBio</p>
+                }
 
-                    <div class="d-flex gap-3 mt-2">
-                        @if (!string.IsNullOrEmpty(Model.Author.LinkedInUrl)) {
-                            <a href="@Model.Author.LinkedInUrl" target="_blank" class="text-secondary"><i class="fab fa-linkedin fa-lg"></i></a>
-                        }
-                        @if (!string.IsNullOrEmpty(Model.Author.TwitterUrl)) {
-                            <a href="@Model.Author.TwitterUrl" target="_blank" class="text-secondary"><i class="fab fa-x-twitter fa-lg"></i></a>
-                        }
-                        @if (!string.IsNullOrEmpty(Model.Author.GitHubUrl)) {
-                            <a href="@Model.Author.GitHubUrl" target="_blank" class="text-secondary"><i class="fab fa-github fa-lg"></i></a>
-                        }
-                    </div>
+                <div class="d-flex gap-3 mt-2">
+                    @if (!string.IsNullOrEmpty(Model.Author.LinkedInUrl)) {
+                        <a href="@Model.Author.LinkedInUrl" target="_blank" class="text-secondary"><i class="fab fa-linkedin fa-lg"></i></a>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Author.TwitterUrl)) {
+                        <a href="@Model.Author.TwitterUrl" target="_blank" class="text-secondary"><i class="fab fa-x-twitter fa-lg"></i></a>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Author.GitHubUrl)) {
+                        <a href="@Model.Author.GitHubUrl" target="_blank" class="text-secondary"><i class="fab fa-github fa-lg"></i></a>
+                    }
                 </div>
-            }
-            else
-            {
-                <div class="py-2">
-                    <i class="fas fa-user-edit me-2 text-primary"></i> 
-                    <span class="fw-bold">Equipe MasterStack</span>
-                </div>
-            }
-        </div>
-    </section>
+            </div>
+        }
+        else
+        {
+            <div class="py-2">
+                <i class="fas fa-user-edit me-2 text-primary"></i> 
+                <span class="fw-bold">Equipe MasterStack</span>
+            </div>
+        }
+    </div>
+</section>
 </div>
 
 @section Styles {

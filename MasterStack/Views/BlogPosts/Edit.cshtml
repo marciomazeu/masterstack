@@ -7,9 +7,7 @@
 }
 
 <style>
-    .tox-tinymce-aux {
-        z-index: 999999 !important;
-    }
+    .tox-tinymce-aux { z-index: 999999 !important; }
 
     .image-preview-wrapper {
         border: 2px dashed #dee2e6;
@@ -18,7 +16,10 @@
         text-align: center;
         background: #f8f9fa;
         cursor: pointer;
+        transition: 0.2s;
     }
+
+    .image-preview-wrapper:hover { background: #e9ecef; }
 
     #imagePreview {
         max-height: 200px;
@@ -32,21 +33,12 @@
         max-height: 200px;
         border-radius: 4px;
         border: 1px solid #dee2e6;
+        object-fit: cover;
     }
 
-    .card {
-        border: none;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-
-    .sticky-sidebar {
-        position: sticky;
-        top: 20px;
-    }
-
-    .badge-culture {
-        font-size: 0.9rem;
-    }
+    .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+    .sticky-sidebar { position: sticky; top: 20px; }
+    .badge-culture { font-size: 0.9rem; }
 </style>
 
 <div class="container mt-4 mb-5">
@@ -60,16 +52,17 @@
         </a>
     </div>
 
-    <form asp-action="EditTranslation" method="post" enctype="multipart/form-data">
+    <form asp-action="EditTranslation" asp-controller="BlogPosts" asp-route-culture="@Model.Culture" asp-route-id="@Model.TranslationId" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="TranslationId" />
         <input type="hidden" asp-for="Culture" />
+        <input type="hidden" asp-for="CurrentImageUrl" />
 
         <div class="row">
             <div class="col-lg-8">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+                        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
                         <div class="mb-4">
                             <label asp-for="Title" class="form-label fw-bold">@Localizer["Título"]</label>
@@ -77,10 +70,32 @@
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-0">
+                        <div class="mb-3">
+                            <label asp-for="Slug" class="form-label fw-bold">URL Amigável (Slug)</label>
+                            <input asp-for="Slug" class="form-control" />
+                            <span asp-validation-for="Slug" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
                             <label asp-for="Content" class="form-label fw-bold">@Localizer["Conteúdo"]</label>
                             <textarea asp-for="Content" id="Editor" class="form-control">@Model.Content</textarea>
                             <span asp-validation-for="Content" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-white fw-bold">SEO & Meta Tags</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="MetaDescription" class="form-label fw-bold small">Meta Description</label>
+                            <textarea asp-for="MetaDescription" class="form-control" rows="2" maxlength="160"></textarea>
+                            <span asp-validation-for="MetaDescription" class="text-danger small"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="MetaKeywords" class="form-label fw-bold small">Palavras-chave</label>
+                            <input asp-for="MetaKeywords" class="form-control" />
+                            <span asp-validation-for="MetaKeywords" class="text-danger small"></span>
                         </div>
                     </div>
                 </div>
@@ -89,25 +104,46 @@
             <div class="col-lg-4">
                 <div class="sticky-sidebar">
                     <div class="card mb-4">
-                    <div class="card-header bg-white fw-bold">@Localizer["Imagem de Capa"]</div>
-                    <div class="card-body text-center">
-                        @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
-                        {
-                            <div class="mb-3">
-                                <p class="small text-muted mb-1">Atual:</p>
-                                <img src="@Model.CurrentImageUrl" class="img-fluid current-image" alt="Atual" />
+                        <div class="card-header bg-white fw-bold">@Localizer["Imagem de Capa"]</div>
+                        <div class="card-body text-center">
+                            @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                            {
+                                <div class="mb-3">
+                                    <p class="small text-muted mb-1">Atual:</p>
+                                    <img src="@Model.CurrentImageUrl" 
+                                         class="img-fluid current-image" 
+                                         alt="Atual" 
+                                         onerror="this.onerror=null;this.src='/images/default-post.jpg';" />
+                                </div>
+                            }
+
+                            <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
+                                <i class="fas fa-exchange-alt fa-2x mb-2 text-muted"></i>
+                                <div id="uploadText" class="small text-muted">@Localizer["Trocar Imagem"]</div>
+                                <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
                             </div>
-                        }
 
-                        <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
-                            <i class="fas fa-exchange-alt fa-2x mb-2 text-muted"></i>
-                            <div id="uploadText" class="small text-muted">@Localizer["Trocar Imagem"]</div>
-                            <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
+                            <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
+                            <span asp-validation-for="ImageFile" class="text-danger small"></span>
                         </div>
+                    </div>
 
-                        <!-- 💡 Alterado de NewImage para ImageFile (muda o ID para ImageInput) -->
-                        <input asp-for="ImageFile" type="file" class="d-none" id="ImageInput" accept="image/*" />
-                        <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Publicação</div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="isPublishedSwitch">
+                                <label class="form-check-label fw-bold" for="isPublishedSwitch">Publicado</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">
+                                <i class="fas fa-save me-1"></i> Salvar Alterações
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -116,32 +152,28 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 
     <script src="https://cdn.tiny.cloud/1/w1gfg8v2xnky4rm0419th9b2tist0w0smsck10vl080jp21g/tinymce/8/tinymce.min.js" referrerpolicy="origin"></script>
 
     <script>
-        // Preview da Nova Imagem
-        document.getElementById('NewImageInput').onchange = evt => {
-            const imageInput = document.getElementById('ImageInput');
-            if (imageInput) {
-                imageInput.onchange = evt => {
-                    const [file] = evt.target.files;
-                    if (file) {
-                        const preview = document.getElementById('imagePreview');
-                        const text = document.getElementById('uploadText');
+        // Preview da Nova Imagem (Corrigido para usar ImageInput diretamente)
+        const imageInput = document.getElementById('ImageInput');
+        if (imageInput) {
+            imageInput.addEventListener('change', function (evt) {
+                const [file] = evt.target.files;
+                if (file) {
+                    const preview = document.getElementById('imagePreview');
+                    const text = document.getElementById('uploadText');
 
-                        preview.src = URL.createObjectURL(file);
-                        preview.style.display = 'block';
-                        if (text) text.innerText = "Nova imagem selecionada";
-                    }
-                };
-            }
+                    preview.src = URL.createObjectURL(file);
+                    preview.style.display = 'block';
+                    if (text) text.innerText = "Nova imagem selecionada";
+                }
+            });
         }
 
-        // TinyMCE (Versão estável e limpa)
+        // TinyMCE
         tinymce.init({
             selector: '#Editor',
             height: 500,
