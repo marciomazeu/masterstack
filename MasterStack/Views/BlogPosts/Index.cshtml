@@ -63,9 +63,10 @@
     <div class="card h-100 shadow-sm border-0 hover-lift transition-all">
         @* Imagem com proporção fixa 16:9 *@
         <div class="ratio ratio-16x9 overflow-hidden rounded-top">
-            <img src="@(string.IsNullOrWhiteSpace(translation.ImageUrl) ? Url.Content("~/uploads/default-post.jpg") : translation.ImageUrl)" 
-     class="card-img-top object-fit-cover w-100 h-100" 
-     alt="@translation.Title">
+            <img src="@(string.IsNullOrWhiteSpace(translation.ImageUrl) ? "/img/home/default-post.jpg" : translation.ImageUrl)" 
+         class="card-img-top object-fit-cover w-100 h-100" 
+         alt="@translation.Title"
+         onerror="this.onerror=null;this.src='/img/home/default-post.jpg';" />
         </div>
 
         <div class="card-body d-flex flex-column p-4">
