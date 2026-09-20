@@ -24,38 +24,56 @@ namespace MasterStack.Services
             var bucketName = _configuration["DigitalOceanSpaces:BucketName"]; // ex: masterstackjobs-images
             var cdnUrl = _configuration["DigitalOceanSpaces:CdnUrl"];
 
-            // 💡 Configuração crítica para compatibilidade S3 com DigitalOcean Spaces
+            // 🔍 LOG DE DIAGNÓSTICO: Verifica se as chaves estão chegando no container
+            _logger.LogInformation("Iniciando Upload. Bucket: {Bucket}, ServiceUrl: {Url}, KeyLength: {KeyLen}", 
+                bucketName, serviceUrl, accessKey?.Length ?? 0);
+
             var s3Config = new AmazonS3Config
             {
                 ServiceURL = serviceUrl,
-                ForcePathStyle = true // Obriga o SDK a formatar a URL corretamente para o Spaces
+                ForcePathStyle = true
             };
 
             using var client = new AmazonS3Client(accessKey, secretKey, s3Config);
 
             var fileName = $"{folderName}/{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
 
-            using var stream = file.OpenReadStream();
-            var request = new PutObjectRequest
+            try
             {
-                BucketName = bucketName,
-                Key = fileName,
-                InputStream = stream,
-                ContentType = file.ContentType,
-                DisablePayloadSigning = true // Evita falhas de assinatura em uploads mutipart/stream
-            };
+                using var stream = file.OpenReadStream();
+                var request = new PutObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = fileName,
+                    InputStream = stream,
+                    ContentType = file.ContentType,
+                    DisablePayloadSigning = true
+                };
 
-            var response = await client.PutObjectAsync(request);
+                var response = await client.PutObjectAsync(request);
 
-            if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
-            {
-                return string.IsNullOrEmpty(cdnUrl)
-                    ? $"https://{bucketName}.{serviceUrl.Replace("https://", "")}/{fileName}"
-                    : $"{cdnUrl.TrimEnd('/')}/{fileName}";
+                if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return string.IsNullOrEmpty(cdnUrl)
+                        ? $"https://{bucketName}.{serviceUrl.Replace("https://", "")}/{fileName}"
+                        : $"{cdnUrl.TrimEnd('/')}/{fileName}";
+                }
+
+                _logger.LogError("DigitalOcean Spaces retornou status não-OK: {StatusCode}", response.HttpStatusCode);
+                throw new Exception($"Erro no upload. Status: {response.HttpStatusCode}");
             }
-
-            _logger.LogError("Falha ao enviar arquivo para o DigitalOcean Spaces. HttpStatusCode: {StatusCode}", response.HttpStatusCode);
-            throw new Exception("Erro ao salvar o arquivo no armazenamento em nuvem.");
+            catch (AmazonS3Exception s3Ex)
+            {
+                // 💡 EXIBE O MOTIVO EXATO DA DIGITALOCEAN NO LOG DO CONTAINER
+                _logger.LogError(s3Ex, "FALHA CRÍTICA S3 SPACES. StatusCode: {Status}, ErrorCode: {Code}, Message: {Msg}", 
+                    s3Ex.StatusCode, s3Ex.ErrorCode, s3Ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro geral de I/O ao enviar arquivo para o Spaces.");
+                throw;
+            }
         }
 
         public async Task DeleteFileAsync(string fileUrl)
