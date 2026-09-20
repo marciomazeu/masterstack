@@ -122,6 +122,13 @@ img.shadow-lg {
     height: auto;
     border-radius: 8px;
 }
+.blog-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+}
 
 /* --- 6. FOOTER (ACESSIBILIDADE 100%) --- */
 footer .text-primary {

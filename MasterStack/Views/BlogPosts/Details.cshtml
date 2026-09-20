@@ -13,10 +13,12 @@
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     bool isFallback = ViewBag.TranslationWarning ?? false;
     var imageFileName = "/uploads/default-post.jpg";
-    var parsedContent = await AffiliateRenderService.ParseAffiliateShortcodesAsync(t.Content, currentCulture);
-
+    
+    string parsedContent = string.Empty;
     if (t != null)
     {
+        parsedContent = await AffiliateRenderService.ParseAffiliateShortcodesAsync(t.Content, currentCulture);
+
         ViewData["Title"] = t.Title;
 
         if (!string.IsNullOrEmpty(t.ImageUrl))
@@ -38,32 +40,34 @@
         ViewData["MetaDescription"] = plainText.Length > 160 ? plainText.Substring(0, 157) + "..." : plainText;
     }
 
-    // 🌐 Lógica de Seleção de Biografia do Autor Dinâmica
-    string authorBioToDisplay = string.Empty;
+    // 🌐 Lógica Global de Seleção da Biografia do Autor Dinâmica
+    string authorBio = string.Empty;
     if (Model.Author != null)
     {
-        // Tenta buscar a biografia na cultura atual a partir da coleção de traduções do usuário
-        var authorTranslation = Model.Author.Translations?.FirstOrDefault(tr => tr.Culture == currentCulture);
-        
-        authorBioToDisplay = authorTranslation?.Biography;
-
-        // Se não encontrar tradução para o idioma atual, usa a biografia principal
-        if (string.IsNullOrEmpty(authorBioToDisplay))
+        authorBio = currentCulture switch
         {
-            authorBioToDisplay = Model.Author.Bio ?? string.Empty;
-        }
+            "en-US" => !string.IsNullOrWhiteSpace(Model.Author.Bio_EN) ? Model.Author.Bio_EN : Model.Author.Bio,
+            "fr-CA" => !string.IsNullOrWhiteSpace(Model.Author.Bio_FR) ? Model.Author.Bio_FR : Model.Author.Bio,
+            _ => Model.Author.Bio
+        } ?? string.Empty;
     }
+
+    // Rótulo localizado para o cabeçalho do autor
+    string writtenByLabel = currentCulture switch
+    {
+        "en-US" => "Written by",
+        "fr-CA" => "Écrit par",
+        _ => "Escrito por"
+    };
 }
 
 @section Head {
-    @* Meta Tags dinâmicas para SEO e Redes Sociais *@
     <meta name="description" content="@ViewData["MetaDescription"]" />
     <meta property="og:title" content="@ViewData["Title"]" />
     <meta property="og:image" content="@ViewData["MetaImage"]" />
     <meta property="og:url" content="@ViewData["CanonicalUrl"]" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    @* Tags hreflang para SEO *@
     @if (Model.Translations != null)
     {
         foreach (var alt in Model.Translations)
@@ -116,7 +120,7 @@
         </div>
 
         <div class="post-content mb-5">
-            @Html.Raw(t.Content)
+            @Html.Raw(parsedContent)
         </div>
     }
 
@@ -125,18 +129,23 @@
         <div class="d-flex align-items-center">
             @if (Model.Author != null)
             {
-                <img src="@(string.IsNullOrEmpty(Model.Author.ProfileImageUrl) ? "/img/default-avatar.png" : Model.Author.ProfileImageUrl)" 
-                     class="rounded-circle me-4 shadow-sm" 
-                     style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #fff;" 
-                     alt="@Model.Author.DisplayName">
+                <img src="@(string.IsNullOrEmpty(Model.Author?.ProfileImageUrl) ? "/images/default-avatar.png" : Model.Author.ProfileImageUrl)" 
+                    alt="@Model.Author?.DisplayName" 
+                    class="rounded-circle me-3 img-fluid" 
+                    style="width: 80px; height: 80px; object-fit: cover;" />
                 
                 <div class="flex-grow-1">
-                    <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@SharedLocalizer["WrittenBy"]</span>
-                    <h5 class="mb-1 fw-bold">@Model.Author.DisplayName</h5>
+                    <span class="text-uppercase text-primary fw-bold small" style="letter-spacing: 1px;">@writtenByLabel</span>
+                    <h5 class="mb-1 fw-bold">@(Model.Author?.DisplayName ?? Model.Author?.UserName)</h5>
                     
-                    @if (!string.IsNullOrEmpty(authorBioToDisplay))
+                    @if (!string.IsNullOrEmpty(Model.Author?.JobTitle))
                     {
-                        <p class="text-muted small mb-2 italic">"@authorBioToDisplay"</p>
+                        <p class="text-primary small mb-1">@Model.Author.JobTitle</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(authorBio))
+                    {
+                        <p class="mb-0 text-secondary small">@authorBio</p>
                     }
 
                     <div class="d-flex gap-3 mt-2">
@@ -171,7 +180,15 @@
             font-size: 1.15rem;
         }
         .post-content p { margin-bottom: 1.5rem; }
-        .post-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 2rem 0; }
+        
+        /* 📱 Imagens responsivas no conteúdo do post para Mobile e Desktop */
+        .post-content img { 
+            max-width: 100% !important; 
+            height: auto !important; 
+            border-radius: 8px; 
+            margin: 1.5rem auto; 
+            display: block;
+        }
         
         .author-card { transition: transform 0.2s; }
         .author-card:hover { transform: translateY(-3px); }
