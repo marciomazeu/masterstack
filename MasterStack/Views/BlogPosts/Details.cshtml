@@ -13,12 +13,14 @@
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     bool isFallback = ViewBag.TranslationWarning ?? false;
     
-    // 💡 Definição segura da URL da imagem do post
+    // 💡 Definição segura da URL da imagem do post (suporta CDN e caminhos locais)
     var imageFileName = "/images/default-post.jpg";
 
     if (t != null && !string.IsNullOrWhiteSpace(t.ImageUrl))
     {
-        imageFileName = t.ImageUrl.StartsWith("/") ? t.ImageUrl : "/" + t.ImageUrl;
+        imageFileName = (t.ImageUrl.StartsWith("http://") || t.ImageUrl.StartsWith("https://") || t.ImageUrl.StartsWith("/"))
+            ? t.ImageUrl
+            : "/" + t.ImageUrl;
     }
 
     string parsedContent = string.Empty;
@@ -28,7 +30,7 @@
         ViewData["Title"] = t.Title;
 
         ViewBag.FinalImagePath = imageFileName;
-        ViewData["MetaImage"] = $"{request.Scheme}://{request.Host}{imageFileName}";
+        ViewData["MetaImage"] = imageFileName.StartsWith("http") ? imageFileName : $"{request.Scheme}://{request.Host}{imageFileName}";
         ViewData["CanonicalUrl"] = $"{request.Scheme}://{request.Host}{request.Path}";
 
         var plainText = System.Text.RegularExpressions.Regex.Replace(t.Content ?? "", "<.*?>", string.Empty);
@@ -37,6 +39,8 @@
 
     // 🌐 Localização das variáveis do Autor
     string authorBio = string.Empty;
+    string authorAvatarUrl = "/images/default-avatar.png";
+
     if (Model.Author != null)
     {
         authorBio = currentCulture switch
@@ -45,6 +49,13 @@
             "fr-CA" => !string.IsNullOrWhiteSpace(Model.Author.Bio_FR) ? Model.Author.Bio_FR : Model.Author.Bio,
             _ => Model.Author.Bio
         } ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(Model.Author.ProfileImageUrl))
+        {
+            authorAvatarUrl = (Model.Author.ProfileImageUrl.StartsWith("http://") || Model.Author.ProfileImageUrl.StartsWith("https://") || Model.Author.ProfileImageUrl.StartsWith("/"))
+                ? Model.Author.ProfileImageUrl
+                : "/" + Model.Author.ProfileImageUrl;
+        }
     }
 
     string writtenByLabel = currentCulture switch
@@ -127,7 +138,7 @@
         <div class="d-flex align-items-center">
             @if (Model.Author != null)
             {
-                <img src="@(string.IsNullOrEmpty(Model.Author?.ProfileImageUrl) ? "/images/default-avatar.png" : Model.Author.ProfileImageUrl)" 
+                <img src="@authorAvatarUrl" 
                     alt="@Model.Author?.DisplayName" 
                     class="rounded-circle me-3 img-fluid" 
                     style="width: 80px; height: 80px; object-fit: cover;"
