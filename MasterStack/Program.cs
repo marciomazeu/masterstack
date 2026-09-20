@@ -233,6 +233,18 @@ try
             ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");
         }
     });
+    // 💡 NOVO: Middleware dinâmico para servir a pasta /uploads em Produção/Containers
+    var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
+    if (!Directory.Exists(uploadsPath))
+    {
+        Directory.CreateDirectory(uploadsPath);
+    }
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads"
+    });
 
     app.UseCookiePolicy();
 
