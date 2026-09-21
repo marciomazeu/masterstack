@@ -1,9 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Webp;
-
+using SkiaSharp;
 namespace MasterStack.Services
 {
     public class DigitalOceanSpacesService : ICloudStorageService
@@ -17,7 +14,7 @@ namespace MasterStack.Services
             _logger = logger;
         }
 
-       public async Task<string> UploadFileAsync(IFormFile file, string folderName)
+public async Task<string> UploadFileAsync(IFormFile file, string folderName)
 {
     if (file == null || file.Length == 0) return null;
 
@@ -27,7 +24,6 @@ namespace MasterStack.Services
     var bucketName = _configuration["DigitalOceanSpaces:BucketName"];
     var cdnUrl = _configuration["DigitalOceanSpaces:CdnUrl"];
 
-    // 💡 Substitui a extensão original do arquivo por .webp
     var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file.FileName);
     var cleanFileName = $"{folderName}/{Guid.NewGuid()}_{fileNameWithoutExt}.webp";
 
@@ -38,32 +34,34 @@ namespace MasterStack.Services
     };
 
     using var client = new AmazonS3Client(accessKey, secretKey, s3Config);
-
-    // 💡 Processamento e Otimização da Imagem
     using var outputStream = new MemoryStream();
+
     try
     {
         using var inputStream = file.OpenReadStream();
-        using var image = await Image.LoadAsync(inputStream);
+        using var originalBitmap = SKBitmap.Decode(inputStream);
 
-        // Se a largura for maior que 1200px, redimensiona proporcionalmente
-        if (image.Width > 1200)
+        // Redimensiona para no máximo 1200px de largura mantendo a proporção
+        int targetWidth = originalBitmap.Width;
+        int targetHeight = originalBitmap.Height;
+
+        if (originalBitmap.Width > 1200)
         {
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Mode = ResizeMode.Max,
-                Size = new Size(1200, 0)
-            }));
+            targetWidth = 1200;
+            targetHeight = (int)(originalBitmap.Height * (1200.0 / originalBitmap.Width));
         }
 
-        // Salva na memória com compressão WebP (Qualidade 80%)
-        await image.SaveAsync(outputStream, new WebpEncoder { Quality = 80 });
+        using var resizedBitmap = originalBitmap.Resize(new SKImageInfo(targetWidth, targetHeight), SKSamplingOptions.Default);
+        using var image = SKImage.FromBitmap(resizedBitmap ?? originalBitmap);
+        
+        // Codifica para WebP com 80% de qualidade
+        using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
+        data.SaveTo(outputStream);
         outputStream.Position = 0;
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, "Erro ao processar e comprimir imagem para WebP. Enviando arquivo original.");
-        // Fallback: se não for um arquivo de imagem válido tratado pelo ImageSharp, usa o stream original
+        _logger.LogError(ex, "Erro ao processar e comprimir imagem com SkiaSharp. Enviando arquivo original.");
         await file.CopyToAsync(outputStream);
         outputStream.Position = 0;
     }
