@@ -44,6 +44,26 @@
     var dbLanguages = ContextDb.Languages.AsNoTracking().ToList();
     var currentLang = dbLanguages.FirstOrDefault(l => l.Culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase)) 
                       ?? dbLanguages.FirstOrDefault(); 
+
+    var request = Context.Request;
+    var currentHost = $"{request.Scheme}://{request.Host}";
+    var currentPath = request.Path.Value ?? "";
+
+    // Remove qualquer prefixo de cultura existente no path para obter o path limpo
+    var cleanPath = System.Text.RegularExpressions.Regex.Replace(
+        currentPath, 
+        @"^/(pt-BR|en-US|fr-CA)", 
+        "", 
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase
+    );
+
+    // URL Canônica dinâmica apontando para a URL atual completa
+    var canonicalUrl = $"{currentHost}{currentPath}";
+
+    // URLs alternativas para cada idioma suportado
+    var urlPt = $"{currentHost}/pt-BR{cleanPath}";
+    var urlEn = $"{currentHost}/en-US{cleanPath}";
+    var urlFr = $"{currentHost}/fr-CA{cleanPath}";
 }
 
 <!DOCTYPE html>
@@ -58,6 +78,12 @@
     <meta property="og:title" content="@ViewData["Title"]" />
     <meta property="og:description" content="@ViewData["Description"]" />
     <meta property="og:type" content="website" />
+    <link rel="canonical" href="@canonicalUrl" />
+    <!-- Tags Hreflang para SEO Multilingue (Evita o aviso de duplicidade entre idiomas) -->
+    <link rel="alternate" hreflang="pt-BR" href="@urlPt" />
+    <link rel="alternate" hreflang="en-US" href="@urlEn" />
+    <link rel="alternate" hreflang="fr-CA" href="@urlFr" />
+    <link rel="alternate" hreflang="x-default" href="@urlEn" />
     <meta property="og:locale" content="@currentCulture.Replace("-", "_")" />
     <meta name="google-site-verification" content="418qHRKHMy7OVZ5IaYpkkgPPZ5RuXchI0wHLjsIa8aA" />
 
