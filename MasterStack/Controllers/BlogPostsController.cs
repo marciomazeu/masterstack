@@ -293,28 +293,28 @@ namespace MasterStack.Controllers
 
             if (fileToProcess != null && fileToProcess.Length > 0)
             {
-                string? oldImageUrl = translation.ImageUrl;
-
                 try
                 {
                     var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
 
                     if (!string.IsNullOrEmpty(uploadedUrl))
                     {
-                        translation.ImageUrl = uploadedUrl;
-                        ModelState.Remove("ImageFile");
-                        ModelState.Remove("NewImage");
+                        // 💡 Busca TODAS as traduções vinculadas ao mesmo BlogPostId (#3) e atualiza o ImageUrl em todas de uma vez
+                        var siblingTranslations = await _context.BlogPostTranslations
+                            .Where(t => t.BlogPostId == translation.BlogPostId)
+                            .ToListAsync();
 
-                        if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.Contains("digitaloceanspaces.com"))
+                        foreach (var sibling in siblingTranslations)
                         {
-                            _ = _cloudStorageService.DeleteFileAsync(oldImageUrl);
+                            sibling.ImageUrl = uploadedUrl;
                         }
+
+                        ModelState.Remove("ImageFile");
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao enviar a imagem da tradução {TranslationId} para o DigitalOcean Spaces.", translation.Id);
-                    model.CurrentImageUrl = translation.ImageUrl;
+                    _logger.LogError(ex, "Erro no upload para o DigitalOcean Spaces.");
                     ModelState.AddModelError("ImageFile", "Falha no upload para o servidor de armazenamento.");
                     return View(model);
                 }
