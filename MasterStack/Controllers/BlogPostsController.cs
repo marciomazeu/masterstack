@@ -249,32 +249,22 @@ namespace MasterStack.Controllers
             return View(model);
         }
 
-       // POST: /{culture}/blogposts/EditTranslation/{id}
 [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
 [Authorize(Roles = "Admin,Author")]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
 {
+    // 💡 Procura diretamente pelo ID da tradução
     var translation = await _context.BlogPostTranslations
         .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
 
     if (translation == null) return NotFound();
 
-    // 💡 Remover erros de validação automáticos da imagem para não travar se o campo não for obrigatório
     ModelState.Remove("ImageFile");
     ModelState.Remove("CurrentImageUrl");
 
-    if (!ModelState.IsValid) 
+    if (!ModelState.IsValid)
     {
-        // Loga no console os campos que falharam a validação para diagnóstico rápido
-        foreach (var state in ModelState)
-        {
-            foreach (var error in state.Value.Errors)
-            {
-                _logger.LogWarning("Erro de validação no campo {Field}: {ErrorMessage}", state.Key, error.ErrorMessage);
-            }
-        }
-
         model.CurrentImageUrl = translation.ImageUrl;
         return View(model);
     }
@@ -285,7 +275,7 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     if (slugExists)
     {
         model.CurrentImageUrl = translation.ImageUrl;
-        ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
+        ModelState.AddModelError("Slug", "Este Slug já está a ser utilizado noutro artigo nesta língua.");
         return View(model);
     }
 
@@ -298,60 +288,61 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     }
 
     translation.Title = model.Title;
-    translation.Slug = model.Slug?.Trim().ToLower(); 
+    translation.Slug = model.Slug?.Trim().ToLower();
     translation.MetaKeywords = model.MetaKeywords;
     translation.IsPublished = model.IsPublished;
 
     var fileToProcess = model.ImageFile;
 
     if (fileToProcess != null && fileToProcess.Length > 0)
-{
-    try
     {
-        // 💡 1. Salvar a URL da imagem antiga para remoção posterior
-        var oldImageUrl = translation.ImageUrl;
-
-        // 💡 2. Fazer o upload do novo arquivo para o Spaces
-        var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
-
-        if (!string.IsNullOrEmpty(uploadedUrl))
+        try
         {
-            // 💡 3. Deletar a imagem antiga do DigitalOcean Spaces (se existir na nuvem)
-            if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.StartsWith("http"))
-            {
-                await _cloudStorageService.DeleteFileAsync(oldImageUrl);
-            }
+            var oldImageUrl = translation.ImageUrl;
+            var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
 
-            // 💡 4. Atualizar a URL em todas as traduções do mesmo BlogPost
-            var siblingTranslations = await _context.BlogPostTranslations
-                .Where(t => t.BlogPostId == translation.BlogPostId)
-                .ToListAsync();
-
-            foreach (var sibling in siblingTranslations)
+            if (!string.IsNullOrEmpty(uploadedUrl))
             {
-                sibling.ImageUrl = uploadedUrl;
+                // 💡 Apaga a imagem antiga do Spaces se for uma URL remota válida
+                if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.StartsWith("http"))
+                {
+                    await _cloudStorageService.DeleteFileAsync(oldImageUrl);
+                }
+
+                // 💡 Procura TODAS as traduções vinculadas ao mesmo BlogPost
+                var siblingTranslations = await _context.BlogPostTranslations
+                    .Where(t => t.BlogPostId == translation.BlogPostId)
+                    .ToListAsync();
+
+                foreach (var sibling in siblingTranslations)
+                {
+                    sibling.ImageUrl = uploadedUrl;
+                    // Força a alteração do estado da entidade no DbContext
+                    _context.Entry(sibling).Property(x => x.ImageUrl).IsModified = true;
+                }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro no envio do ficheiro para o DigitalOcean Spaces.");
+            ModelState.AddModelError("ImageFile", "Falha ao enviar a nova imagem.");
+            model.CurrentImageUrl = translation.ImageUrl;
+            return View(model);
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Erro no upload/deleção para o DigitalOcean Spaces.");
-        ModelState.AddModelError("ImageFile", "Falha ao processar a nova imagem de capa.");
-        model.CurrentImageUrl = translation.ImageUrl;
-        return View(model);
-    }
-}
 
     try
     {
+        // 💡 Garante a persistência síncrona na base de dados
         await _context.SaveChangesAsync();
         TempData["Success"] = "Tradução atualizada com sucesso!";
+        
         return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
     }
     catch (DbUpdateConcurrencyException)
     {
         model.CurrentImageUrl = translation.ImageUrl;
-        ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
+        ModelState.AddModelError("", "Erro de concorrência: o registo foi alterado por outro utilizador.");
         return View(model);
     }
 }

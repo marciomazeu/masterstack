@@ -40,37 +40,63 @@ namespace MasterStack.Controllers
             _geminiAiService = geminiAiService; // 🔥 Agora ele NUNCA será nulo
         }
 
-        [HttpGet]
+      [HttpGet]
 [Route("Dashboard")]
-        public async Task<IActionResult> Dashboard(string culture, string searchTerm, string cultureFilter, string status, int page = 1)
-        {
-            int pageSize = 10;
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null) return Challenge();
+public async Task<IActionResult> Dashboard(string culture, string searchTerm, string cultureFilter, string status, int page = 1)
+{
+    int pageSize = 10;
+    var currentUser = await _userManager.GetUserAsync(User);
+    if (currentUser == null) return Challenge();
 
-            var query = _context.BlogPosts
-                .Include(p => p.Translations)
-                .Include(p => p.Author)
-                .AsQueryable();
+    // 💡 AsNoTracking() ignora o cache local do EF e busca os dados reais e atualizados do banco
+    var query = _context.BlogPosts
+        .AsNoTracking()
+        .Include(p => p.Translations)
+        .Include(p => p.Author)
+        .AsQueryable();
 
-            if (!User.IsInRole("Admin"))
-                query = query.Where(p => p.AuthorId == currentUser.Id);
+    if (!User.IsInRole("Admin"))
+        query = query.Where(p => p.AuthorId == currentUser.Id);
 
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                searchTerm = searchTerm.ToLower();
-                query = query.Where(p => p.Translations.Any(t => t.Title.ToLower().Contains(searchTerm)));
-            }
+    if (!string.IsNullOrEmpty(searchTerm))
+    {
+        searchTerm = searchTerm.ToLower();
+        query = query.Where(p => p.Translations.Any(t => t.Title.ToLower().Contains(searchTerm)));
+    }
 
-            var totalPosts = await query.CountAsync();
-            var posts = await query.OrderByDescending(p => p.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+    if (!string.IsNullOrEmpty(cultureFilter))
+    {
+        query = query.Where(p => p.Translations.Any(t => t.Culture == cultureFilter));
+    }
 
-            ViewBag.PostsPT = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "pt-BR");
-            ViewBag.PostsEN = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "en-US");
-            ViewBag.PostsFR = await _context.BlogPostTranslations.CountAsync(t => t.Culture == "fr-CA");
+    if (!string.IsNullOrEmpty(status) && status != "all")
+    {
+        bool isPublished = status == "published";
+        query = query.Where(p => p.Translations.Any(t => t.IsPublished == isPublished));
+    }
 
-            return View(new DashboardViewModel { Posts = posts, PaginaAtual = page, TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize) });
-        }
+    var totalPosts = await query.CountAsync();
+    var posts = await query
+        .OrderByDescending(p => p.CreatedAt)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    ViewBag.PostsPT = await _context.BlogPostTranslations.AsNoTracking().CountAsync(t => t.Culture == "pt-BR");
+    ViewBag.PostsEN = await _context.BlogPostTranslations.AsNoTracking().CountAsync(t => t.Culture == "en-US");
+    ViewBag.PostsFR = await _context.BlogPostTranslations.AsNoTracking().CountAsync(t => t.Culture == "fr-CA");
+
+    ViewData["CurrentStatus"] = status;
+    ViewData["CurrentFilter"] = searchTerm;
+    ViewData["CurrentCulture"] = cultureFilter;
+
+    return View(new DashboardViewModel 
+    { 
+        Posts = posts, 
+        PaginaAtual = page, 
+        TotalPaginas = (int)Math.Ceiling(totalPosts / (double)pageSize) 
+    });
+}
 
         [HttpGet("Users")]
         [Authorize(Roles = "Admin")]
