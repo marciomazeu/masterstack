@@ -249,90 +249,102 @@ namespace MasterStack.Controllers
             return View(model);
         }
 
-        // POST: /{culture}/blogposts/EditTranslation/{id}
-        [HttpPost("{culture}/blogposts/EditTranslation/{id}")]
-        [Authorize(Roles = "Admin,Author")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
+       // POST: /{culture}/blogposts/EditTranslation/{id}
+[HttpPost("{culture}/blogposts/EditTranslation/{id}")]
+[Authorize(Roles = "Admin,Author")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
+{
+    var translation = await _context.BlogPostTranslations
+        .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
+
+    if (translation == null) return NotFound();
+
+    // 💡 Remover erros de validação automáticos da imagem para não travar se o campo não for obrigatório
+    ModelState.Remove("ImageFile");
+    ModelState.Remove("CurrentImageUrl");
+
+    if (!ModelState.IsValid) 
+    {
+        // Loga no console os campos que falharam a validação para diagnóstico rápido
+        foreach (var state in ModelState)
         {
-            var translation = await _context.BlogPostTranslations
-                .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
-
-            if (translation == null) return NotFound();
-
-            if (!ModelState.IsValid) 
+            foreach (var error in state.Value.Errors)
             {
-                model.CurrentImageUrl = translation.ImageUrl;
-                return View(model);
-            }
-
-            var slugExists = await _context.BlogPostTranslations
-                .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
-
-            if (slugExists)
-            {
-                model.CurrentImageUrl = translation.ImageUrl;
-                ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
-                return View(model);
-            }
-
-            var sanitizer = new Ganss.Xss.HtmlSanitizer();
-            translation.Content = sanitizer.Sanitize(model.Content);
-
-            if (!string.IsNullOrEmpty(model.MetaDescription))
-            {
-                translation.MetaDescription = Regex.Replace(model.MetaDescription, "<.*?>", string.Empty);
-            }
-
-            translation.Title = model.Title;
-            translation.Slug = model.Slug?.Trim().ToLower(); 
-            translation.MetaKeywords = model.MetaKeywords;
-            translation.IsPublished = model.IsPublished;
-
-            var fileToProcess = model.ImageFile;
-
-            if (fileToProcess != null && fileToProcess.Length > 0)
-            {
-                try
-                {
-                    var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
-
-                    if (!string.IsNullOrEmpty(uploadedUrl))
-                    {
-                        // 💡 Busca TODAS as traduções vinculadas ao mesmo BlogPostId (#3) e atualiza o ImageUrl em todas de uma vez
-                        var siblingTranslations = await _context.BlogPostTranslations
-                            .Where(t => t.BlogPostId == translation.BlogPostId)
-                            .ToListAsync();
-
-                        foreach (var sibling in siblingTranslations)
-                        {
-                            sibling.ImageUrl = uploadedUrl;
-                        }
-
-                        ModelState.Remove("ImageFile");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Erro no upload para o DigitalOcean Spaces.");
-                    ModelState.AddModelError("ImageFile", "Falha no upload para o servidor de armazenamento.");
-                    return View(model);
-                }
-            }
-
-            try
-            {
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Tradução atualizada com sucesso!";
-                return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                model.CurrentImageUrl = translation.ImageUrl;
-                ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
-                return View(model);
+                _logger.LogWarning("Erro de validação no campo {Field}: {ErrorMessage}", state.Key, error.ErrorMessage);
             }
         }
+
+        model.CurrentImageUrl = translation.ImageUrl;
+        return View(model);
+    }
+
+    var slugExists = await _context.BlogPostTranslations
+        .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
+
+    if (slugExists)
+    {
+        model.CurrentImageUrl = translation.ImageUrl;
+        ModelState.AddModelError("Slug", "Este Slug já está sendo usado em outro post desta língua.");
+        return View(model);
+    }
+
+    var sanitizer = new Ganss.Xss.HtmlSanitizer();
+    translation.Content = sanitizer.Sanitize(model.Content);
+
+    if (!string.IsNullOrEmpty(model.MetaDescription))
+    {
+        translation.MetaDescription = Regex.Replace(model.MetaDescription, "<.*?>", string.Empty);
+    }
+
+    translation.Title = model.Title;
+    translation.Slug = model.Slug?.Trim().ToLower(); 
+    translation.MetaKeywords = model.MetaKeywords;
+    translation.IsPublished = model.IsPublished;
+
+    var fileToProcess = model.ImageFile;
+
+    if (fileToProcess != null && fileToProcess.Length > 0)
+    {
+        try
+        {
+            var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
+
+            if (!string.IsNullOrEmpty(uploadedUrl))
+            {
+                // 💡 Atualiza a imagem de TODAS as traduções vinculadas a este mesmo post
+                var siblingTranslations = await _context.BlogPostTranslations
+                    .Where(t => t.BlogPostId == translation.BlogPostId)
+                    .ToListAsync();
+
+                foreach (var sibling in siblingTranslations)
+                {
+                    sibling.ImageUrl = uploadedUrl;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro no upload para o DigitalOcean Spaces.");
+            ModelState.AddModelError("ImageFile", "Falha no upload para o servidor de armazenamento.");
+            model.CurrentImageUrl = translation.ImageUrl;
+            return View(model);
+        }
+    }
+
+    try
+    {
+        await _context.SaveChangesAsync();
+        TempData["Success"] = "Tradução atualizada com sucesso!";
+        return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        model.CurrentImageUrl = translation.ImageUrl;
+        ModelState.AddModelError("", "Erro de concorrência: o registro foi alterado por outro usuário.");
+        return View(model);
+    }
+}
 
         // GET: /{culture}/Admin/AddTranslation/{postId}
         [HttpGet]
