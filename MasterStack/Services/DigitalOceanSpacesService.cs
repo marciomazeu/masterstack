@@ -1,6 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using SkiaSharp;
+using ImageMagick;
 namespace MasterStack.Services
 {
     public class DigitalOceanSpacesService : ICloudStorageService
@@ -39,29 +39,29 @@ public async Task<string> UploadFileAsync(IFormFile file, string folderName)
     try
     {
         using var inputStream = file.OpenReadStream();
-        using var originalBitmap = SKBitmap.Decode(inputStream);
+        using var image = new MagickImage(inputStream);
 
         // Redimensiona para no máximo 1200px de largura mantendo a proporção
-        int targetWidth = originalBitmap.Width;
-        int targetHeight = originalBitmap.Height;
-
-        if (originalBitmap.Width > 1200)
+        if (image.Width > 1200)
         {
-            targetWidth = 1200;
-            targetHeight = (int)(originalBitmap.Height * (1200.0 / originalBitmap.Width));
+            var geometry = new MagickGeometry(1200, 0)
+            {
+                IgnoreAspectRatio = false
+            };
+            image.Resize(geometry);
         }
 
-        using var resizedBitmap = originalBitmap.Resize(new SKImageInfo(targetWidth, targetHeight), SKSamplingOptions.Default);
-        using var image = SKImage.FromBitmap(resizedBitmap ?? originalBitmap);
-        
-        // Codifica para WebP com 80% de qualidade
-        using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
-        data.SaveTo(outputStream);
+        // Define o formato de saída para WebP e ajusta a qualidade
+        image.Format = MagickFormat.WebP;
+        image.Quality = 80;
+
+        // Escreve a imagem comprimida na memória
+        await image.WriteAsync(outputStream);
         outputStream.Position = 0;
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, "Erro ao processar e comprimir imagem com SkiaSharp. Enviando arquivo original.");
+        _logger.LogError(ex, "Erro ao processar imagem para WebP com Magick.NET. Enviando original.");
         await file.CopyToAsync(outputStream);
         outputStream.Position = 0;
     }
