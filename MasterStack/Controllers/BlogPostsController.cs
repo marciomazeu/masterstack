@@ -305,32 +305,42 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     var fileToProcess = model.ImageFile;
 
     if (fileToProcess != null && fileToProcess.Length > 0)
+{
+    try
     {
-        try
+        // 💡 1. Salvar a URL da imagem antiga para remoção posterior
+        var oldImageUrl = translation.ImageUrl;
+
+        // 💡 2. Fazer o upload do novo arquivo para o Spaces
+        var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
+
+        if (!string.IsNullOrEmpty(uploadedUrl))
         {
-            var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToProcess, "blog");
-
-            if (!string.IsNullOrEmpty(uploadedUrl))
+            // 💡 3. Deletar a imagem antiga do DigitalOcean Spaces (se existir na nuvem)
+            if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.StartsWith("http"))
             {
-                // 💡 Atualiza a imagem de TODAS as traduções vinculadas a este mesmo post
-                var siblingTranslations = await _context.BlogPostTranslations
-                    .Where(t => t.BlogPostId == translation.BlogPostId)
-                    .ToListAsync();
+                await _cloudStorageService.DeleteFileAsync(oldImageUrl);
+            }
 
-                foreach (var sibling in siblingTranslations)
-                {
-                    sibling.ImageUrl = uploadedUrl;
-                }
+            // 💡 4. Atualizar a URL em todas as traduções do mesmo BlogPost
+            var siblingTranslations = await _context.BlogPostTranslations
+                .Where(t => t.BlogPostId == translation.BlogPostId)
+                .ToListAsync();
+
+            foreach (var sibling in siblingTranslations)
+            {
+                sibling.ImageUrl = uploadedUrl;
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro no upload para o DigitalOcean Spaces.");
-            ModelState.AddModelError("ImageFile", "Falha no upload para o servidor de armazenamento.");
-            model.CurrentImageUrl = translation.ImageUrl;
-            return View(model);
-        }
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Erro no upload/deleção para o DigitalOcean Spaces.");
+        ModelState.AddModelError("ImageFile", "Falha ao processar a nova imagem de capa.");
+        model.CurrentImageUrl = translation.ImageUrl;
+        return View(model);
+    }
+}
 
     try
     {

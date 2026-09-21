@@ -77,37 +77,40 @@ namespace MasterStack.Services
         }
 
         public async Task DeleteFileAsync(string fileUrl)
+{
+    if (string.IsNullOrEmpty(fileUrl)) return;
+
+    try
+    {
+        var accessKey = _configuration["DigitalOceanSpaces:AccessKey"];
+        var secretKey = _configuration["DigitalOceanSpaces:SecretKey"];
+        var serviceUrl = _configuration["DigitalOceanSpaces:ServiceUrl"];
+        var bucketName = _configuration["DigitalOceanSpaces:BucketName"];
+
+        var uri = new Uri(fileUrl);
+        // Extrai o caminho sem a primeira barra (ex: "blog/guid_nome.jpg")
+        var key = uri.AbsolutePath.TrimStart('/'); 
+
+        var s3Config = new AmazonS3Config 
+        { 
+            ServiceURL = serviceUrl,
+            ForcePathStyle = true 
+        };
+        
+        using var client = new AmazonS3Client(accessKey, secretKey, s3Config);
+
+        await client.DeleteObjectAsync(new DeleteObjectRequest
         {
-            if (string.IsNullOrEmpty(fileUrl)) return;
+            BucketName = bucketName,
+            Key = key
+        });
 
-            try
-            {
-                var accessKey = _configuration["DigitalOceanSpaces:AccessKey"];
-                var secretKey = _configuration["DigitalOceanSpaces:SecretKey"];
-                var serviceUrl = _configuration["DigitalOceanSpaces:ServiceUrl"];
-                var bucketName = _configuration["DigitalOceanSpaces:BucketName"];
-
-                var uri = new Uri(fileUrl);
-                var key = uri.AbsolutePath.TrimStart('/');
-
-                var s3Config = new AmazonS3Config 
-                { 
-                    ServiceURL = serviceUrl,
-                    ForcePathStyle = true 
-                };
-                
-                using var client = new AmazonS3Client(accessKey, secretKey, s3Config);
-
-                await client.DeleteObjectAsync(new DeleteObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = key
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Não foi possível remover a imagem do Spaces: {Url}", fileUrl);
-            }
-        }
+        _logger.LogInformation("Imagem antiga removida do Spaces: {Key}", key);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Não foi possível remover a imagem antiga do Spaces: {Url}", fileUrl);
+    }
+}
     }
 }
