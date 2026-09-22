@@ -50,7 +50,8 @@ namespace MasterStack.Controllers
                         
                     JobType = "Home_Job_Type_FullTime_Remote", 
                     PostedDate = j.CreatedAt,
-                    Skills = new List<string>()
+                    Skills = new List<string>(),
+                    RedirectUrl = j.RedirectUrl
                 })
                 .ToListAsync();
 

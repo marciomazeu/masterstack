@@ -16,5 +16,6 @@ namespace MasterStack.ViewModels
         // Campos essenciais para a correção da busca e direcionamento:
         public string Url { get; set; }
         public string Source { get; set; } // Ex: "Interna", "Adzuna"
+        public string? RedirectUrl { get; set; }
     }
 }

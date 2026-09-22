@@ -171,9 +171,15 @@
                             
                             <div class="card-footer p-4 pt-0 bg-transparent border-top-0 d-flex justify-content-between align-items-center">
                                 <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>@job.PostedDate.ToString("dd/MM/yyyy")</small>
-                                <a href="/@currentCulture/Jobs/Details/@job.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                @* <a href="/@currentCulture/Jobs/Details/@job.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                                     @Localizer["Home_Jobs_Apply"]
-                                </a>
+                                </a> *@
+                                <a href="@(string.IsNullOrEmpty(job.RedirectUrl) ? Url.Action("Details", "Jobs", new { id = job.Id }) : job.RedirectUrl)" 
+   target="_blank" 
+   rel="noopener noreferrer" 
+   class="btn btn-primary">
+    @Localizer["Home_Jobs_Apply"]
+</a>
                             </div>
                         </div>
                     </div>

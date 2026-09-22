@@ -89,25 +89,26 @@ namespace MasterStack.Controllers
 
         // GET: /{culture}/Jobs/Details/5
         [HttpGet("Details/{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int id)
         {
            var job = await _context.JobPostings
-        .FirstOrDefaultAsync(j => j.Id == id);
+                    .FirstOrDefaultAsync(j => j.Id == id);
 
-    if (job == null)
-    {
-        TempData["Warning"] = "Vaga não encontrada ou já encerrada.";
-        return RedirectToAction("Enterprises");
-    }
+            if (job == null)
+            {
+                TempData["Warning"] = "Vaga não encontrada ou já encerrada.";
+                return RedirectToAction("Enterprises");
+            }
 
-    // Se for vaga de API/Parceiro, redireciona para o link externo
-    if (!string.IsNullOrEmpty(job.RedirectUrl))
-    {
-        return Redirect(job.RedirectUrl);
-    }
+            // Se for vaga de API/Parceiro, redireciona para o link externo
+            if (!string.IsNullOrEmpty(job.RedirectUrl))
+            {
+                return Redirect(job.RedirectUrl);
+            }
 
-    // Retorna a view de detalhes localizada na pasta Recruiter
-    return View("~/Views/Recruiter/Details.cshtml", job);
+            // Retorna a view de detalhes localizada na pasta Recruiter
+            return View("~/Views/Recruiter/Details.cshtml", job);
         }
 
         // GET: /{culture}/Jobs/Enterprises
