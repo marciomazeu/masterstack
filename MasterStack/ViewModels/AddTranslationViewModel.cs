@@ -13,6 +13,8 @@ namespace MasterStack.ViewModels
         [AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".webp" })]
         public IFormFile? ImageFile { get; set; } // O arquivo da imagem
         public bool IsPublished { get; set; } = false;
+        public string? Slug { get; set; }
+        public string? MetaDescription { get; set; }
         public string? MetaKeywords { get; set; }
     }
 }

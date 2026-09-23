@@ -5,18 +5,15 @@
 }
 
 <style>
-    /* Estilo igual ao Create */
     .image-preview-wrapper { border: 2px dashed #dee2e6; border-radius: 8px; padding: 20px; text-align: center; background: #f8f9fa; cursor: pointer; transition: 0.3s; }
     .image-preview-wrapper:hover { background: #e9ecef; }
     #imagePreview { max-height: 250px; display: none; margin: 10px auto; border-radius: 4px; }
     .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
     .sticky-sidebar { position: sticky; top: 20px; }
     
-    /* Ajuste Quill para bater com o layout */
     .ql-toolbar.ql-snow { border-top-left-radius: 8px; border-top-right-radius: 8px; background: #f8f9fa; border-color: #dee2e6; }
     .ql-container.ql-snow { border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; border-color: #dee2e6; font-size: 1rem; }
     
-    /* Preview do Google */
     .google-preview { max-width: 600px; font-family: arial, sans-serif; }
     .google-title { color: #1a0dab; font-size: 20px; margin-bottom: 3px; cursor: pointer; }
     .google-url { color: #006621; font-size: 14px; margin-bottom: 3px; }
@@ -64,16 +61,18 @@
                         <h5 class="mb-3"><i class="fas fa-search me-2 text-muted"></i>SEO & Preview</h5>
                         
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Slug (URL)</label>
+                            <label asp-for="Slug" class="form-label small fw-bold">Slug (URL)</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light">/@Model.SelectedCulture/blog/</span>
-                                <input type="text" id="Slug" name="Slug" class="form-control" placeholder="slug-automatico" data-auto="true">
+                                <input asp-for="Slug" id="Slug" class="form-control" placeholder="slug-automatico" data-auto="true">
                             </div>
+                            <span asp-validation-for="Slug" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Meta Description</label>
-                            <textarea id="MetaDescription" name="MetaDescription" class="form-control form-control-sm" rows="3" data-auto="true"></textarea>
+                            <label asp-for="MetaDescription" class="form-label small fw-bold">Meta Description</label>
+                            <textarea asp-for="MetaDescription" id="MetaDescription" class="form-control form-control-sm" rows="3" data-auto="true" maxlength="160"></textarea>
+                            <span asp-validation-for="MetaDescription" class="text-danger small"></span>
                             <div id="descCounter" class="text-muted small mt-1">0 / 160 caracteres</div>
                         </div>
 
@@ -110,20 +109,20 @@
                         </div>
                     </div>
 
-<div class="card mb-4">
-    <div class="card-header bg-white fw-bold">Status</div>
-    <div class="card-body">
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
-            <label class="form-check-label fw-bold" for="publishSwitch">
-                <span id="statusLabel" class="text-danger">Rascunho</span>
-            </label>
-        </div>
-        <small class="text-muted d-block mt-2">
-            Se desmarcado, o post não aparecerá na listagem pública.
-        </small>
-    </div>
-</div>
+                    <div class="card mb-4">
+                        <div class="card-header bg-white fw-bold">Status</div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
+                                <label class="form-check-label fw-bold" for="publishSwitch">
+                                    <span id="statusLabel" class="text-danger">Rascunho</span>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Se desmarcado, o post não aparecerá na listagem pública.
+                            </small>
+                        </div>
+                    </div>
 
                     <div class="card">
                         <div class="card-body">
@@ -144,7 +143,6 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
     <script>
-        // 1. Inicialização do Quill
         var quill = new Quill('#quill-editor', {
             theme: 'snow',
             modules: {
@@ -158,14 +156,12 @@
             }
         });
 
-        // 2. Seleção de Elementos (Apenas UMA vez)
         const titleInput = document.getElementById('Title');
         const slugInput = document.getElementById('Slug');
         const descField = document.getElementById('MetaDescription');
         const sw = document.getElementById('publishSwitch');
         const label = document.getElementById('statusLabel');
 
-        // 3. Funções Auxiliares
         function slugify(text) {
             return text.toString().toLowerCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -189,7 +185,24 @@
             document.getElementById('descCounter').className = count >= 150 ? "text-danger small" : "text-muted small";
         }
 
-        // 4. Eventos
+        // 🔥 Evento de Preview da Imagem Selecionada
+        const imageInput = document.getElementById('ImageInput');
+        if (imageInput) {
+            imageInput.onchange = evt => {
+                const [file] = evt.target.files;
+                if (file) {
+                    const preview = document.getElementById('imagePreview');
+                    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+                    const uploadText = document.getElementById('uploadText');
+
+                    preview.src = URL.createObjectURL(file);
+                    preview.style.display = 'block';
+                    if (uploadPlaceholder) uploadPlaceholder.style.display = 'none';
+                    if (uploadText) uploadText.style.display = 'none';
+                }
+            };
+        }
+
         titleInput.addEventListener('input', function() {
             if (slugInput.dataset.auto !== "false") {
                 slugInput.value = slugify(this.value);
@@ -215,7 +228,6 @@
             updateGooglePreview();
         });
 
-        // Switch de Status
         const updateStatusLabel = () => {
             if (sw.checked) {
                 label.innerText = "Publicado";
@@ -227,13 +239,11 @@
         };
         sw.addEventListener('change', updateStatusLabel);
 
-        // 5. Submit do Formulário
         document.getElementById('addTranslationForm').onsubmit = function() {
             document.getElementById('quill-content').value = quill.root.innerHTML;
             return true;
         };
 
-        // Inicialização
         updateStatusLabel();
         updateGooglePreview();
     </script>

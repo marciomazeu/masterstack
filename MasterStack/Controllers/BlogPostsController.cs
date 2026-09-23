@@ -347,11 +347,11 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     }
 }
 
-        // GET: /{culture}/Admin/AddTranslation/{postId}
+       // GET: /{culture}/Admin/AddTranslation/{postId}
         [HttpGet]
         [Authorize(Roles = "Admin,Author")]
         [Route("{culture}/Admin/AddTranslation/{postId}")]
-        public async Task<IActionResult> AddTranslation(int postId, string targetCulture)
+        public async Task<IActionResult> AddTranslation(int postId, string culture)
         {
             var post = await _context.BlogPosts.FindAsync(postId);
             if (post == null) return NotFound();
@@ -359,11 +359,10 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
             var viewModel = new AddTranslationViewModel
             {
                 BlogPostId = postId,
-                SelectedCulture = targetCulture
+                SelectedCulture = culture // 💡 Corrigido: usa o parâmetro 'culture' vindo da rota
             };
 
-            var idiomas = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-            ViewBag.Languages = new SelectList(idiomas, "Culture", "Name", targetCulture);
+            await PopulateLanguagesViewBagAsync(culture);
 
             return View(viewModel);
         }
@@ -375,7 +374,11 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+            {
+                await PopulateLanguagesViewBagAsync(model.SelectedCulture);
+                return View(model);
+            }
             
             var sanitizer = new HtmlSanitizer();
             string cleanHtml = sanitizer.Sanitize(model.Content);
@@ -386,6 +389,7 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
             if (alreadyExists)
             {
                 ModelState.AddModelError("SelectedCulture", "Este idioma já existe para este post.");
+                await PopulateLanguagesViewBagAsync(model.SelectedCulture);
                 return View(model);
             }
 
@@ -395,7 +399,9 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
                 dbImagePath = await _cloudStorageService.UploadFileAsync(model.ImageFile, "blog");
             }
 
-            string uniqueSlug = await GetUniqueSlugAsync(model.Title, model.SelectedCulture);
+            // 💡 Respeita o slug digitado pelo usuário na View. Se estiver vazio, gera a partir do título.
+            string rawSlug = string.IsNullOrWhiteSpace(model.Slug) ? model.Title : model.Slug;
+            string uniqueSlug = await GetUniqueSlugAsync(rawSlug, model.SelectedCulture);
 
             var translation = new BlogPostTranslation
             {
@@ -404,7 +410,11 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
                 Title = model.Title,
                 Content = cleanHtml,
                 Slug = uniqueSlug,
-                ImageUrl = dbImagePath ?? "/images/default-post.jpg",
+                
+                // 💡 SALVANDO A META DESCRIPTION NO BANCO DE DADOS
+                MetaDescription = model.MetaDescription,
+                
+                ImageUrl = dbImagePath ?? "/img/home/default-post.jpg",
                 IsPublished = model.IsPublished,
                 MetaKeywords = model.MetaKeywords
             };
@@ -413,6 +423,13 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
             await _context.SaveChangesAsync();
 
             return RedirectToAction("Dashboard", "Admin", new { culture = model.SelectedCulture });
+        }
+
+        // Helper para manter a SelectList de idiomas consistente
+        private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
+        {
+            var idiomas = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+            ViewBag.Languages = new SelectList(idiomas, "Culture", "Name", selectedCulture);
         }
 
         // POST: DeleteTranslation

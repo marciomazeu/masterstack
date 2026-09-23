@@ -7,8 +7,6 @@
 @{
     ViewData["Title"] = Localizer["CreatePageTitle"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-    
-    // 💡 Sincroniza a cultura padrão do formulário com a cultura ativa da página (se não foi definida anteriormente)
     var selectedCultureValue = Model?.SelectedCulture ?? currentCulture;
 }
 
@@ -63,7 +61,6 @@
         </a>
     </div>
 
-    <!-- Form com enctype="multipart/form-data" para permitir envio de imagem de capa -->
     <form asp-action="Create" asp-controller="BlogPosts" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data" id="createForm">
         @Html.AntiForgeryToken()
 
@@ -84,7 +81,8 @@
                             <div id="quill-editor" style="height: 450px; background: white; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                                 @Html.Raw(Model?.Content)
                             </div>
-                            <input type="hidden" name="Content" id="quill-content">
+                            <input type="hidden" asp-for="Content" id="quill-content">
+                            <span asp-validation-for="Content" class="text-danger small"></span>
                         </div>
                     </div>
                 </div>
@@ -104,6 +102,7 @@
                         <div class="mb-3">
                             <label asp-for="MetaDescription" class="form-label fw-bold small text-uppercase">Meta Description</label>
                             <textarea asp-for="MetaDescription" id="MetaDescription" class="form-control" rows="3" maxlength="160" data-auto="false"></textarea>
+                            <span asp-validation-for="MetaDescription" class="text-danger small"></span>
                             
                             <div class="d-flex justify-content-between align-items-center mt-2">
                                 <small id="descCounter" class="badge bg-light text-muted border">0 / 160 caracteres</small>
@@ -146,7 +145,6 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label asp-for="SelectedCulture" class="form-label small">Idioma da Publicação</label>
-                                <!-- 🔥 O valor pré-selecionado é sincronizado dinamicamente com o idioma da rota atual -->
                                 <select asp-for="SelectedCulture" class="form-select">
                                     <option value="pt-BR" selected="@(selectedCultureValue == "pt-BR")">🇧🇷 Português</option>
                                     <option value="en-US" selected="@(selectedCultureValue == "en-US")">🇺🇸 Inglês</option>
@@ -392,14 +390,21 @@
             if(pDesc) pDesc.innerText = (df && df.value) ? df.value : "A descrição aparecerá aqui...";
         }
 
-        document.getElementById('ImageInput').onchange = evt => {
-            const [file] = document.getElementById('ImageInput').files;
-            if (file) {
-                document.getElementById('imagePreview').src = URL.createObjectURL(file);
-                document.getElementById('imagePreview').style.display = 'block';
-                document.getElementById('uploadPlaceholder').style.display = 'none';
-            }
-        };
+        // 🔥 Evento de Preview da Imagem de Capa
+        const imageInputEl = document.getElementById('ImageInput');
+        if (imageInputEl) {
+            imageInputEl.onchange = evt => {
+                const [file] = imageInputEl.files;
+                if (file) {
+                    const preview = document.getElementById('imagePreview');
+                    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+                    
+                    preview.src = URL.createObjectURL(file);
+                    preview.style.display = 'block';
+                    if (uploadPlaceholder) uploadPlaceholder.style.display = 'none';
+                }
+            };
+        }
 
         document.getElementById('createForm').onsubmit = function() {
             document.getElementById('quill-content').value = quill.root.innerHTML;
