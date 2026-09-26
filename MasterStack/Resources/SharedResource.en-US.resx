@@ -2549,4 +2549,192 @@
     <value>Publish Post</value>
     <comment/>
   </data>
+  <data name="CreatePageTitle" xml:space="preserve">
+    <value>Create New Post</value>
+    <comment/>
+  </data>
+  <data name="EditTranslation" xml:space="preserve">
+    <value>Edit Translation</value>
+    <comment/>
+  </data>
+  <data name="BackBtn" xml:space="preserve">
+    <value>Back</value>
+    <comment/>
+  </data>
+  <data name="BackToDashboard" xml:space="preserve">
+    <value>Back to Dashboard</value>
+    <comment/>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+    <comment/>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Title</value>
+    <comment/>
+  </data>
+  <data name="TitleLabel" xml:space="preserve">
+    <value>Post Title</value>
+    <comment/>
+  </data>
+  <data name="TitlePlaceholder" xml:space="preserve">
+    <value>Enter title...</value>
+    <comment/>
+  </data>
+  <data name="PostContent" xml:space="preserve">
+    <value>Post Content</value>
+    <comment/>
+  </data>
+  <data name="CoverImage" xml:space="preserve">
+    <value>Cover Image</value>
+    <comment/>
+  </data>
+  <data name="CurrentImage" xml:space="preserve">
+    <value>Current Image</value>
+    <comment/>
+  </data>
+  <data name="ChangeImage" xml:space="preserve">
+    <value>Change Image</value>
+    <comment/>
+  </data>
+  <data name="ClickToSelectNew" xml:space="preserve">
+    <value>Click to select new</value>
+    <comment/>
+  </data>
+  <data name="SeoOptimization" xml:space="preserve">
+    <value>Search Optimization (SEO)</value>
+    <comment/>
+  </data>
+  <data name="SlugUrl" xml:space="preserve">
+    <value>Friendly URL (Slug)</value>
+    <comment/>
+  </data>
+  <data name="SlugWarning" xml:space="preserve">
+    <value>Warning: Changing the slug breaks already shared links.</value>
+    <comment/>
+  </data>
+  <data name="MetaDescription" xml:space="preserve">
+    <value>Meta Description</value>
+    <comment/>
+  </data>
+  <data name="MetaKeywords" xml:space="preserve">
+    <value>Keywords (Comma separated)</value>
+    <comment/>
+  </data>
+  <data name="Characters" xml:space="preserve">
+    <value>characters</value>
+    <comment/>
+  </data>
+  <data name="SuggestFromContent" xml:space="preserve">
+    <value>Suggest from text</value>
+    <comment/>
+  </data>
+  <data name="GooglePreview" xml:space="preserve">
+    <value>Google Preview</value>
+    <comment/>
+  </data>
+  <data name="DraftWarning" xml:space="preserve">
+    <value>If unchecked, the post will not appear on the public list.</value>
+    <comment/>
+  </data>
+  <data name="SaveChanges" xml:space="preserve">
+    <value>Save Changes</value>
+    <comment/>
+  </data>
+  <data name="ArticleSize" xml:space="preserve">
+    <value>Article Length</value>
+    <comment/>
+  </data>
+  <data name="SizeShort" xml:space="preserve">
+    <value>Short (News / Fast)</value>
+    <comment/>
+  </data>
+  <data name="SizeMedium" xml:space="preserve">
+    <value>Medium (Standard Blog)</value>
+    <comment/>
+  </data>
+  <data name="SizeLong" xml:space="preserve">
+    <value>Long (Complete / Advanced SEO)</value>
+    <comment/>
+  </data>
+  <data name="PostTopic" xml:space="preserve">
+    <value>Post Topic</value>
+    <comment/>
+  </data>
+  <data name="TopicPlaceholder" xml:space="preserve">
+    <value>Ex: Best practices in EF Core...</value>
+    <comment/>
+  </data>
+  <data name="Generate" xml:space="preserve">
+    <value>Generate</value>
+    <comment/>
+  </data>
+  <data name="UserOpinionLabel" xml:space="preserve">
+    <value>Your Opinion / Draft Improvements</value>
+    <comment/>
+  </data>
+  <data name="OpinionPlaceholder" xml:space="preserve">
+    <value>Ex: Add a paragraph about performance...</value>
+    <comment/>
+  </data>
+  <data name="RefineDraft" xml:space="preserve">
+    <value>Refine Current Draft with My Opinion</value>
+    <comment/>
+  </data>
+  <data name="AdSenseValidator" xml:space="preserve">
+    <value>Google AdSense Validator</value>
+    <comment/>
+  </data>
+  <data name="MinWordsCheck" xml:space="preserve">
+    <value>Minimum 600 words</value>
+    <comment/>
+  </data>
+  <data name="TablesCheck" xml:space="preserve">
+    <value>Has structured tables</value>
+    <comment/>
+  </data>
+  <data name="CodeCheck" xml:space="preserve">
+    <value>Has practical code blocks</value>
+    <comment/>
+  </data>
+  <data name="HumanTouchCheck" xml:space="preserve">
+    <value>Contains Human Touch (Your Opinion)</value>
+    <comment/>
+  </data>
+  <data name="DenseText" xml:space="preserve">
+    <value>Dense text</value>
+    <comment/>
+  </data>
+  <data name="TooShort" xml:space="preserve">
+    <value>Too short</value>
+    <comment/>
+  </data>
+  <data name="Words" xml:space="preserve">
+    <value>words</value>
+    <comment/>
+  </data>
+  <data name="HasTables" xml:space="preserve">
+    <value>Has comparison tables</value>
+    <comment/>
+  </data>
+  <data name="TipAddTable" xml:space="preserve">
+    <value>Tip: Add a comparison table</value>
+    <comment/>
+  </data>
+  <data name="HasCode" xml:space="preserve">
+    <value>Has code examples</value>
+    <comment/>
+  </data>
+  <data name="TipAddCode" xml:space="preserve">
+    <value>Tip: Include practical code blocks</value>
+    <comment/>
+  </data>
+  <data name="HasHumanTouch" xml:space="preserve">
+    <value>Contains Human Touch applied</value>
+    <comment/>
+  </data>
+  <data name="MissingPersonalExp" xml:space="preserve">
+    <value>Missing personal experience</value>
+    <comment/>
+  </data>
 </root>
