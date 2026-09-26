@@ -330,7 +330,7 @@
     <comment/>
   </data>
   <data name="AddTranslation" xml:space="preserve">
-    <value>Add Translation</value>
+    <value>New Translation</value>
     <comment/>
   </data>
   <data name="Page" xml:space="preserve">
@@ -2523,6 +2523,30 @@
   </data>
   <data name="LoginBtn" xml:space="preserve">
     <value>Log In</value>
+    <comment/>
+  </data>
+  <data name="TranslationTitle" xml:space="preserve">
+    <value>Translation Title</value>
+    <comment/>
+  </data>
+  <data name="SaveTranslation" xml:space="preserve">
+    <value>Save Translation</value>
+    <comment/>
+  </data>
+  <data name="TranslationImage" xml:space="preserve">
+    <value>Translation Image</value>
+    <comment/>
+  </data>
+  <data name="PublicationLanguage" xml:space="preserve">
+    <value>Publication Language</value>
+    <comment/>
+  </data>
+  <data name="AiAssistantTitle" xml:space="preserve">
+    <value>Smart Writing Assistant</value>
+    <comment/>
+  </data>
+  <data name="PublishPost" xml:space="preserve">
+    <value>Publish Post</value>
     <comment/>
   </data>
 </root>

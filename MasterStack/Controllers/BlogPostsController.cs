@@ -346,92 +346,93 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
         return View(model);
     }
 }
+// GET: /{culture}/Admin/AddTranslation/{postId}?targetCulture=en-US
+[HttpGet]
+[Authorize(Roles = "Admin,Author")]
+[Route("{culture}/Admin/AddTranslation/{postId}")]
+public async Task<IActionResult> AddTranslation(int postId, string culture, [FromQuery] string? targetCulture)
+{
+    var post = await _context.BlogPosts.FindAsync(postId);
+    if (post == null) return NotFound();
 
-       // GET: /{culture}/Admin/AddTranslation/{postId}
-        [HttpGet]
-        [Authorize(Roles = "Admin,Author")]
-        [Route("{culture}/Admin/AddTranslation/{postId}")]
-        public async Task<IActionResult> AddTranslation(int postId, string culture)
-        {
-            var post = await _context.BlogPosts.FindAsync(postId);
-            if (post == null) return NotFound();
+    // 💡 Se targetCulture vier na URL (?targetCulture=en-US), ele prioriza o targetCulture.
+    // Caso contrário, usa a cultura ativa da rota.
+    string cultureToCreate = !string.IsNullOrWhiteSpace(targetCulture) ? targetCulture : culture;
 
-            var viewModel = new AddTranslationViewModel
-            {
-                BlogPostId = postId,
-                SelectedCulture = culture // 💡 Corrigido: usa o parâmetro 'culture' vindo da rota
-            };
+    var viewModel = new AddTranslationViewModel
+    {
+        BlogPostId = postId,
+        SelectedCulture = cultureToCreate
+    };
 
-            await PopulateLanguagesViewBagAsync(culture);
+    await PopulateLanguagesViewBagAsync(cultureToCreate);
 
-            return View(viewModel);
-        }
+    return View(viewModel);
+}
 
-        // POST: /{culture}/Admin/AddTranslation/{postId}
-        [HttpPost]
-        [Authorize(Roles = "Admin,Author")]
-        [Route("{culture}/Admin/AddTranslation/{postId}")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTranslation(AddTranslationViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                await PopulateLanguagesViewBagAsync(model.SelectedCulture);
-                return View(model);
-            }
-            
-            var sanitizer = new HtmlSanitizer();
-            string cleanHtml = sanitizer.Sanitize(model.Content);
+// POST: /{culture}/Admin/AddTranslation/{postId}
+[HttpPost]
+[Authorize(Roles = "Admin,Author")]
+[Route("{culture}/Admin/AddTranslation/{postId}")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> AddTranslation(AddTranslationViewModel model, string culture)
+{
+    if (!ModelState.IsValid)
+    {
+        await PopulateLanguagesViewBagAsync(model.SelectedCulture);
+        return View(model);
+    }
 
-            bool alreadyExists = await _context.BlogPostTranslations
-                .AnyAsync(t => t.BlogPostId == model.BlogPostId && t.Culture == model.SelectedCulture);
+    var sanitizer = new HtmlSanitizer();
+    string cleanHtml = sanitizer.Sanitize(model.Content);
 
-            if (alreadyExists)
-            {
-                ModelState.AddModelError("SelectedCulture", "Este idioma já existe para este post.");
-                await PopulateLanguagesViewBagAsync(model.SelectedCulture);
-                return View(model);
-            }
+    // 💡 Valida se a tradução no idioma Selecionado (ex: en-US) já existe na base de dados
+    bool alreadyExists = await _context.BlogPostTranslations
+        .AnyAsync(t => t.BlogPostId == model.BlogPostId && t.Culture == model.SelectedCulture);
 
-            string? dbImagePath = null;
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
-            {
-                dbImagePath = await _cloudStorageService.UploadFileAsync(model.ImageFile, "blog");
-            }
+    if (alreadyExists)
+    {
+        ModelState.AddModelError("SelectedCulture", "Este idioma já existe para este post.");
+        await PopulateLanguagesViewBagAsync(model.SelectedCulture);
+        return View(model);
+    }
 
-            // 💡 Respeita o slug digitado pelo usuário na View. Se estiver vazio, gera a partir do título.
-            string rawSlug = string.IsNullOrWhiteSpace(model.Slug) ? model.Title : model.Slug;
-            string uniqueSlug = await GetUniqueSlugAsync(rawSlug, model.SelectedCulture);
+    string? dbImagePath = null;
+    if (model.ImageFile != null && model.ImageFile.Length > 0)
+    {
+        dbImagePath = await _cloudStorageService.UploadFileAsync(model.ImageFile, "blog");
+    }
 
-            var translation = new BlogPostTranslation
-            {
-                BlogPostId = model.BlogPostId,
-                Culture = model.SelectedCulture,
-                Title = model.Title,
-                Content = cleanHtml,
-                Slug = uniqueSlug,
-                
-                // 💡 SALVANDO A META DESCRIPTION NO BANCO DE DADOS
-                MetaDescription = model.MetaDescription,
-                
-                ImageUrl = dbImagePath ?? "/img/home/default-post.jpg",
-                IsPublished = model.IsPublished,
-                MetaKeywords = model.MetaKeywords
-            };
+    // 💡 Preserva o slug personalizado digitado pelo usuário na View. Se estiver em branco, gera baseado no título.
+    string rawSlug = string.IsNullOrWhiteSpace(model.Slug) ? model.Title : model.Slug;
+    string uniqueSlug = await GetUniqueSlugAsync(rawSlug, model.SelectedCulture);
 
-            _context.BlogPostTranslations.Add(translation);
-            await _context.SaveChangesAsync();
+    var translation = new BlogPostTranslation
+    {
+        BlogPostId = model.BlogPostId,
+        Culture = model.SelectedCulture, // 💡 Grava explicitamente como en-US ou fr-CA
+        Title = model.Title,
+        Content = cleanHtml,
+        Slug = uniqueSlug,
+        MetaDescription = model.MetaDescription,
+        MetaKeywords = model.MetaKeywords,
+        ImageUrl = dbImagePath ?? "/img/home/default-post.jpg",
+        IsPublished = model.IsPublished
+    };
 
-            return RedirectToAction("Dashboard", "Admin", new { culture = model.SelectedCulture });
-        }
+    _context.BlogPostTranslations.Add(translation);
+    await _context.SaveChangesAsync();
 
-        // Helper para manter a SelectList de idiomas consistente
-        private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
-        {
-            var idiomas = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-            ViewBag.Languages = new SelectList(idiomas, "Culture", "Name", selectedCulture);
-        }
+    // 💡 Redireciona o Admin mantendo a cultura original da interface em que ele estava navegando
+    return RedirectToAction("Dashboard", "Admin", new { culture = culture });
+}
 
+// Helper para manter a SelectList de idiomas consistente
+private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
+{
+    var idiomas = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+    ViewBag.Languages = new SelectList(idiomas, "Culture", "Name", selectedCulture);
+}
         // POST: DeleteTranslation
         [HttpPost]
         [Authorize(Roles = "Admin,Author")]
