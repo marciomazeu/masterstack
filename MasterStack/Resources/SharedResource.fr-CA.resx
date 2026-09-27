@@ -2737,4 +2737,190 @@
     <value>Expérience personnelle manquante</value>
     <comment/>
   </data>
+  <data name="CreatePageTitle_BlogPostCreate" xml:space="preserve">
+  <value>Créer un nouvel article</value>
+</data>
+<data name="BackBtn_BlogPostCreate" xml:space="preserve">
+  <value>Retour</value>
+</data>
+<data name="TitleLabel_BlogPostCreate" xml:space="preserve">
+  <value>Titre de l'article</value>
+</data>
+<data name="TitlePlaceholder_BlogPostCreate" xml:space="preserve">
+  <value>Entrez le titre de l'article...</value>
+</data>
+<data name="PostContent_BlogPostCreate" xml:space="preserve">
+  <value>Contenu de l'article</value>
+</data>
+<data name="SeoOptimization_BlogPostCreate" xml:space="preserve">
+  <value>Optimisation pour les moteurs de recherche (SEO)</value>
+</data>
+<data name="SlugLabel_BlogPostCreate" xml:space="preserve">
+  <value>URL conviviale (Slug)</value>
+</data>
+<data name="SlugPlaceholder_BlogPostCreate" xml:space="preserve">
+  <value>exemple-de-slug-convivial</value>
+</data>
+<data name="MetaDescriptionLabel_BlogPostCreate" xml:space="preserve">
+  <value>Méta-description</value>
+</data>
+<data name="CharactersCount_BlogPostCreate" xml:space="preserve">
+  <value>caractères</value>
+</data>
+<data name="SuggestFromText_BlogPostCreate" xml:space="preserve">
+  <value>Suggérer à partir du texte</value>
+</data>
+<data name="MetaKeywordsLabel_BlogPostCreate" xml:space="preserve">
+  <value>Mots-clés (Séparés par des virgules)</value>
+</data>
+<data name="MetaKeywordsPlaceholder_BlogPostCreate" xml:space="preserve">
+  <value>ex: dotnet, tutoriel, aspnet</value>
+</data>
+<data name="GooglePreviewTitle_BlogPostCreate" xml:space="preserve">
+  <value>Aperçu Google</value>
+</data>
+<data name="DefaultPreviewTitle_BlogPostCreate" xml:space="preserve">
+  <value>Titre de l'article</value>
+</data>
+<data name="DefaultPreviewDesc_BlogPostCreate" xml:space="preserve">
+  <value>Commencez à écrire pour voir le résumé ici...</value>
+</data>
+<data name="SettingsHeader_BlogPostCreate" xml:space="preserve">
+  <value>Paramètres</value>
+</data>
+<data name="PublicationLanguageLabel_BlogPostCreate" xml:space="preserve">
+  <value>Langue de publication</value>
+</data>
+<data name="LangPt_BlogPostCreate" xml:space="preserve">
+  <value>Portugais</value>
+</data>
+<data name="LangEn_BlogPostCreate" xml:space="preserve">
+  <value>Anglais</value>
+</data>
+<data name="LangFr_BlogPostCreate" xml:space="preserve">
+  <value>Français</value>
+</data>
+<data name="AiAssistantHeader_BlogPostCreate" xml:space="preserve">
+  <value>Assistant de rédaction intelligent</value>
+</data>
+<data name="ArticleLengthLabel_BlogPostCreate" xml:space="preserve">
+  <value>Longueur de l'article</value>
+</data>
+<data name="OptionShort_BlogPostCreate" xml:space="preserve">
+  <value>Court (Nouvelle / Rapide)</value>
+</data>
+<data name="OptionMedium_BlogPostCreate" xml:space="preserve">
+  <value>Moyen (Standard Blog)</value>
+</data>
+<data name="OptionLong_BlogPostCreate" xml:space="preserve">
+  <value>Long (Complet / SEO Avancé)</value>
+</data>
+<data name="PostTopicLabel_BlogPostCreate" xml:space="preserve">
+  <value>Sujet de l'article</value>
+</data>
+<data name="TopicPlaceholder_BlogPostCreate" xml:space="preserve">
+  <value>Ex: Meilleures pratiques en EF Core...</value>
+</data>
+<data name="GenerateBtn_BlogPostCreate" xml:space="preserve">
+  <value>Générer</value>
+</data>
+<data name="UserOpinionLabel_BlogPostCreate" xml:space="preserve">
+  <value>Votre avis / Améliorations du brouillon</value>
+</data>
+<data name="OpinionPlaceholder_BlogPostCreate" xml:space="preserve">
+  <value>Ex: Ajoutez un paragraphe sur la performance et incluez un tableau comparatif...</value>
+</data>
+<data name="RefineBtn_BlogPostCreate" xml:space="preserve">
+  <value>Affiner le brouillon actuel avec mon avis</value>
+</data>
+<data name="AdSenseValidatorHeader_BlogPostCreate" xml:space="preserve">
+  <value>Validateur Google AdSense</value>
+</data>
+<data name="ChkLengthDefault_BlogPostCreate" xml:space="preserve">
+  <value>Minimum 600 mots</value>
+</data>
+<data name="ChkTablesDefault_BlogPostCreate" xml:space="preserve">
+  <value>Contient des tableaux structurés</value>
+</data>
+<data name="ChkCodeDefault_BlogPostCreate" xml:space="preserve">
+  <value>Contient des blocs de code pratique</value>
+</data>
+<data name="ChkOpinionDefault_BlogPostCreate" xml:space="preserve">
+  <value>Contient la touche humaine (Votre avis)</value>
+</data>
+<data name="CoverImageHeader_BlogPostCreate" xml:space="preserve">
+  <value>Image de couverture</value>
+</data>
+<data name="UploadPlaceholderText_BlogPostCreate" xml:space="preserve">
+  <value>Cliquer pour sélectionner une image</value>
+</data>
+<data name="StatusHeader_BlogPostCreate" xml:space="preserve">
+  <value>Statut</value>
+</data>
+<data name="StatusDraft_BlogPostCreate" xml:space="preserve">
+  <value>Brouillon</value>
+</data>
+<data name="StatusPublished_BlogPostCreate" xml:space="preserve">
+  <value>Publié</value>
+</data>
+<data name="StatusWarning_BlogPostCreate" xml:space="preserve">
+  <value>Si décoché, l'article n'apparaîtra pas dans la liste publique.</value>
+</data>
+<data name="SubmitBtn_BlogPostCreate" xml:space="preserve">
+  <value>Publier l'article</value>
+</data>
+<data name="CancelBtn_BlogPostCreate" xml:space="preserve">
+  <value>Annuler</value>
+</data>
+<data name="Words_BlogPostCreate" xml:space="preserve">
+  <value>mots</value>
+</data>
+<data name="AdSenseDenseText_BlogPostCreate" xml:space="preserve">
+  <value>Texte dense</value>
+</data>
+<data name="AdSenseTooShort_BlogPostCreate" xml:space="preserve">
+  <value>Trop court</value>
+</data>
+<data name="AdSenseHasTables_BlogPostCreate" xml:space="preserve">
+  <value>Contient des tableaux comparatifs</value>
+</data>
+<data name="AdSenseTipAddTable_BlogPostCreate" xml:space="preserve">
+  <value>Conseil: Ajoutez un tableau comparatif</value>
+</data>
+<data name="AdSenseHasCode_BlogPostCreate" xml:space="preserve">
+  <value>Contient des exemples de code</value>
+</data>
+<data name="AdSenseTipAddCode_BlogPostCreate" xml:space="preserve">
+  <value>Conseil: Incluez des blocs de code pratique</value>
+</data>
+<data name="AdSenseHasHumanTouch_BlogPostCreate" xml:space="preserve">
+  <value>Contient la touche humaine appliquée</value>
+</data>
+<data name="AdSenseMissingPersonalExp_BlogPostCreate" xml:space="preserve">
+  <value>Expérience personnelle manquante</value>
+</data>
+<data name="JsAlertFieldNotFound_BlogPostCreate" xml:space="preserve">
+  <value>Champ de sujet introuvable.</value>
+</data>
+<data name="JsAlertTopicEmpty_BlogPostCreate" xml:space="preserve">
+  <value>Le sujet ne peut pas être vide!</value>
+</data>
+<data name="JsErrorServerError_BlogPostCreate" xml:space="preserve">
+  <value>Erreur de réponse du serveur (Statut</value>
+</data>
+<data name="JsAlertGenFailed_BlogPostCreate" xml:space="preserve">
+  <value>Échec de la génération du contenu</value>
+</data>
+<data name="JsAlertOpinionEmpty_BlogPostCreate" xml:space="preserve">
+  <value>Entrez vos améliorations ou votre avis avant d'affiner!</value>
+</data>
+<data name="JsAlertContentEmpty_BlogPostCreate" xml:space="preserve">
+  <value>Il n'y a aucun texte dans l'éditeur à affiner!</value>
+</data>
+<data name="JsErrorRefineReq_BlogPostCreate" xml:space="preserve">
+  <value>Erreur de requête d'affinage IA</value>
+</data>
+<data name="JsAlertRefineFailed_BlogPostCreate" xml:space="preserve">
+  <value>Échec de l'affinage du contenu</value>
+</data>
 </root>

@@ -149,7 +149,7 @@
                             <div class="input-group input-group-sm" style="max-width: 150px;">
                                 <input type="text" name="searchTerm" class="form-control border-secondary bg-dark text-white shadow-none"
                                        placeholder="@Localizer["SearchPlaceholder"]" value="@Context.Request.Query["searchTerm"]">
-                                <button class="btn btn-outline-secondary border-start-0" aria-label="Buscar"type="submit">
+                                <button class="btn btn-outline-secondary border-start-0" aria-label="Buscar" type="submit">
                                     <i class="fas fa-search"></i>
                                 </button>
                             </div>
@@ -280,7 +280,7 @@
                     <p>@Localizer["HeroSubtitle"]</p>
                 </div>
 
-                <div class="col-md-4 col-lg-4 col-xl-4 mt-3">
+               <div class="col-md-4 col-lg-4 col-xl-4 mt-3">
                     @await Component.InvokeAsync("FooterPages")
                 </div>
 
@@ -299,12 +299,21 @@
                 </div>
                 <div class="col-md-5 col-lg-4">
                     <div class="text-center text-md-end">
-                        <ul class="list-unstyled list-inline">
-                            <li class="list-inline-item">
-                                <a href="#" class="btn-floating btn-sm text-white" aria-label="Facebook" style="font-size: 23px;"><i class="fab fa-facebook"></i></a>
+                        <ul class="list-unstyled list-inline mb-0">
+                            <li class="list-inline-item me-3">
+                                <a href="https://www.instagram.com/masterstackjobs" target="_blank" rel="noopener noreferrer" class="btn-floating btn-sm text-white" aria-label="Instagram" style="font-size: 23px;">
+                                    <i class="fab fa-instagram"></i>
+                                </a>
+                            </li>
+                            <li class="list-inline-item me-3">
+                                <a href="#" class="btn-floating btn-sm text-white" aria-label="Facebook" style="font-size: 23px;">
+                                    <i class="fab fa-facebook"></i>
+                                </a>
                             </li>
                             <li class="list-inline-item">
-                                <a href="#" class="btn-floating btn-sm text-white" aria-label="LinkedIn" style="font-size: 23px;"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="btn-floating btn-sm text-white" aria-label="LinkedIn" style="font-size: 23px;">
+                                    <i class="fab fa-linkedin"></i>
+                                </a>
                             </li>
                         </ul>
                     </div>
@@ -331,7 +340,6 @@
                         <p class="mb-0 text-muted small">Your session has expired due to inactivity (15 minutes).</p>
                     </div>
                     <div class="modal-footer border-0 justify-content-center">
-                        <!-- ✅ 'onclick' apontando para a mesma função do script -->
                         <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="redirectToLogout()">
                             Entrar Novamente / Se reconnecter / Log In Again
                         </button>
@@ -340,7 +348,6 @@
             </div>
         </div>
        <script>
-            // ✅ Salva a cultura atual do Razor diretamente para o JavaScript
             const currentCulture = "@currentCulture";
 
             document.addEventListener("DOMContentLoaded", function () {
@@ -355,7 +362,6 @@
                 }
 
                function showInactivityModal() {
-                    // 1. Bloqueia imediatamente a execução se estiver em página de Erro
                     if (window.location.pathname.toLowerCase().includes('/error') || 
                         document.title.toLowerCase().includes('error')) {
                         return;
@@ -380,7 +386,6 @@
                 resetTimer();
             });
 
-            // ✅ Nome da função unificado + Rota dinâmica com a cultura correta
             function redirectToLogout() {
                 window.location.href = '/' + currentCulture + '/Account/Logout'; 
             }

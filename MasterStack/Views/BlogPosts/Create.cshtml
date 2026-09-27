@@ -5,7 +5,7 @@
 @inject IStringLocalizer<SharedResource> Localizer
 
 @{
-    ViewData["Title"] = Localizer["CreatePageTitle"];
+    ViewData["Title"] = Localizer["CreatePageTitle_BlogPostCreate"];
     var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     var selectedCultureValue = Model?.SelectedCulture ?? currentCulture;
 }
@@ -55,9 +55,9 @@
 
 <div class="container mt-4 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">@Localizer["CreatePageTitle"]</h1>
+        <h1 class="h3 mb-0">@Localizer["CreatePageTitle_BlogPostCreate"]</h1>
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left"></i> @Localizer["BackBtn"]
+            <i class="fas fa-arrow-left"></i> @Localizer["BackBtn_BlogPostCreate"]
         </a>
     </div>
 
@@ -71,13 +71,13 @@
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
 
                         <div class="mb-4">
-                            <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel"]</label>
-                            <input asp-for="Title" id="Title" class="form-control form-control-lg" placeholder="@Localizer["TitlePlaceholder"]" />
+                            <label asp-for="Title" class="form-label fw-bold">@Localizer["TitleLabel_BlogPostCreate"]</label>
+                            <input asp-for="Title" id="Title" class="form-control form-control-lg" placeholder="@Localizer["TitlePlaceholder_BlogPostCreate"]" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Conteúdo do Post</label>
+                            <label class="form-label fw-bold">@Localizer["PostContent_BlogPostCreate"]</label>
                             <div id="quill-editor" style="height: 450px; background: white; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                                 @Html.Raw(Model?.Content)
                             </div>
@@ -88,49 +88,49 @@
                 </div>
 
                 <div class="card mb-4">
-                    <div class="card-header bg-white fw-bold py-3">Otimização para Buscas (SEO)</div>
+                    <div class="card-header bg-white fw-bold py-3">@Localizer["SeoOptimization_BlogPostCreate"]</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label asp-for="Slug" class="form-label fw-bold small text-uppercase">URL Amigável (Slug)</label>
+                            <label asp-for="Slug" class="form-label fw-bold small text-uppercase">@Localizer["SlugLabel_BlogPostCreate"]</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted small">/blog/</span>
-                                <input asp-for="Slug" id="Slug" class="form-control" placeholder="exemplo-de-url-amigavel" />
+                                <input asp-for="Slug" id="Slug" class="form-control" placeholder="@Localizer["SlugPlaceholder_BlogPostCreate"]" />
                             </div>
                             <span asp-validation-for="Slug" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="MetaDescription" class="form-label fw-bold small text-uppercase">Meta Description</label>
+                            <label asp-for="MetaDescription" class="form-label fw-bold small text-uppercase">@Localizer["MetaDescriptionLabel_BlogPostCreate"]</label>
                             <textarea asp-for="MetaDescription" id="MetaDescription" class="form-control" rows="3" maxlength="160" data-auto="false"></textarea>
                             <span asp-validation-for="MetaDescription" class="text-danger small"></span>
                             
                             <div class="d-flex justify-content-between align-items-center mt-2">
-                                <small id="descCounter" class="badge bg-light text-muted border">0 / 160 caracteres</small>
+                                <small id="descCounter" class="badge bg-light text-muted border">0 / 160 @Localizer["CharactersCount_BlogPostCreate"]</small>
                                 
                                 <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="forceAutoDescription()">
-                                    <i class="fas fa-magic me-1"></i> Sugerir baseada no texto
+                                    <i class="fas fa-magic me-1"></i> @Localizer["SuggestFromText_BlogPostCreate"]
                                 </button>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label asp-for="MetaKeywords" class="form-label small fw-bold">Palavras-chave (Separadas por vírgula)</label>
-                            <input asp-for="MetaKeywords" class="form-control form-control-sm" placeholder="ex: dotnet, tutorial, aspnet" />
+                            <label asp-for="MetaKeywords" class="form-label small fw-bold">@Localizer["MetaKeywordsLabel_BlogPostCreate"]</label>
+                            <input asp-for="MetaKeywords" class="form-control form-control-sm" placeholder="@Localizer["MetaKeywordsPlaceholder_BlogPostCreate"]" />
                             <span asp-validation-for="MetaKeywords" class="text-danger small"></span>
                         </div>
 
                         <hr />
 
                         <div class="google-preview-box">
-                            <h6 class="text-muted small mb-2"><i class="fab fa-google"></i> Prévia do Google</h6>
+                            <h6 class="text-muted small mb-2"><i class="fab fa-google"></i> @Localizer["GooglePreviewTitle_BlogPostCreate"]</h6>
                             <div style="font-family: arial, sans-serif;">
                                 <div style="color: #202124; font-size: 14px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     https://seusite.com/@currentCulture/blog/<span id="preview-slug">...</span>
                                 </div>
                                 <div id="preview-title" style="color: #1a0dab; font-size: 20px; line-height: 1.3; cursor: pointer; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    Título do Post
+                                    @Localizer["DefaultPreviewTitle_BlogPostCreate"]
                                 </div>
                                 <div id="preview-desc" style="color: #4d5156; font-size: 14px; line-height: 1.58; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                                    Comece a escrever para ver o resumo aqui...
+                                    @Localizer["DefaultPreviewDesc_BlogPostCreate"]
                                 </div>
                             </div>
                         </div>
@@ -141,38 +141,38 @@
             <div class="col-lg-4">
                 <div class="sticky-sidebar">
                     <div class="card mb-4">
-                        <div class="card-header bg-white fw-bold">Configurações</div>
+                        <div class="card-header bg-white fw-bold">@Localizer["SettingsHeader_BlogPostCreate"]</div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label asp-for="SelectedCulture" class="form-label small">Idioma da Publicação</label>
+                                <label asp-for="SelectedCulture" class="form-label small">@Localizer["PublicationLanguageLabel_BlogPostCreate"]</label>
                                 <select asp-for="SelectedCulture" class="form-select">
-                                    <option value="pt-BR" selected="@(selectedCultureValue == "pt-BR")">🇧🇷 Português</option>
-                                    <option value="en-US" selected="@(selectedCultureValue == "en-US")">🇺🇸 Inglês</option>
-                                    <option value="fr-CA" selected="@(selectedCultureValue == "fr-CA")">🇫🇷 Français</option>
+                                    <option value="pt-BR" selected="@(selectedCultureValue == "pt-BR")">🇧🇷 @Localizer["LangPt_BlogPostCreate"]</option>
+                                    <option value="en-US" selected="@(selectedCultureValue == "en-US")">🇺🇸 @Localizer["LangEn_BlogPostCreate"]</option>
+                                    <option value="fr-CA" selected="@(selectedCultureValue == "fr-CA")">🇫🇷 @Localizer["LangFr_BlogPostCreate"]</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
                     <div class="card mb-4 bg-light border-primary shadow-sm">
-                        <div class="card-header bg-primary text-white fw-bold">🪄 Assistente de Escrita Inteligente</div>
+                        <div class="card-header bg-primary text-white fw-bold">🪄 @Localizer["AiAssistantHeader_BlogPostCreate"]</div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label small fw-bold text-muted text-uppercase">Tamanho do Artigo</label>
+                                <label class="form-label small fw-bold text-muted text-uppercase">@Localizer["ArticleLengthLabel_BlogPostCreate"]</label>
                                 <select id="aiLength" class="form-select form-select-sm">
-                                    <option value="curto (cerca de 400 a 600 palavras)">Curto (Notícia / Rápido)</option>
-                                    <option value="médio (cerca de 800 a 1000 palavras)" selected>Médio (Padrão Blog)</option>
-                                    <option value="longo (cerca de 1200 a 1500 palavras)">Longo (Completo / SEO Avançado)</option>
+                                    <option value="curto (cerca de 400 a 600 palavras)">@Localizer["OptionShort_BlogPostCreate"]</option>
+                                    <option value="médio (cerca de 800 a 1000 palavras)" selected>@Localizer["OptionMedium_BlogPostCreate"]</option>
+                                    <option value="longo (cerca de 1200 a 1500 palavras)">@Localizer["OptionLong_BlogPostCreate"]</option>
                                 </select>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label small fw-bold text-muted text-uppercase">Tema do Post</label>
+                                <label class="form-label small fw-bold text-muted text-uppercase">@Localizer["PostTopicLabel_BlogPostCreate"]</label>
                                 <div class="input-group">
-                                    <input type="text" id="aiTopic" class="form-control" placeholder="Ex: Melhores práticas no EF Core...">
+                                    <input type="text" id="aiTopic" class="form-control" placeholder="@Localizer["TopicPlaceholder_BlogPostCreate"]">
                                     <button class="btn btn-primary" type="button" id="btnGenerateAi" onclick="generateContentWithAi()">
                                         <span id="aiSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-                                        Gerar
+                                        @Localizer["GenerateBtn_BlogPostCreate"]
                                     </button>
                                 </div>
                             </div>
@@ -181,14 +181,14 @@
 
                             <div class="mb-3">
                                 <label class="form-label small fw-bold text-success text-uppercase">
-                                    <i class="fas fa-user-edit me-1"></i> Sua Opinião / Melhorias para o Rascunho
+                                    <i class="fas fa-user-edit me-1"></i> @Localizer["UserOpinionLabel_BlogPostCreate"]
                                 </label>
                                 <textarea id="userOpinion" class="form-control form-control-sm" rows="3" 
-                                        placeholder="Ex: Adicione um parágrafo sobre performance e inclua uma tabela comparativa..."></textarea>
+                                        placeholder="@Localizer["OpinionPlaceholder_BlogPostCreate"]"></textarea>
                                 
                                 <button type="button" class="btn btn-success btn-sm w-100 mt-2" id="btnRefineAi" onclick="refineContentWithAi()">
                                     <span id="aiRefineSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-                                    <i class="fas fa-sync-alt me-1"></i> Refinar Rascunho Atual com Minha Opinião
+                                    <i class="fas fa-sync-alt me-1"></i> @Localizer["RefineBtn_BlogPostCreate"]
                                 </button>
                             </div>
 
@@ -196,21 +196,21 @@
 
                             <div class="bg-white p-3 rounded border">
                                 <h6 class="fw-bold small text-muted text-uppercase mb-3">
-                                    <i class="fas fa-shield-alt text-warning me-1"></i> Validador Google AdSense
+                                    <i class="fas fa-shield-alt text-warning me-1"></i> @Localizer["AdSenseValidatorHeader_BlogPostCreate"]
                                 </h6>
                                 
                                 <ul class="list-unstyled mb-0 small">
                                     <li class="mb-2 d-flex align-items-center" id="chk-length">
-                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Mínimo de 600 palavras</span>
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>@Localizer["ChkLengthDefault_BlogPostCreate"]</span>
                                     </li>
                                     <li class="mb-2 d-flex align-items-center" id="chk-tables">
-                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Possui tabelas estruturadas</span>
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>@Localizer["ChkTablesDefault_BlogPostCreate"]</span>
                                     </li>
                                     <li class="mb-2 d-flex align-items-center" id="chk-code">
-                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Possui blocos de código prático</span>
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>@Localizer["ChkCodeDefault_BlogPostCreate"]</span>
                                     </li>
                                     <li class="mb-0 d-flex align-items-center" id="chk-opinion">
-                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>Contém o Toque Humano (Sua Opinião)</span>
+                                        <i class="fas fa-circle text-danger me-2 font-xs"></i> <span>@Localizer["ChkOpinionDefault_BlogPostCreate"]</span>
                                     </li>
                                 </ul>
                             </div>
@@ -218,12 +218,12 @@
                     </div>
 
                     <div class="card mb-4">
-                        <div class="card-header bg-white fw-bold">Imagem de Capa</div>
+                        <div class="card-header bg-white fw-bold">@Localizer["CoverImageHeader_BlogPostCreate"]</div>
                         <div class="card-body">
                             <div class="image-preview-wrapper" onclick="document.getElementById('ImageInput').click();">
                                 <div id="uploadPlaceholder">
                                     <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
-                                    <div class="small text-muted">Clique para selecionar imagem</div>
+                                    <div class="small text-muted">@Localizer["UploadPlaceholderText_BlogPostCreate"]</div>
                                 </div>
                                 <img id="imagePreview" src="#" alt="Preview" class="img-fluid" />
                             </div>
@@ -233,23 +233,23 @@
                     </div>
 
                     <div class="card mb-4">
-                        <div class="card-header bg-white fw-bold">Status</div>
+                        <div class="card-header bg-white fw-bold">@Localizer["StatusHeader_BlogPostCreate"]</div>
                         <div class="card-body">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="publishSwitch">
                                 <label class="form-check-label fw-bold" for="publishSwitch">
-                                    <span id="statusLabel" class="text-danger">Rascunho</span>
+                                    <span id="statusLabel" class="text-danger">@Localizer["StatusDraft_BlogPostCreate"]</span>
                                 </label>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                Se desmarcado, o post não aparecerá na listagem pública.
+                                @Localizer["StatusWarning_BlogPostCreate"]
                             </small>
                         </div>
                     </div>
                     <div class="card">
                         <div class="card-body">
-                            <button type="submit" class="btn btn-success w-100 mb-2 py-2 fw-bold">Publicar Post</button>
-                            <a asp-action="Index" class="btn btn-light w-100 btn-sm text-muted border">Cancelar</a>
+                            <button type="submit" class="btn btn-success w-100 mb-2 py-2 fw-bold">@Localizer["SubmitBtn_BlogPostCreate"]</button>
+                            <a asp-action="Index" class="btn btn-light w-100 btn-sm text-muted border">@Localizer["CancelBtn_BlogPostCreate"]</a>
                         </div>
                     </div>
                 </div>
@@ -372,7 +372,7 @@
             if (!df || !counter) return;
 
             const count = df.value.length;
-            counter.innerText = `${count} / 160 caracteres`;
+            counter.innerText = `${count} / 160 @Localizer["CharactersCount_BlogPostCreate"]`;
             counter.className = count >= 150 ? "text-danger small" : "text-muted small";
         }
 
@@ -385,12 +385,11 @@
             const pSlug = document.getElementById('preview-slug');
             const pDesc = document.getElementById('preview-desc');
 
-            if(pTitle) pTitle.innerText = (ti && ti.value) ? ti.value : "Título do Post";
+            if(pTitle) pTitle.innerText = (ti && ti.value) ? ti.value : "@Localizer["DefaultPreviewTitle_BlogPostCreate"]";
             if(pSlug) pSlug.innerText = (si && si.value) ? si.value : "slug-do-post";
-            if(pDesc) pDesc.innerText = (df && df.value) ? df.value : "A descrição aparecerá aqui...";
+            if(pDesc) pDesc.innerText = (df && df.value) ? df.value : "@Localizer["DefaultPreviewDesc_BlogPostCreate"]";
         }
 
-        // 🔥 Evento de Preview da Imagem de Capa
         const imageInputEl = document.getElementById('ImageInput');
         if (imageInputEl) {
             imageInputEl.onchange = evt => {
@@ -416,7 +415,7 @@
         
         const updateLabel = () => {
             if(!sw || !label) return;
-            label.innerText = sw.checked ? "Publicado" : "Rascunho";
+            label.innerText = sw.checked ? "@Localizer["StatusPublished_BlogPostCreate"]" : "@Localizer["StatusDraft_BlogPostCreate"]";
             label.className = sw.checked ? "text-success fw-bold" : "text-danger fw-bold";
         };
 
@@ -429,10 +428,10 @@
             const lengthEl = document.getElementById('aiLength');
             const opinionEl = document.getElementById('userOpinion');
 
-            if (!topicEl) return alert('Campo de tema não encontrado.');
+            if (!topicEl) return alert('@Localizer["JsAlertFieldNotFound_BlogPostCreate"]');
             const topic = topicEl.value.trim();
 
-            if (!topic) return alert('O tema não pode estar vazio!');
+            if (!topic) return alert('@Localizer["JsAlertTopicEmpty_BlogPostCreate"]');
 
             const selectedCultureEl = document.querySelector('select[name="SelectedCulture"]');
             const culture = selectedCultureEl ? selectedCultureEl.value : '@currentCulture';
@@ -454,7 +453,7 @@
                     body: `topic=${encodeURIComponent(topic)}&culture=${encodeURIComponent(culture)}&length=${encodeURIComponent(length)}&opinion=${encodeURIComponent(opinion)}`
                 });
 
-                if (!response.ok) throw new Error('Erro na resposta do servidor (Status ' + response.status + ')');
+                if (!response.ok) throw new Error('@Localizer["JsErrorServerError_BlogPostCreate"] ' + response.status + ')');
 
                 const data = await response.json();
                 
@@ -472,7 +471,7 @@
                 runAdSenseAnalyzer();
 
             } catch (error) {
-                alert('Falha ao gerar conteúdo: ' + error.message);
+                alert('@Localizer["JsAlertGenFailed_BlogPostCreate"]: ' + error.message);
             } finally {
                 document.getElementById('aiSpinner').classList.add('d-none');
                 document.getElementById('btnGenerateAi').disabled = false;
@@ -492,8 +491,8 @@
             const currentSlug = slugInput ? slugInput.value : '';
             const currentMeta = descField ? descField.value : '';
 
-            if (!opinion) return alert('Digite o que você quer melhorar ou sua opinião antes de refinar!');
-            if (currentContent === '<p><br></p>' || !currentContent) return alert('Não há nenhum texto no editor para ser refinado!');
+            if (!opinion) return alert('@Localizer["JsAlertOpinionEmpty_BlogPostCreate"]');
+            if (currentContent === '<p><br></p>' || !currentContent) return alert('@Localizer["JsAlertContentEmpty_BlogPostCreate"]');
 
             document.getElementById('aiRefineSpinner').classList.remove('d-none');
             document.getElementById('btnRefineAi').disabled = true;
@@ -510,7 +509,7 @@
                     body: `culture=${encodeURIComponent(culture)}&opinion=${encodeURIComponent(opinion)}&currentContent=${encodeURIComponent(currentContent)}`
                 });
 
-                if (!response.ok) throw new Error('Erro na requisição de refinamento da IA');
+                if (!response.ok) throw new Error('@Localizer["JsErrorRefineReq_BlogPostCreate"]');
 
                 const data = await response.json();
                 
@@ -527,7 +526,7 @@
                 runAdSenseAnalyzer();
 
             } catch (error) {
-                alert('Falha ao refinar conteúdo: ' + error.message);
+                alert('@Localizer["JsAlertRefineFailed_BlogPostCreate"]: ' + error.message);
             } finally {
                 document.getElementById('aiRefineSpinner').classList.add('d-none');
                 document.getElementById('btnRefineAi').disabled = false;
@@ -542,36 +541,36 @@
             const chkLength = document.getElementById('chk-length');
             if (chkLength) {
                 if (wordCount >= 600) {
-                    chkLength.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Texto denso (${wordCount} palavras)</span>`;
+                    chkLength.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>@Localizer["AdSenseDenseText_BlogPostCreate"] (${wordCount} @Localizer["Words_BlogPostCreate"])</span>`;
                 } else {
-                    chkLength.innerHTML = `<i class="fas fa-exclamation-circle text-danger me-2"></i> <span>Muito curto (${wordCount}/600 palavras)</span>`;
+                    chkLength.innerHTML = `<i class="fas fa-exclamation-circle text-danger me-2"></i> <span>@Localizer["AdSenseTooShort_BlogPostCreate"] (${wordCount}/600 @Localizer["Words_BlogPostCreate"])</span>`;
                 }
             }
 
             const chkTables = document.getElementById('chk-tables');
             if (chkTables) {
                 if (html.includes('<table')) {
-                    chkTables.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Possui tabelas de comparação</span>`;
+                    chkTables.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>@Localizer["AdSenseHasTables_BlogPostCreate"]</span>`;
                 } else {
-                    chkTables.innerHTML = `<i class="fas fa-times-circle text-muted me-2"></i> <span>Dica: Adicione uma tabela comparativa</span>`;
+                    chkTables.innerHTML = `<i class="fas fa-times-circle text-muted me-2"></i> <span>@Localizer["AdSenseTipAddTable_BlogPostCreate"]</span>`;
                 }
             }
 
             const chkCode = document.getElementById('chk-code');
             if (chkCode) {
                 if (html.includes('<pre') || html.includes('<code')) {
-                    chkCode.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Possui exemplos de código</span>`;
+                    chkCode.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>@Localizer["AdSenseHasCode_BlogPostCreate"]</span>`;
                 } else {
-                    chkCode.innerHTML = `<i class="fas fa-times-circle text-muted me-2"></i> <span>Dica: Inclua blocos de código prático</span>`;
+                    chkCode.innerHTML = `<i class="fas fa-times-circle text-muted me-2"></i> <span>@Localizer["AdSenseTipAddCode_BlogPostCreate"]</span>`;
                 }
             }
 
             const chkOpinion = document.getElementById('chk-opinion');
             if (chkOpinion) {
-                if (html.includes('<strong>Nota do Autor:</strong>')) {
-                    chkOpinion.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>Contém o Toque Humano aplicado</span>`;
+                if (html.includes('<strong>Nota do Autor:</strong>') || html.includes('<strong>Author Note:</strong>') || html.includes('<strong>Note de l\'auteur:</strong>')) {
+                    chkOpinion.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> <span>@Localizer["AdSenseHasHumanTouch_BlogPostCreate"]</span>`;
                 } else {
-                    chkOpinion.innerHTML = `<i class="fas fa-times-circle text-danger me-2"></i> <span>Falta incluir sua experiência pessoal</span>`;
+                    chkOpinion.innerHTML = `<i class="fas fa-times-circle text-danger me-2"></i> <span>@Localizer["AdSenseMissingPersonalExp_BlogPostCreate"]</span>`;
                 }
             }
         }
