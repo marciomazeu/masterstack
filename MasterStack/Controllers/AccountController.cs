@@ -394,16 +394,20 @@ namespace MasterStack.Controllers
             return View();
         }
 
-        [HttpGet]
         [HttpPost]
-        [IgnoreAntiforgeryToken]
+        [ValidateAntiForgeryToken]
+        [Route("{culture}/Account/Logout")]
         public async Task<IActionResult> Logout(string culture)
         {
+            // 1. Efectua o logout da sessão do ASP.NET Identity
             await _signInManager.SignOutAsync();
+
+            // 2. Garante o fallback de cultura caso venha vazio
             var currentCulture = !string.IsNullOrEmpty(culture) 
                 ? culture 
                 : RouteData.Values["culture"]?.ToString() ?? "pt-BR";
 
+            // 3. Redireciona para o Login ou Home passando o parâmetro de cultura
             return RedirectToAction("Login", "Account", new { culture = currentCulture });
         }
 
