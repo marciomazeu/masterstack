@@ -272,19 +272,6 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // Endpoints para Logout
-    app.MapGet("/{culture}/Account/Logout", async (string culture, SignInManager<ApplicationUser> signInManager) =>
-    {
-        await signInManager.SignOutAsync();
-        return Results.Redirect($"/{culture}/Account/Login");
-    });
-
-    app.MapGet("/Account/Logout", async (SignInManager<ApplicationUser> signInManager) =>
-    {
-        await signInManager.SignOutAsync();
-        return Results.Redirect("/fr-CA/Account/Login");
-    });
-
     // --- 7. ROTAS MAPPING ---
     app.MapControllerRoute(
         name: "culture-route",
