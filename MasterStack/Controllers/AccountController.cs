@@ -396,7 +396,6 @@ namespace MasterStack.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Route("{culture}/Account/Logout")]
         public async Task<IActionResult> Logout(string culture)
         {
             // 1. Efectua o logout da sessão do ASP.NET Identity
