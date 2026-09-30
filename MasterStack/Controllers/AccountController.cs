@@ -50,6 +50,15 @@ namespace MasterStack.Controllers
             _logger = logger;
         }
 
+        [HttpGet]
+        public IActionResult Index(string culture)
+        {
+            var currentCulture = !string.IsNullOrEmpty(culture) 
+                ? culture 
+                : RouteData.Values["culture"]?.ToString() ?? "fr-CA";
+
+            return RedirectToAction("Login", "Account", new { culture = currentCulture });
+        }
         // ==========================================
         // Helper para tradução com Fallback seguro em E-mails
         // ==========================================
@@ -404,7 +413,7 @@ namespace MasterStack.Controllers
             // 2. Garante o fallback de cultura caso venha vazio
             var currentCulture = !string.IsNullOrEmpty(culture) 
                 ? culture 
-                : RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+                : RouteData.Values["culture"]?.ToString() ?? "fr-CA";
 
             // 3. Redireciona para o Login ou Home passando o parâmetro de cultura
             return RedirectToAction("Login", "Account", new { culture = currentCulture });
