@@ -18,8 +18,9 @@ using Microsoft.Extensions.Localization;
 
 namespace MasterStack.Controllers
 {
-    [Authorize] // 🔒 Exige login para acessar o módulo de vagas
-    [Route("{controller}")]
+    [Authorize] // 🔒 Exige login por padrão no controller
+    [Route("{culture}/[controller]")] // ✅ Define a rota base com suporte a cultura (/fr-CA/Jobs)
+    [Route("[controller]")]
     public class JobsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -112,7 +113,7 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/Jobs/Enterprises
-        [AllowAnonymous]
+        [AllowAnonymous] // 🔓 Libera a busca de vagas/empresas para visitantes e buscadores (Google)
         [HttpGet("Enterprises")]
         public async Task<IActionResult> Enterprises(string culture, [FromQuery] string? searchTerm)
         {
