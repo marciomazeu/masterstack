@@ -142,7 +142,7 @@
             <div class="collapse navbar-collapse" id="navContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link text-white" asp-controller="BlogPosts" asp-action="Index" asp-route-culture="@currentCulture">
+                       <a class="nav-link text-white" asp-controller="BlogPosts" asp-action="Index" asp-route-culture="@currentCulture">
                             <i class="fas fa-blog me-1"></i> @Localizer["MenuBlog"]
                         </a>
                     </li>
@@ -186,13 +186,13 @@
                             {
                                 <li>
                                     <a class="dropdown-item" 
-                                       asp-controller="@currentController" 
-                                       asp-action="@currentAction" 
-                                       asp-route-culture="@lang.Culture"
-                                       asp-route-id="@candidateId"
-                                       asp-route-slug="@(currentAction == "Details" || currentAction == "Page" ? currentSlug : null)"> 
-                                        <span class="fi @lang.FlagClass"></span> @lang.Name
-                                    </a>
+                                        asp-controller="@(currentController ?? "Home")" 
+                                        asp-action="@(currentAction ?? "Index")" 
+                                        asp-route-culture="@lang.Culture"
+                                        asp-route-id="@candidateId"
+                                        asp-route-slug="@(currentAction == "Details" || currentAction == "Page" ? currentSlug : null)"> 
+                                            <span class="fi @lang.FlagClass"></span> @lang.Name
+                                        </a>
                                 </li>
                             }
                         </ul>

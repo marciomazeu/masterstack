@@ -12,8 +12,11 @@ using Microsoft.Extensions.Localization;
 using System.Text;
 using System.Text.RegularExpressions;
 
+
 namespace MasterStack.Controllers
 {
+    [Route("{culture}/[controller]")]
+    [Route("[controller]")]
     public class BlogPostsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -41,6 +44,7 @@ namespace MasterStack.Controllers
 
         // GET: /{culture}/BlogPosts
         [HttpGet]
+        [HttpGet("Index")]
         public async Task<IActionResult> Index(string culture, int page = 1, string searchTerm = "", bool notfound = false)
         {
             if (notfound)
