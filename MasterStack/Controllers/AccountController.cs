@@ -17,7 +17,7 @@ using Serilog;
 
 namespace MasterStack.Controllers
 {
-    [Route("{culture}/[controller]")]
+    [Route("[controller]")]
     public class AccountController : Controller
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -75,9 +75,8 @@ namespace MasterStack.Controllers
                 : (cultureStr.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? enText : ptText);
         }
 
-        [HttpGet]
-        [HttpGet("Login")]
-        [HttpGet("/Account/Login")]
+       [HttpGet("Login")]
+        [HttpGet("/{culture}/Account/Login")]
         public IActionResult Login(string culture, string returnUrl = null)
         {
             ViewBag.CurrentCulture = culture ?? RouteData.Values["culture"] ?? "fr-CA";
@@ -85,9 +84,8 @@ namespace MasterStack.Controllers
             return View();
         }
 
-        [HttpPost]
         [HttpPost("Login")]
-        [HttpPost("/Account/Login")]
+        [HttpPost("/{culture}/Account/Login")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string username, string password, string culture, string returnUrl = null)
         {
@@ -403,10 +401,10 @@ namespace MasterStack.Controllers
             return View();
         }
 
-        [HttpGet("Logout")]
-        [HttpGet("/Account/Logout")]
+      [HttpGet("Logout")]
+        [HttpGet("/{culture}/Account/Logout")]
         [HttpPost("Logout")]
-        [HttpPost("/Account/Logout")]
+        [HttpPost("/{culture}/Account/Logout")]
         public async Task<IActionResult> Logout(string culture)
         {
             // 1. Limpa a sessão do utilizador no Identity
@@ -640,6 +638,7 @@ namespace MasterStack.Controllers
             return View();
         }
 
+        [HttpGet("EnableTwoFactor")]
         [HttpGet("/{culture}/Account/EnableTwoFactor")]
         public async Task<IActionResult> EnableTwoFactor([FromRoute] string culture)
         {
@@ -667,6 +666,7 @@ namespace MasterStack.Controllers
             return View(model);
         }
 
+        [HttpPost("EnableTwoFactor")]
         [HttpPost("/{culture}/Account/EnableTwoFactor")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnableTwoFactor(EnableTwoFactorViewModel model, [FromRoute] string culture)

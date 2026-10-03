@@ -10,7 +10,7 @@ using MasterStack.Models;
 namespace MasterStack.Controllers
 {
     [Authorize(Roles = "Recruiter,Admin")]
-    [Microsoft.AspNetCore.Mvc.Route("{controller}")]
+    [Microsoft.AspNetCore.Components.Route("[controller]")]
     public class CandidateController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +26,7 @@ namespace MasterStack.Controllers
 // Em Controllers/CandidateController.cs
 
 [HttpGet("Profile/{id}")]
+        [HttpGet("/{culture}/Candidate/Profile/{id}")]
 public async Task<IActionResult> Profile(string id, string culture = "pt-BR")
 {
     var candidate = await _context.Users

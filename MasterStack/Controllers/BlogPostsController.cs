@@ -15,7 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace MasterStack.Controllers
 {
-    [Route("{culture}/[controller]")]
+
     [Route("[controller]")]
     public class BlogPostsController : Controller
     {
@@ -43,8 +43,8 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/BlogPosts
-        [HttpGet]
-        [HttpGet("Index")]
+      [HttpGet("/[controller]")]
+        [HttpGet("/{culture}/[controller]")]
         public async Task<IActionResult> Index(string culture, int page = 1, string searchTerm = "", bool notfound = false)
         {
             if (notfound)
@@ -140,7 +140,8 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/BlogPosts/Create
-        [HttpGet]
+        [HttpGet("Create")]
+        [HttpGet("/{culture}/BlogPosts/Create")]
         [Authorize(Roles = "Admin,Author")]
         public IActionResult Create()
         {
@@ -150,10 +151,11 @@ namespace MasterStack.Controllers
         }
 
         // POST: /{culture}/BlogPosts/Create
-        [HttpPost]
+        [HttpPost("Create")]
+        [HttpPost("/{culture}/BlogPosts/Create")]
         [Authorize(Roles = "Admin,Author")]
         [ValidateAntiForgeryToken]
-        [RequestSizeLimit(52428800)] // 50MB
+        [RequestSizeLimit(52428800)]
         public async Task<IActionResult> Create([FromRoute] string culture, BlogPostCreateViewModel model)
         {
             if (!ModelState.IsValid) 
@@ -233,9 +235,9 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/BlogPosts/EditTranslation/{id}
-        [HttpGet]
+        [HttpGet("EditTranslation/{id}")]
+        [HttpGet("/{culture}/BlogPosts/EditTranslation/{id}")]
         [Authorize(Roles = "Admin,Author")]
-        [Route("/{culture}/[controller]/[action]/{id}")]
         public async Task<IActionResult> EditTranslation(int id)
         {
             var translation = await _context.BlogPostTranslations.FirstOrDefaultAsync(t => t.Id == id);
@@ -254,9 +256,10 @@ namespace MasterStack.Controllers
             return View(model);
         }
 
-[HttpPost("/{culture}/blogposts/EditTranslation/{id}")]
-[Authorize(Roles = "Admin,Author")]
-[ValidateAntiForgeryToken]
+        [HttpPost("EditTranslation/{id}")]
+        [HttpPost("/{culture}/blogposts/EditTranslation/{id}")]
+        [Authorize(Roles = "Admin,Author")]
+        [ValidateAntiForgeryToken]
 public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
 {
     // 💡 Procura diretamente pelo ID da tradução
@@ -352,9 +355,9 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     }
 }
 // GET: /{culture}/Admin/AddTranslation/{postId}?targetCulture=en-US
-[HttpGet]
-[Authorize(Roles = "Admin,Author")]
-[Route("/{culture}/Admin/AddTranslation/{postId}")]
+        [HttpGet("/{culture}/Admin/AddTranslation/{postId}")]
+        [HttpGet("/Admin/AddTranslation/{postId}")]
+        [Authorize(Roles = "Admin,Author")]
 public async Task<IActionResult> AddTranslation(int postId, string culture, [FromQuery] string? targetCulture)
 {
     var post = await _context.BlogPosts.FindAsync(postId);
@@ -376,10 +379,10 @@ public async Task<IActionResult> AddTranslation(int postId, string culture, [Fro
 }
 
 // POST: /{culture}/Admin/AddTranslation/{postId}
-[HttpPost]
-[Authorize(Roles = "Admin,Author")]
-[Route("/{culture}/Admin/AddTranslation/{postId}")]
-[ValidateAntiForgeryToken]
+[HttpPost("/{culture}/Admin/AddTranslation/{postId}")]
+        [HttpPost("/Admin/AddTranslation/{postId}")]
+        [Authorize(Roles = "Admin,Author")]
+        [ValidateAntiForgeryToken]
 public async Task<IActionResult> AddTranslation(AddTranslationViewModel model, string culture)
 {
     if (!ModelState.IsValid)
@@ -494,9 +497,9 @@ private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
         }
 
         // Upload de Imagens do Editor Quill para o DigitalOcean Spaces
-        [HttpPost]
+        [HttpPost("UploadEditorImage")]
+        [HttpPost("/{culture}/BlogPosts/UploadEditorImage")]
         [Authorize(Roles = "Admin,Author")]
-        [Route("/{culture}/BlogPosts/UploadEditorImage")]
         public async Task<IActionResult> UploadEditorImage(IFormFile image)
         {
             if (image == null || image.Length == 0) return BadRequest("Imagem inválida.");
