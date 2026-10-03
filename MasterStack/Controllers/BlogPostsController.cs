@@ -44,66 +44,71 @@ namespace MasterStack.Controllers
 
         // GET: /{culture}/BlogPosts
       [HttpGet("/[controller]")]
-        [HttpGet("/{culture}/[controller]")]
-        public async Task<IActionResult> Index(string culture, int page = 1, string searchTerm = "", bool notfound = false)
+[HttpGet("/{culture}/[controller]")]
+public async Task<IActionResult> Index(string? culture, int page = 1, string? searchTerm = "", bool notfound = false)
+{
+    if (notfound)
+    {
+        TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
+    }
+
+    int pageSize = 6;
+
+    // 💡 Resolve a cultura com fallback limpo (impede NullReferenceException)
+    var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+        ? culture 
+        : (RouteData.Values["culture"]?.ToString() ?? HttpContext.Request.Query["culture"].ToString());
+
+    if (string.IsNullOrWhiteSpace(activeCulture))
+    {
+        activeCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+    }
+
+    var query = _context.BlogPosts
+        .AsNoTracking()
+        .Include(p => p.Author)
+        .Include(p => p.Translations.Where(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+        .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+        .AsQueryable();
+
+    if (!string.IsNullOrWhiteSpace(searchTerm))
+    {
+        // 💡 Sanitiza o termo de busca (decodifica C# / %23 e remove # do início)
+        var cleanSearch = System.Net.WebUtility.UrlDecode(searchTerm).Trim().TrimStart('#');
+
+        if (!string.IsNullOrWhiteSpace(cleanSearch))
         {
-            if (notfound)
-            {
-                TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
-            }
-
-            int pageSize = 6;
-
-            // 💡 Usa activeCulture para garantir que nunca seja nulo
-            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
-                ? culture 
-                : (RouteData.Values["culture"]?.ToString() ?? System.Globalization.CultureInfo.CurrentCulture.Name);
-
-            var query = _context.BlogPosts
-                .AsNoTracking()
-                .Include(p => p.Author)
-                .Include(p => p.Translations.Where(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
-                .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                // 💡 Limpa e descodifica o termo de busca (ex: resolve C# / %23 e remove # do início)
-                var cleanSearch = System.Net.WebUtility.UrlDecode(searchTerm).Trim().TrimStart('#');
-
-                if (!string.IsNullOrWhiteSpace(cleanSearch))
-                {
-                    // 💡 CORREÇÃO CRÍTICA: Usa 'activeCulture' e EF.Functions.ILike para busca case-insensitive no PostgreSQL
-                    query = query.Where(p => p.Translations.Any(t =>
-                        t.Culture.ToLower() == activeCulture.ToLower() &&
-                        (EF.Functions.Like(t.Title.ToLower(), $"%{cleanSearch.ToLower()}%") || 
-                        EF.Functions.Like(t.Content.ToLower(), $"%{cleanSearch.ToLower()}%"))
-                    ));
-                }
-            }
-
-            query = query.OrderByDescending(p => p.CreatedAt);
-
-            var totalPosts = await query.CountAsync();
-
-            var posts = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var viewModel = new BlogPostListViewModel
-            {
-                Posts = posts,
-                CurrentPage = page,
-                TotalPages = (int)Math.Ceiling(totalPosts / (double)pageSize),
-                Culture = activeCulture
-            };
-
-            ViewBag.Languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-            ViewBag.SearchTerm = searchTerm;
-
-            return View(viewModel);
+            var searchPattern = $"%{cleanSearch.ToLower()}%";
+            query = query.Where(p => p.Translations.Any(t =>
+                t.Culture.ToLower() == activeCulture.ToLower() &&
+                (EF.Functions.Like(t.Title.ToLower(), searchPattern) || 
+                 EF.Functions.Like(t.Content.ToLower(), searchPattern))
+            ));
         }
+    }
+
+    query = query.OrderByDescending(p => p.CreatedAt);
+
+    var totalPosts = await query.CountAsync();
+
+    var posts = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    var viewModel = new BlogPostListViewModel
+    {
+        Posts = posts,
+        CurrentPage = page,
+        TotalPages = (int)Math.Ceiling(totalPosts / (double)pageSize),
+        Culture = activeCulture
+    };
+
+    ViewBag.Languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+    ViewBag.SearchTerm = searchTerm;
+
+    return View(viewModel);
+}
         // GET: /{culture}/blog/{slug}
         [HttpGet("/{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)
