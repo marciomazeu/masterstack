@@ -60,4 +60,10 @@
     <Folder Include="wwwroot\uploads\blog\" />
   </ItemGroup>
 
+  <ItemGroup>
+  <None Update="Data\countries-cities.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+</ItemGroup>
+
 </Project>

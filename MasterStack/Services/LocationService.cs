@@ -6,11 +6,8 @@ namespace MasterStack.Services
     public interface ILocationService
     {
         Task<List<CountryDto>> GetCountriesAsync();
-        
-        // 📌 Método adicionado para resolver o erro
         Task<List<CountryDto>> GetCountriesForCulture(string culture);
-        
-        Task<List<string>> GetCitiesByCountryAsync(string countryCode, string state);
+        Task<List<string>> GetCitiesByCountryAsync(string countryCode, string? state);
     }
 
     public class CountryDto
@@ -34,19 +31,35 @@ namespace MasterStack.Services
         {
             if (_cachedLocations != null) return _cachedLocations;
 
-            var filePath = Path.Combine(_env.ContentRootPath, "Data", "countries-cities.json");
-            if (!File.Exists(filePath))
+            try
             {
-                return new List<CountryDto>();
+                var filePath = Path.Combine(_env.ContentRootPath, "Data", "countries-cities.json");
+                
+                if (!File.Exists(filePath))
+                {
+                    // Fallback para procurar no diretório do binário compilado caso não esteja no ContentRootPath
+                    filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "countries-cities.json");
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    _cachedLocations = new List<CountryDto>();
+                    return _cachedLocations;
+                }
+
+                var json = await File.ReadAllTextAsync(filePath);
+                _cachedLocations = JsonSerializer.Deserialize<List<CountryDto>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new List<CountryDto>();
+
+                return _cachedLocations;
             }
-
-            var json = await File.ReadAllTextAsync(filePath);
-            _cachedLocations = JsonSerializer.Deserialize<List<CountryDto>>(json, new JsonSerializerOptions
+            catch
             {
-                PropertyNameCaseInsensitive = true
-            }) ?? new List<CountryDto>();
-
-            return _cachedLocations;
+                _cachedLocations = new List<CountryDto>();
+                return _cachedLocations;
+            }
         }
 
         public async Task<List<CountryDto>> GetCountriesAsync()
@@ -54,16 +67,15 @@ namespace MasterStack.Services
             return await LoadLocationsAsync();
         }
 
-        // 📌 Implementação do GetCountriesForCulture
         public async Task<List<CountryDto>> GetCountriesForCulture(string culture)
         {
-            // Retorna os países da base. Se precisar traduzir nomes de países 
-            // no futuro com base na culture ("pt-BR", "en-US"), a lógica entra aqui.
             return await LoadLocationsAsync();
         }
 
         public async Task<List<string>> GetCitiesByCountryAsync(string countryCode, string? state)
         {
+            if (string.IsNullOrWhiteSpace(countryCode)) return new List<string>();
+
             var locations = await LoadLocationsAsync();
             var country = locations.FirstOrDefault(c => c.Iso2.Equals(countryCode, StringComparison.OrdinalIgnoreCase));
             return country?.Cities ?? new List<string>();
