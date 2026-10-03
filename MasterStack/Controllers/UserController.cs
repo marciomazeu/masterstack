@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MasterStack.Controllers
 {
-    [Authorize] // 🔒 Exige login para qualquer ação de usuário
+   [Authorize] // 🔒 Exige login para qualquer ação de usuário
     [Route("[controller]")]
     public class UserController : Controller
     {
@@ -75,7 +75,8 @@ namespace MasterStack.Controllers
         // ==========================================
         // 1. GET: Exibir Perfil
         // ==========================================
-        [HttpGet("{culture}/Profile")]
+        [HttpGet("/{culture}/[controller]/Profile")]
+        [HttpGet("[controller]/Profile")]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> Profile([FromRoute] string culture)
         {
@@ -130,6 +131,7 @@ namespace MasterStack.Controllers
         // 2. GET: Helper de Cidades via AJAX
         // ==========================================
         [HttpGet("GetCitiesByCountry")] 
+        [HttpGet("/{culture}/[controller]/GetCitiesByCountry")]
         public async Task<IActionResult> GetCitiesByCountry(string countryCode, string? state, string culture)
         {
             if (string.IsNullOrEmpty(countryCode))
@@ -164,7 +166,8 @@ namespace MasterStack.Controllers
         // ==========================================
         // 3. POST: Atualizar Perfil & Localização
         // ==========================================
-        [HttpPost("{culture}/User/UpdateProfile")]
+        [HttpPost("/{culture}/[controller]/UpdateProfile")]
+        [HttpPost("[controller]/UpdateProfile")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> UpdateProfile([FromRoute] string culture, ProfileViewModel model)
