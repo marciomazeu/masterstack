@@ -235,7 +235,7 @@ namespace MasterStack.Controllers
         // GET: /{culture}/BlogPosts/EditTranslation/{id}
         [HttpGet]
         [Authorize(Roles = "Admin,Author")]
-        [Route("{culture}/[controller]/[action]/{id}")]
+        [Route("/{culture}/[controller]/[action]/{id}")]
         public async Task<IActionResult> EditTranslation(int id)
         {
             var translation = await _context.BlogPostTranslations.FirstOrDefaultAsync(t => t.Id == id);
@@ -254,7 +254,7 @@ namespace MasterStack.Controllers
             return View(model);
         }
 
-[HttpPost("{culture}/blogposts/EditTranslation/{id}")]
+[HttpPost("/{culture}/blogposts/EditTranslation/{id}")]
 [Authorize(Roles = "Admin,Author")]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
@@ -354,7 +354,7 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
 // GET: /{culture}/Admin/AddTranslation/{postId}?targetCulture=en-US
 [HttpGet]
 [Authorize(Roles = "Admin,Author")]
-[Route("{culture}/Admin/AddTranslation/{postId}")]
+[Route("/{culture}/Admin/AddTranslation/{postId}")]
 public async Task<IActionResult> AddTranslation(int postId, string culture, [FromQuery] string? targetCulture)
 {
     var post = await _context.BlogPosts.FindAsync(postId);
@@ -496,7 +496,7 @@ private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
         // Upload de Imagens do Editor Quill para o DigitalOcean Spaces
         [HttpPost]
         [Authorize(Roles = "Admin,Author")]
-        [Route("{culture}/BlogPosts/UploadEditorImage")]
+        [Route("/{culture}/BlogPosts/UploadEditorImage")]
         public async Task<IActionResult> UploadEditorImage(IFormFile image)
         {
             if (image == null || image.Length == 0) return BadRequest("Imagem inválida.");

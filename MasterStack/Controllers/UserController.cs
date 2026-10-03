@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MasterStack.Controllers
 {
-   [Authorize] // 🔒 Exige login para qualquer ação de usuário
+   [Authorize]
     [Route("[controller]")]
     public class UserController : Controller
     {
@@ -75,8 +75,8 @@ namespace MasterStack.Controllers
         // ==========================================
         // 1. GET: Exibir Perfil
         // ==========================================
-        [HttpGet("/Users/Profile")]
         [HttpGet("/{culture}/User/Profile")]
+        [HttpGet("/User/Profile")]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> Profile([FromRoute] string culture)
         {
@@ -166,8 +166,8 @@ namespace MasterStack.Controllers
         // ==========================================
         // 3. POST: Atualizar Perfil & Localização
         // ==========================================
-        [HttpPost("/User/UpdateProfile")]
         [HttpPost("/{culture}/User/UpdateProfile")]
+        [HttpPost("/User/UpdateProfile")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
         public async Task<IActionResult> UpdateProfile([FromRoute] string culture, ProfileViewModel model)
