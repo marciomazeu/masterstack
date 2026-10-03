@@ -130,14 +130,14 @@ namespace MasterStack.Controllers
         // 2. GET: Helper de Cidades via AJAX
         // ==========================================
         [HttpGet("GetCitiesByCountry")] 
-        public async Task<IActionResult> GetCitiesByCountry(string countryCode)
+        public async Task<IActionResult> GetCitiesByCountry(string countryCode, string? state, string culture)
         {
             if (string.IsNullOrEmpty(countryCode))
             {
                 return Json(new List<object>());
             }
 
-            var cities = await _locationService.GetCitiesByCountryAsync(countryCode);
+            var cities = await _locationService.GetCitiesByCountryAsync(countryCode, state);
             var result = cities.Select(c => new { id = c, name = c }).ToList();
             result.Add(new { id = "OTHER", name = "➕ Outra / Não listada" });
 

@@ -10,7 +10,7 @@ namespace MasterStack.Services
         // 📌 Método adicionado para resolver o erro
         Task<List<CountryDto>> GetCountriesForCulture(string culture);
         
-        Task<List<string>> GetCitiesByCountryAsync(string countryCode);
+        Task<List<string>> GetCitiesByCountryAsync(string countryCode, string state);
     }
 
     public class CountryDto
@@ -62,7 +62,7 @@ namespace MasterStack.Services
             return await LoadLocationsAsync();
         }
 
-        public async Task<List<string>> GetCitiesByCountryAsync(string countryCode)
+        public async Task<List<string>> GetCitiesByCountryAsync(string countryCode, string? state)
         {
             var locations = await LoadLocationsAsync();
             var country = locations.FirstOrDefault(c => c.Iso2.Equals(countryCode, StringComparison.OrdinalIgnoreCase));

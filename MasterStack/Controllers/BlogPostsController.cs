@@ -53,20 +53,22 @@ namespace MasterStack.Controllers
             }
 
             int pageSize = 6;
-            var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+           var activeCulture = !string.IsNullOrEmpty(culture) 
+            ? culture 
+            : (RouteData.Values["culture"]?.ToString() ?? System.Globalization.CultureInfo.CurrentCulture.Name);
 
             var query = _context.BlogPosts
-                .AsNoTracking()
-                .Include(p => p.Author)
-                .Include(p => p.Translations.Where(t => t.Culture == currentCulture && t.IsPublished))
-                .Where(p => p.Translations.Any(t => t.Culture == currentCulture && t.IsPublished))
-                .AsQueryable();
+            .AsNoTracking()
+            .Include(p => p.Author)
+            .Include(p => p.Translations.Where(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+            .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+            .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 searchTerm = searchTerm.Trim();
                 query = query.Where(p => p.Translations.Any(t =>
-                    t.Culture == currentCulture &&
+                    t.Culture == culture &&
                     (t.Title.Contains(searchTerm) || t.Content.Contains(searchTerm))
                 ));
             }

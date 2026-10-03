@@ -236,10 +236,12 @@
     </div>
 </div>
 
-@section Scripts {
+
+    @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const countrySelect = document.getElementById('CountrySelect');
+            const stateInput = document.querySelector('input[name="StateOrRegion"]');
             const citySelect = document.getElementById('CitySelect');
             const customCityContainer = document.getElementById('CustomCityContainer');
             const customCityInput = document.getElementById('CustomCityInput');
@@ -261,7 +263,7 @@
                 }
             });
 
-            async function loadCities(countryCode, selectedCity = '') {
+            async function loadCities(countryCode, stateOrRegion = '', selectedCity = '') {
                 citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
                 customCityContainer.classList.add('d-none');
 
@@ -276,7 +278,10 @@
 
                 try {
                     const baseUrl = "@Url.Action("GetCitiesByCountry", "User", new { culture = currentCulture })";
-                    const response = await fetch(`${baseUrl}?countryCode=${encodeURIComponent(countryCode)}`);
+                    // 💡 Adiciona o parâmetro de Estado/Província na requisição
+                    const url = `${baseUrl}?countryCode=${encodeURIComponent(countryCode)}&state=${encodeURIComponent(stateOrRegion)}`;
+                    
+                    const response = await fetch(url);
 
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
@@ -288,16 +293,23 @@
                     if (cities && cities.length > 0) {
                         cities.forEach(city => {
                             const option = document.createElement('option');
-                            option.value = city.id;
-                            option.textContent = city.name;
+                            const cityName = city.name || city;
+                            option.value = cityName;
+                            option.textContent = cityName;
 
-                            if (selectedCity && (city.id === selectedCity || city.name === selectedCity)) {
+                            if (selectedCity && cityName.toLowerCase() === selectedCity.toLowerCase()) {
                                 option.selected = true;
                                 cityFoundInList = true;
                             }
 
                             citySelect.appendChild(option);
                         });
+
+                        // Adiciona opção para digitar cidade manualmente caso não esteja na lista
+                        const otherOption = document.createElement('option');
+                        otherOption.value = 'OTHER';
+                        otherOption.textContent = "Outra / Outre / Other...";
+                        citySelect.appendChild(otherOption);
 
                         citySelect.disabled = false;
 
@@ -310,7 +322,12 @@
                             finalCityInput.value = selectedCity;
                         }
                     } else {
-                        citySelect.innerHTML = '<option value="">@Localizer["Profile_NoCitiesFound"]</option>';
+                        // Se não houver lista, habilita a digitação manual de forma transparente
+                        citySelect.value = 'OTHER';
+                        citySelect.disabled = false;
+                        customCityContainer.classList.remove('d-none');
+                        if (selectedCity) customCityInput.value = selectedCity;
+                        finalCityInput.value = selectedCity;
                     }
                 } catch (error) {
                     console.error('Erro ao buscar cidades:', error);
@@ -318,31 +335,26 @@
                 }
             }
 
+            // Recarrega cidades ao alterar o País
             countrySelect.addEventListener('change', function () {
-                loadCities(this.value);
+                const currentState = stateInput ? stateInput.value : '';
+                loadCities(this.value, currentState);
             });
 
-            if (countrySelect.value) {
-                loadCities(countrySelect.value, savedCity);
+            // Recarrega cidades ao alterar o Estado/Província (quando o utilizador sai do campo)
+            if (stateInput) {
+                stateInput.addEventListener('blur', function () {
+                    if (countrySelect.value) {
+                        loadCities(countrySelect.value, this.value, finalCityInput.value);
+                    }
+                });
             }
 
-            countrySelect.addEventListener('change', function () {
-                const postalInput = document.getElementById('PostalCodeInput');
-                switch (this.value) {
-                    case 'BR':
-                        postalInput.placeholder = "Ex: 13000-000";
-                        break;
-                    case 'CA':
-                        postalInput.placeholder = "Ex: G1K 3E3";
-                        break;
-                    case 'US':
-                        postalInput.placeholder = "Ex: 90210";
-                        break;
-                    default:
-                        postalInput.placeholder = "@Localizer["Profile_PostalCodePlaceholder"]";
-                        break;
-                }
-            });
+            // Carregamento Inicial
+            if (countrySelect.value) {
+                const initialState = stateInput ? stateInput.value : '';
+                loadCities(countrySelect.value, initialState, savedCity);
+            }
         });
     </script>
 }
