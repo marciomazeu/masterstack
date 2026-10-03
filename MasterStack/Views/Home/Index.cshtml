@@ -55,7 +55,7 @@
     </div>
 </header>
 
-<!-- SEÇÃO DE ATIVIDADES / PILARES DA EMPRESA (COM NOVAS IMAGENS) -->
+<!-- SEÇÃO DE ATIVIDADES / PILARES DA EMPRESA -->
 <section class="py-5 bg-light border-bottom" id="about-activities">
     <div class="container px-5 my-4">
         <div class="text-center mb-5">
@@ -124,7 +124,8 @@
     <div class="container px-5 text-center">
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
             <span class="fw-bold me-2 text-muted small"><i class="bi bi-tags me-1"></i>@Localizer["Nav_Topics"]:</span>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "C#" })" class="btn btn-outline-primary">#C#</a>
+            <!-- 💡 Ajustada classe do botão C# para manter padronização -->
+            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "C#" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#C#</a>
             <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "ASP.NET" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#ASP.NET</a>
             <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "React" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#React</a>
             <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "SQL Server" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#SQLServer</a>
@@ -153,6 +154,9 @@
             {
                 @foreach (var job in Model.FeaturedJobs)
                 {
+                    var isExternal = !string.IsNullOrEmpty(job.RedirectUrl);
+                    var targetUrl = isExternal ? job.RedirectUrl : Url.Action("Details", "Jobs", new { id = job.Id, culture = currentCulture });
+
                     <div class="col-md-6 col-lg-4">
                         <div class="card h-100 shadow-sm border-0 rounded-4 transition hover-shadow">
                             <div class="card-body p-4 d-flex flex-column">
@@ -174,15 +178,14 @@
                             
                             <div class="card-footer p-4 pt-0 bg-transparent border-top-0 d-flex justify-content-between align-items-center">
                                 <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>@job.PostedDate.ToString("dd/MM/yyyy")</small>
-                                @* <a href="/@currentCulture/Jobs/Details/@job.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                
+                                <!-- 💡 Target dinâmico: apenas links externos abrem em nova aba -->
+                                <a href="@targetUrl" 
+                                   target="@(isExternal ? "_blank" : "_self")" 
+                                   rel="@(isExternal ? "noopener noreferrer" : "")" 
+                                   class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                                     @Localizer["Home_Jobs_Apply"]
-                                </a> *@
-                                <a href="@(string.IsNullOrEmpty(job.RedirectUrl) ? Url.Action("Details", "Jobs", new { id = job.Id }) : job.RedirectUrl)" 
-   target="_blank" 
-   rel="noopener noreferrer" 
-   class="btn btn-primary">
-    @Localizer["Home_Jobs_Apply"]
-</a>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -258,7 +261,8 @@
                                 <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
                                     <div class="d-flex align-items-center justify-content-between text-muted small">
                                         <span class="fw-bold text-primary">MasterStack</span>
-                                        <span><i class="bi bi-clock me-1"></i>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+                                        <!-- 💡 Ajustado para usar a data de criação real do post -->
+                                        <span><i class="bi bi-clock me-1"></i>@post.CreatedAt.ToString("dd/MM/yyyy")</span>
                                     </div>
                                 </div>
                             </div>
@@ -270,7 +274,7 @@
     </div>
 </section>
 
-<!-- NEWSLETTER / CONFORMIDADE LEGAL (Lei 25 / CASL) -->
+<!-- NEWSLETTER -->
 <section class="py-5 bg-dark text-white">
     <div class="container px-5 my-4 text-center">
         <div class="row justify-content-center">
@@ -290,7 +294,8 @@
                         <input class="form-check-input" type="checkbox" name="consent" id="newsletterConsent" required>
                         <label class="form-check-label text-white-50 small" for="newsletterConsent">
                             @Localizer["Home_Newsletter_Consent_Text"] 
-                            <a asp-controller="Home" asp-action="Privacy" class="text-white text-decoration-underline">@Localizer["Home_Privacy_Officer_Label"]</a>.
+                            <!-- 💡 Adicionado suporte à rota de cultura no link de Privacidade -->
+                            <a asp-controller="Home" asp-action="Privacy" asp-route-culture="@currentCulture" class="text-white text-decoration-underline">@Localizer["Home_Privacy_Officer_Label"]</a>.
                         </label>
                     </div>
                 </form>
