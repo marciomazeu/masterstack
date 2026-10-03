@@ -34,6 +34,11 @@ try
         options.ListenAnyIP(8080); // Porta de produção usada pela DigitalOcean
     });
 
+    builder.Services.Configure<HostOptions>(options =>
+    {
+        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+    });
+
     builder.Host.UseSerilog();
 
     // --- 1. BANCO DE DADOS ---
@@ -111,7 +116,7 @@ try
    // --- 4. MVC E RAZOR ---
     // 💡 Registra o filtro no DI para que o AddService<CultureFilter>() funcione perfeitamente
     builder.Services.AddControllersWithViews(options => {
-        options.Filters.Add(new CultureFilter());
+       options.Filters.AddService<CultureFilter>();
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
