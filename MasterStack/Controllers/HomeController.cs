@@ -94,7 +94,7 @@ namespace MasterStack.Controllers
 
         [AllowAnonymous]
         [Route("Home/Error/{statusCode?}")]
-        [Route("{culture}/Home/Error/{statusCode?}")]
+        [Route("/{culture}/Home/Error/{statusCode?}")]
         public async Task<IActionResult> Error(int? statusCode)
         {
             string currentCulture = CultureInfo.CurrentCulture.Name;
@@ -167,7 +167,7 @@ namespace MasterStack.Controllers
             return View("NotFound", suggestedPosts);
         }
 
-        [Route("{culture}/p/{slug}")]
+        [Route("/{culture}/p/{slug}")]
         public async Task<IActionResult> Page(string culture, string slug)
         {
             var page = await _context.StaticPages

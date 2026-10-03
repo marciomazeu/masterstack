@@ -378,7 +378,7 @@ public async Task<IActionResult> AddTranslation(int postId, string culture, [Fro
 // POST: /{culture}/Admin/AddTranslation/{postId}
 [HttpPost]
 [Authorize(Roles = "Admin,Author")]
-[Route("{culture}/Admin/AddTranslation/{postId}")]
+[Route("/{culture}/Admin/AddTranslation/{postId}")]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> AddTranslation(AddTranslationViewModel model, string culture)
 {
