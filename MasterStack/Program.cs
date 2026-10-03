@@ -115,8 +115,10 @@ try
 
    // --- 4. MVC E RAZOR ---
     // 💡 Registra o filtro no DI para que o AddService<CultureFilter>() funcione perfeitamente
+   builder.Services.AddScoped<CultureFilter>();
+
     builder.Services.AddControllersWithViews(options => {
-       options.Filters.AddService<CultureFilter>();
+        options.Filters.AddService<CultureFilter>(); // ✅ Usa AddService em vez de 'new CultureFilter()'
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddViewLocalization()
@@ -215,8 +217,8 @@ try
     app.UseResponseCompression();
 
     // CRIAÇÃO SEGURA DOS DIRETÓRIOS DE UPLOADS
-    var webRoot = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-    var uploadsFolder = Path.Combine(webRoot, "uploads");
+    var webroot = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+    var uploadsFolder = Path.Combine(webroot, "uploads");
     var blogUploadsFolder = Path.Combine(uploadsFolder, "blog");
     var profileUploadsFolder = Path.Combine(uploadsFolder, "profiles");
 
@@ -232,7 +234,7 @@ try
     }
 
     // ARQUIVOS ESTÁTICOS PADRÃO
-    app.UseStaticFiles(new StaticFileOptions
+   app.UseStaticFiles(new StaticFileOptions
     {
         OnPrepareResponse = ctx =>
         {
@@ -240,17 +242,28 @@ try
         }
     });
     // 💡 NOVO: Middleware dinâmico para servir a pasta /uploads em Produção/Containers
-    var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
-    if (!Directory.Exists(uploadsPath))
+    // Middleware dinâmico para servir a pasta /uploads em Produção/Containers de forma segura
+    try
     {
-        Directory.CreateDirectory(uploadsPath);
-    }
+        var contentRoot = app.Environment.ContentRootPath;
+        var webRoot = app.Environment.WebRootPath ?? Path.Combine(contentRoot, "wwwroot");
+        var uploadsPath = Path.Combine(webRoot, "uploads");
 
-    app.UseStaticFiles(new StaticFileOptions
+        if (!Directory.Exists(uploadsPath))
+        {
+            Directory.CreateDirectory(uploadsPath);
+        }
+
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+            RequestPath = "/uploads"
+        });
+    }
+    catch (Exception ex)
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-        RequestPath = "/uploads"
-    });
+        Log.Warning(ex, "Aviso ao registrar o PhysicalFileProvider para a pasta /uploads.");
+    }
 
     app.UseCookiePolicy();
 
