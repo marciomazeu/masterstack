@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = Localizer["2FA_Title"];
     var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? Context.Request.Query["returnUrl"].ToString();
 }
 
 <div class="container py-5">
@@ -37,9 +38,8 @@
                     <!-- FIX: Declarado explicitamente asp-controller e asp-action para evitar duplicar a URL -->
                     <form asp-controller="Account" asp-action="LoginWith2FA" asp-route-culture="@culture" method="post">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="RememberMe" />
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
 
-                        <!-- Input de Código Formatado -->
                         <div class="mb-4 text-start">
                             <label asp-for="TwoFactorCode" class="form-label fw-bold small text-muted text-uppercase">
                                 @Localizer["2FA_Lbl_Code"]
@@ -53,7 +53,6 @@
                             <span asp-validation-for="TwoFactorCode" class="text-danger small d-block mt-1"></span>
                         </div>
 
-                        <!-- FIX: Apontado para a propriedade RememberMachine se ela existir no ViewModel (ou mantido RememberMe se for o caso) -->
                         <div class="form-check text-start mb-4">
                             <input asp-for="RememberMe" class="form-check-input" />
                             <label asp-for="RememberMe" class="form-check-label small text-muted">

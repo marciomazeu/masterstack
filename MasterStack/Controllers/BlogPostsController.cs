@@ -53,24 +53,33 @@ namespace MasterStack.Controllers
             }
 
             int pageSize = 6;
-           var activeCulture = !string.IsNullOrEmpty(culture) 
-            ? culture 
-            : (RouteData.Values["culture"]?.ToString() ?? System.Globalization.CultureInfo.CurrentCulture.Name);
+
+            // 💡 Usa activeCulture para garantir que nunca seja nulo
+            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+                ? culture 
+                : (RouteData.Values["culture"]?.ToString() ?? System.Globalization.CultureInfo.CurrentCulture.Name);
 
             var query = _context.BlogPosts
-            .AsNoTracking()
-            .Include(p => p.Author)
-            .Include(p => p.Translations.Where(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
-            .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
-            .AsQueryable();
+                .AsNoTracking()
+                .Include(p => p.Author)
+                .Include(p => p.Translations.Where(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+                .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                searchTerm = searchTerm.Trim();
-                query = query.Where(p => p.Translations.Any(t =>
-                    t.Culture == culture &&
-                    (t.Title.Contains(searchTerm) || t.Content.Contains(searchTerm))
-                ));
+                // 💡 Limpa e descodifica o termo de busca (ex: resolve C# / %23 e remove # do início)
+                var cleanSearch = System.Net.WebUtility.UrlDecode(searchTerm).Trim().TrimStart('#');
+
+                if (!string.IsNullOrWhiteSpace(cleanSearch))
+                {
+                    // 💡 CORREÇÃO CRÍTICA: Usa 'activeCulture' e EF.Functions.ILike para busca case-insensitive no PostgreSQL
+                    query = query.Where(p => p.Translations.Any(t =>
+                        t.Culture.ToLower() == activeCulture.ToLower() &&
+                        (EF.Functions.Like(t.Title.ToLower(), $"%{cleanSearch.ToLower()}%") || 
+                        EF.Functions.Like(t.Content.ToLower(), $"%{cleanSearch.ToLower()}%"))
+                    ));
+                }
             }
 
             query = query.OrderByDescending(p => p.CreatedAt);
@@ -87,7 +96,7 @@ namespace MasterStack.Controllers
                 Posts = posts,
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling(totalPosts / (double)pageSize),
-                Culture = culture
+                Culture = activeCulture
             };
 
             ViewBag.Languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
@@ -95,7 +104,6 @@ namespace MasterStack.Controllers
 
             return View(viewModel);
         }
-
         // GET: /{culture}/blog/{slug}
         [HttpGet("/{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)

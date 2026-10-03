@@ -159,8 +159,9 @@ namespace MasterStack.Controllers
         }
 
         [HttpGet("LoginWith2FA")]
+        [HttpGet("/{culture}/Account/LoginWith2FA")]
         [AllowAnonymous]
-        public async Task<IActionResult> LoginWith2FA([FromRoute] string culture, string returnUrl = null)
+        public async Task<IActionResult> LoginWith2FA(string culture, string returnUrl = null)
         {
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
@@ -174,16 +175,15 @@ namespace MasterStack.Controllers
             return View(new LoginWith2FAViewModel());
         }
 
-        [HttpPost("LoginWith2FA")]
+       [HttpPost("LoginWith2FA")]
+        [HttpPost("/{culture}/Account/LoginWith2FA")]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, [FromRoute] string culture, string returnUrl = null)
+        public async Task<IActionResult> LoginWith2FA(LoginWith2FAViewModel model, string culture, string returnUrl = null)
         {
-            string currentCulture = string.IsNullOrEmpty(culture) ? (string)RouteData.Values["culture"] ?? "pt-BR" : culture;
-
-            var cultureInfo = new CultureInfo(currentCulture);
-            CultureInfo.CurrentCulture = cultureInfo;
-            CultureInfo.CurrentUICulture = cultureInfo;
+            string currentCulture = string.IsNullOrEmpty(culture) 
+                ? (RouteData.Values["culture"]?.ToString() ?? "pt-BR") 
+                : culture;
 
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null) 
@@ -198,8 +198,14 @@ namespace MasterStack.Controllers
                 return View(model);
             }
 
-            var cleanCode = model.TwoFactorCode?.Replace(" ", "").Replace("-", "");
-            var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(cleanCode, isPersistent: model.RememberMe, rememberClient: false);
+            // 💡 Sanitiza o código removendo espaços e hífens automaticamente
+            var cleanCode = model.TwoFactorCode?.Replace(" ", "").Replace("-", "").Trim();
+
+            var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(
+                cleanCode, 
+                isPersistent: model.RememberMe, 
+                rememberClient: false
+            );
 
             if (result.Succeeded)
             {
@@ -219,10 +225,11 @@ namespace MasterStack.Controllers
             if (result.IsLockedOut)
             {
                 ModelState.AddModelError(string.Empty, _localizer["AccountLocked"].Value);
+                ViewData["ReturnUrl"] = returnUrl;
+                ViewData["CurrentCulture"] = currentCulture;
                 return View(model);
             }
 
-            // 🌐 Tradução dinâmica da mensagem de código inválido
             ModelState.AddModelError(string.Empty, _localizer["Invalid2FACode"].Value);
             ViewData["ReturnUrl"] = returnUrl;
             ViewData["CurrentCulture"] = currentCulture;
