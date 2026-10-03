@@ -97,8 +97,7 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/blog/{slug}
-        [HttpGet]
-        [Route("{culture}/blog/{slug}")]
+        [HttpGet("/{culture}/blog/{slug}")]
         public async Task<IActionResult> Details(string culture, string slug)
         {
             var entryPoint = await _context.BlogPostTranslations
