@@ -137,11 +137,28 @@ namespace MasterStack.Controllers
                 return Json(new List<object>());
             }
 
-            var cities = await _locationService.GetCitiesByCountryAsync(countryCode, state);
-            var result = cities.Select(c => new { id = c, name = c }).ToList();
-            result.Add(new { id = "OTHER", name = "➕ Outra / Não listada" });
+           try
+    {
+        // Garante que se o estado/província vier nulo ou em branco, passa string vazia
+        var stateParam = state ?? string.Empty;
 
-            return Json(result);
+        // Chama o serviço de localização passando país e estado
+        var cities = await _locationService.GetCitiesByCountryAsync(countryCode, stateParam);
+
+        // Fallback: se não encontrar cidades com o estado específico (ou se o estado estava em branco),
+        // faz a busca apenas pelo código do país
+        if ((cities == null || !cities.Any()) && !string.IsNullOrEmpty(stateParam))
+        {
+            cities = await _locationService.GetCitiesByCountryAsync(countryCode, string.Empty);
+        }
+
+        return Json(cities ?? new List<string>());
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Erro ao buscar cidades para país {CountryCode} e estado {State}", countryCode, state);
+        return Json(new List<string>());
+    }
         }
 
         // ==========================================
