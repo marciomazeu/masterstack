@@ -43,7 +43,7 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/BlogPosts
-      [HttpGet("/[controller]")]
+     [HttpGet("/[controller]")]
 [HttpGet("/{culture}/[controller]")]
 public async Task<IActionResult> Index(string? culture, int page = 1, string? searchTerm = "", bool notfound = false)
 {
@@ -54,7 +54,7 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
 
     int pageSize = 6;
 
-    // 💡 Resolve a cultura com fallback limpo (impede NullReferenceException)
+    // 💡 1. Garante que activeCulture nunca fica nula, mesmo com query string /BlogPosts?culture=pt-BR
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
         : (RouteData.Values["culture"]?.ToString() ?? HttpContext.Request.Query["culture"].ToString());
@@ -64,16 +64,16 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         activeCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     }
 
+    // 💡 2. Query simplificada sem Includes encadeados no Where para evitar erros de tradução SQL no EF Core
     var query = _context.BlogPosts
         .AsNoTracking()
         .Include(p => p.Author)
-        .Include(p => p.Translations.Where(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
-        .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished))
+        .Include(p => p.Translations)
+        .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished && !t.IsDeleted))
         .AsQueryable();
 
     if (!string.IsNullOrWhiteSpace(searchTerm))
     {
-        // 💡 Sanitiza o termo de busca (decodifica C# / %23 e remove # do início)
         var cleanSearch = System.Net.WebUtility.UrlDecode(searchTerm).Trim().TrimStart('#');
 
         if (!string.IsNullOrWhiteSpace(cleanSearch))
