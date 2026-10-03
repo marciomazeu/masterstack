@@ -505,9 +505,9 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
         }
 
         [HttpGet("GetCities/{countryCode}")]
-        public async Task<IActionResult> GetCities(string countryCode)
+        public async Task<IActionResult> GetCities(string countryCode, string? state)
         {
-            var cities = await _locationService.GetCitiesByCountryAsync(countryCode);
+            var cities = await _locationService.GetCitiesByCountryAsync(countryCode, state ?? string.Empty);
             return Json(cities);
         }
 
