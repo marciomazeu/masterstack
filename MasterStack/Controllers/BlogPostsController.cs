@@ -168,6 +168,33 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         [RequestSizeLimit(52428800)]
         public async Task<IActionResult> Create([FromRoute] string culture, BlogPostCreateViewModel model)
         {
+            // 🔴 DEBUG TEMPORÁRIO: Captura todos os erros de validação
+    if (!ModelState.IsValid)
+    {
+        var erros = ModelState
+            .Where(x => x.Value.Errors.Count > 0)
+            .Select(x => new {
+                Campo = x.Key,
+                Erros = x.Value.Errors.Select(e => e.ErrorMessage).ToList()
+            }).ToList();
+
+        // Escreve os erros no Console/Terminal para podermos ver
+        foreach (var e in erros)
+        {
+            _logger.LogError($"Campo com erro: {e.Campo} -> {string.Join(", ", e.Erros)}");
+        }
+
+        // Coloca o primeiro erro no TempData para aparecer na tela
+        var primeiroErro = erros.FirstOrDefault();
+        TempData["Error"] = $"Falha no campo '{primeiroErro?.Campo}': {primeiroErro?.Erros.FirstOrDefault()}";
+
+        // Repopula os idiomas para a View não quebrar
+        var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+        ViewBag.Languages = new SelectList(languages, "Culture", "Name", model.SelectedCulture);
+
+        return View(model);
+    }
+    
             var activeCulture = !string.IsNullOrWhiteSpace(culture) 
             ? culture 
             : (!string.IsNullOrWhiteSpace(model.SelectedCulture) ? model.SelectedCulture : "pt-BR");
