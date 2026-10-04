@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-// 1. VOCÊ PRECISA DESTE USING PARA O IFormFile FUNCIONAR
 using Microsoft.AspNetCore.Http;
 
 namespace MasterStack.Models
@@ -34,26 +33,27 @@ namespace MasterStack.Models
         [Display(Name = "SEO Slug")]
         public string Slug { get; set; }
 
-        // 2. ADICIONE ESTE CAMPO PARA GUARDAR O NOME NO BANCO
         public string? ImageUrl { get; set; }
 
-        // 3. USE [NotMapped] PARA O EF IGNORAR ESTE CAMPO NO SQL
         [NotMapped]
         public IFormFile? ImageFile { get; set; }
 
         public virtual Language? Language { get; set; }
 
+        // 💡 [NotMapped] adicionado para impedir o erro de coluna inexistente no SQL
+        [NotMapped]
         [StringLength(100)]
         [Display(Name = "Título SEO")]
-        public string? MetaTitle { get; set; } // Adicione isto aqui
+        public string? MetaTitle { get; set; }
 
         [StringLength(160)]
-        public string? MetaDescription { get; set; } // Resumo para o Google
+        public string? MetaDescription { get; set; }
 
         public string? MetaKeywords { get; set; }
 
         [Display(Name = "Publicado")]
-        public bool IsPublished { get; set; } = false; // Por padrão, nasce como rascunho
+        public bool IsPublished { get; set; } = false;
+
         public bool IsDeleted { get; set; } = false;
     }
 }
