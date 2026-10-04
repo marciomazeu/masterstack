@@ -214,7 +214,6 @@ try
     });
 
     app.UseHttpsRedirection();
-    app.UseResponseCompression();
 
     // CRIAÇÃO SEGURA DOS DIRETÓRIOS DE UPLOADS
     var webroot = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
@@ -241,6 +240,7 @@ try
             ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");
         }
     });
+    app.UseResponseCompression();
     // 💡 NOVO: Middleware dinâmico para servir a pasta /uploads em Produção/Containers
     // Middleware dinâmico para servir a pasta /uploads em Produção/Containers de forma segura
     try
