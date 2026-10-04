@@ -1,4 +1,13 @@
 /* --- 1. CONFIGURAÇÕES GLOBAIS E RESET --- */
+@font-face {
+    font-family: 'FontAwesome';
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'bootstrap-icons';
+    font-display: swap;
+}
 html {
     scroll-padding-top: 75px; /* Ajuste para Navbar fixa */
     position: relative;
