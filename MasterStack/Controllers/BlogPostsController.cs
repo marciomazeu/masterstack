@@ -52,19 +52,31 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
     }
 
-    int pageSize = 6;
+    // 1. Identifica a cultura vinda da Rota ou da Query String (com fallback limpo)
+    var routeCulture = RouteData.Values["culture"]?.ToString();
+    var queryCulture = HttpContext.Request.Query["culture"].ToString();
 
-    // 💡 Resolve a cultura sem falhar se vier via Query String
-    var activeCulture = !string.IsNullOrWhiteSpace(culture) 
-        ? culture 
-        : (RouteData.Values["culture"]?.ToString() ?? HttpContext.Request.Query["culture"].ToString());
-
-    if (string.IsNullOrWhiteSpace(activeCulture))
+    // Se a URL veio no formato /BlogPosts?culture=fr-CA (sem /fr-CA/ no caminho),
+    // fazemos um redirecionamento 302 limpo para a rota elegante /fr-CA/BlogPosts?searchTerm=...
+    if (string.IsNullOrEmpty(routeCulture) && !string.IsNullOrEmpty(queryCulture))
     {
-        activeCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+        return RedirectToRoute(new { 
+            culture = queryCulture, 
+            controller = "BlogPosts", 
+            action = "Index", 
+            searchTerm = searchTerm, 
+            page = page 
+        });
     }
 
-    // 💡 Carrega as traduções sem forçar INNER JOIN restritivo no Where principal
+    // Define a cultura ativa final
+    var activeCulture = !string.IsNullOrWhiteSpace(routeCulture) 
+        ? routeCulture 
+        : (!string.IsNullOrWhiteSpace(culture) ? culture : "pt-BR");
+
+    int pageSize = 6;
+
+    // 2. Monta a consulta de Posts com filtro seguro de traduções publicadas
     var query = _context.BlogPosts
         .AsNoTracking()
         .Include(p => p.Author)
@@ -72,6 +84,7 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         .Where(p => p.Translations.Any(t => t.IsPublished && !t.IsDeleted))
         .AsQueryable();
 
+    // 3. Aplica a busca por palavra-chave se informada
     if (!string.IsNullOrWhiteSpace(searchTerm))
     {
         var cleanSearch = System.Net.WebUtility.UrlDecode(searchTerm).Trim().TrimStart('#');
@@ -80,8 +93,9 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         {
             var searchPattern = $"%{cleanSearch.ToLower()}%";
             query = query.Where(p => p.Translations.Any(t =>
-                EF.Functions.Like(t.Title.ToLower(), searchPattern) || 
-                EF.Functions.Like(t.Content.ToLower(), searchPattern)
+                t.IsPublished && !t.IsDeleted &&
+                (EF.Functions.Like(t.Title.ToLower(), searchPattern) || 
+                 EF.Functions.Like(t.Content.ToLower(), searchPattern))
             ));
         }
     }

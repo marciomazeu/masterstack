@@ -125,11 +125,11 @@
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
             <span class="fw-bold me-2 text-muted small"><i class="bi bi-tags me-1"></i>@Localizer["Nav_Topics"]:</span>
             <!-- 💡 Ajustada classe do botão C# para manter padronização -->
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "C#" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#C#</a>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "ASP.NET" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#ASP.NET</a>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "React" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#React</a>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "SQL Server" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#SQLServer</a>
-            <a href="@Url.Action("Index", "BlogPosts", new { culture = currentCulture, searchTerm = "CSS" })" class="btn btn-sm btn-outline-primary rounded-pill px-3">#CSS</a>
+           <a href="/@currentCulture/BlogPosts?searchTerm=C%23" class="btn btn-sm btn-outline-primary rounded-pill px-3">#C#</a>
+    <a href="/@currentCulture/BlogPosts?searchTerm=ASP.NET" class="btn btn-sm btn-outline-primary rounded-pill px-3">#ASP.NET</a>
+    <a href="/@currentCulture/BlogPosts?searchTerm=React" class="btn btn-sm btn-outline-primary rounded-pill px-3">#React</a>
+    <a href="/@currentCulture/BlogPosts?searchTerm=SQL%20Server" class="btn btn-sm btn-outline-primary rounded-pill px-3">#SQLServer</a>
+    <a href="/@currentCulture/BlogPosts?searchTerm=CSS" class="btn btn-sm btn-outline-primary rounded-pill px-3">#CSS</a>
         </div>
     </div>
 </section>
