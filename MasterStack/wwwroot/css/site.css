@@ -8,6 +8,10 @@
     font-family: 'bootstrap-icons';
     font-display: swap;
 }
+/* Melhora o contraste de texto secundário para acessibilidade */
+.text-muted {
+    color: #595959 !important;
+}
 html {
     scroll-padding-top: 75px; /* Ajuste para Navbar fixa */
     position: relative;

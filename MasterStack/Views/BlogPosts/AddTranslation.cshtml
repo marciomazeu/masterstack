@@ -33,7 +33,7 @@
         </a>
     </div>
 
-    <form id="addTranslationForm" asp-controller="BlogPosts" asp-action="AddTranslation" asp-route-postId="@Model.BlogPostId" method="post" enctype="multipart/form-data">
+    <form id="addTranslationForm" asp-controller="BlogPosts" asp-action="AddTranslation" asp-route-postId="@Model.BlogPostId" asp-route-culture="@Model.SelectedCulture" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="BlogPostId" />
         <input type="hidden" asp-for="SelectedCulture" />
@@ -148,15 +148,40 @@
         var quill = new Quill('#quill-editor', {
             theme: 'snow',
             modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline'],
-                    ['link', 'image', 'code-block'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['clean']
-                ]
+                toolbar: {
+                    container: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        ['link', 'image', 'code-block'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ],
+                    handlers: { image: imageHandler }
+                }
             }
         });
+
+        async function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+            input.onchange = async () => {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('image', file);
+                const response = await fetch(`/@Model.SelectedCulture/BlogPosts/UploadEditorImage`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const range = quill.getSelection();
+                    quill.insertEmbed(range.index, 'image', result.url);
+                }
+            };
+        }
 
         const titleInput = document.getElementById('Title');
         const slugInput = document.getElementById('Slug');

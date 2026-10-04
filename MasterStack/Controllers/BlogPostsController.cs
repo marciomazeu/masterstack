@@ -168,8 +168,15 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         [RequestSizeLimit(52428800)]
         public async Task<IActionResult> Create([FromRoute] string culture, BlogPostCreateViewModel model)
         {
+            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+            ? culture 
+            : (!string.IsNullOrWhiteSpace(model.SelectedCulture) ? model.SelectedCulture : "pt-BR");
+
+            ModelState.Remove("ImageFile");
             if (!ModelState.IsValid) 
             {
+                var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+                ViewBag.Languages = new SelectList(languages, "Culture", "Name", model.SelectedCulture);
                 return View(model);
             }
 
@@ -266,8 +273,8 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
             return View(model);
         }
 
-        [HttpPost("EditTranslation/{id}")]
-        [HttpPost("/{culture}/blogposts/EditTranslation/{id}")]
+       [HttpPost("EditTranslation/{id}")]
+        [HttpPost("/{culture}/BlogPosts/EditTranslation/{id}")] // 💡 Corrigido para BlogPosts com B e P maiúsculos
         [Authorize(Roles = "Admin,Author")]
         [ValidateAntiForgeryToken]
 public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
