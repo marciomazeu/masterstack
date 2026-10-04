@@ -43,8 +43,8 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/BlogPosts
-[HttpGet("/[controller]")]
 [HttpGet("/{culture}/[controller]")]
+[HttpGet("/[controller]")]
 public async Task<IActionResult> Index(string? culture, int page = 1, string? searchTerm = "", bool notfound = false)
 {
     if (notfound)
@@ -522,37 +522,6 @@ private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
             }
 
             return BadRequest("Falha ao processar imagem.");
-        }
-
-        [Route("sitemap.xml")]
-        public async Task<IActionResult> Sitemap()
-        {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var posts = await _context.BlogPosts
-                .Include(p => p.Translations)
-                .ToListAsync();
-
-            var sb = new StringBuilder();
-            sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
-
-            foreach (var post in posts)
-            {
-                foreach (var trans in post.Translations)
-                {
-                    var url = $"{baseUrl}/{trans.Culture}/blog/{trans.Slug}";
-                    sb.AppendLine("  <url>");
-                    sb.AppendLine($"    <loc>{url}</loc>");
-                    sb.AppendLine($"    <lastmod>{post.UpdatedAt:yyyy-MM-dd}</lastmod>");
-                    sb.AppendLine("    <changefreq>monthly</changefreq>");
-                    sb.AppendLine("    <priority>0.8</priority>");
-                    sb.AppendLine("  </url>");
-                }
-            }
-
-            sb.AppendLine("</urlset>");
-
-            return Content(sb.ToString(), "application/xml");
         }
 
         #region Helpers
