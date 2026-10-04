@@ -63,13 +63,17 @@
     <meta property="og:locale" content="@currentCulture.Replace("-", "_")" />
     <meta name="google-site-verification" content="418qHRKHMy7OVZ5IaYpkkgPPZ5RuXchI0wHLjsIa8aA" />
 
-    <!-- SEO Canônico e Multilingue (Hreflang) -->
+    <!-- SEO Canônico e Multilingue (Hreflang Limpo e Sem Duplicações) -->
     <link rel="canonical" href="@canonicalUrl" />
     @foreach (var lang in dbLanguages)
     {
         <link rel="alternate" hreflang="@lang.Culture.ToLower()" href="@($"{currentHost}/{lang.Culture}{cleanPath}")" />
     }
     <link rel="alternate" hreflang="x-default" href="@($"{currentHost}/fr-CA{cleanPath}")" />
+
+    <!-- Performance preconnect -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -78,51 +82,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.2/css/flag-icons.min.css" />
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    
-    @await RenderSectionAsync("Styles", required: false)
-    @RenderSection("Head", required: false)
-</head>
-
-<!DOCTYPE html>
-<html lang="@currentCulture">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    @RenderSection("MetaTags", required: false)
-    <title>@(ViewData["Title"] ?? "MasterStack") - MasterStack</title>
-
-    <meta name="description" content="@(ViewData["Description"] ?? "Sua plataforma de tecnologia multilingue.")" />
-    <meta property="og:title" content="@ViewData["Title"]" />
-    <meta property="og:description" content="@ViewData["Description"]" />
-    <meta property="og:type" content="website" />
-    <!-- Canonical Fixo com Cultura -->
-<link rel="canonical" href="@canonicalUrl" />
-
-<!-- Alternate Hreflang Dinâmico e Sem Duplicações -->
-@foreach (var lang in dbLanguages)
-{
-    var altUrl = $"{currentHost}/{lang.Culture}{cleanPath}";
-    <link rel="alternate" hreflang="@lang.Culture.ToLower()" href="@altUrl" />
-}
-<link rel="alternate" hreflang="x-default" href="@($"{currentHost}/fr-CA{cleanPath}")" />
-    <meta property="og:locale" content="@currentCulture.Replace("-", "_")" />
-    <meta name="google-site-verification" content="418qHRKHMy7OVZ5IaYpkkgPPZ5RuXchI0wHLjsIa8aA" />
-
-    @foreach (var lang in dbLanguages)
-    {
-        <link rel="alternate" hreflang="@lang.Culture.ToLower()" 
-              href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path.ToString().Replace($"/{currentCulture}", $"/{lang.Culture}")}")" />
-    }
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.2/css/flag-icons.min.css" />
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     
     @await RenderSectionAsync("Styles", required: false)
     @RenderSection("Head", required: false)
@@ -163,9 +122,9 @@
                 </ul>
 
                 <ul class="navbar-nav align-items-center ms-auto">
+                    <!-- Formulário de Busca Ajustado para Rota Limpa -->
                     <li class="nav-item mx-lg-2 my-2 my-lg-0">
-                        <form class="d-flex" asp-controller="BlogPosts" asp-action="Index" method="get">
-                            <input type="hidden" name="culture" value="@currentCulture" />
+                        <form class="d-flex" action="/@currentCulture/BlogPosts" method="get">
                             <div class="input-group input-group-sm" style="max-width: 150px;">
                                 <input type="text" name="searchTerm" class="form-control border-secondary bg-dark text-white shadow-none"
                                        placeholder="@Localizer["SearchPlaceholder"]" value="@Context.Request.Query["searchTerm"]">
@@ -208,7 +167,6 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow">
                                     <li><h6 class="dropdown-header">@Localizer["Menu_Administration"]</h6></li>
                                     
-                                    <!-- Permissões de Admin / Autor -->
                                     @if (User.IsInRole("Admin") || User.IsInRole("Author"))
                                     {
                                         <li>
@@ -238,7 +196,6 @@
                                         <li><hr class="dropdown-divider"></li>
                                     }
 
-                                    <!-- Permissões do Recrutador -->
                                     @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
                                     {
                                         <li>
@@ -249,7 +206,6 @@
                                         <li><hr class="dropdown-divider"></li>
                                     }
 
-                                    <!-- Menu Comum do Usuário -->
                                     <li>
                                         <a class="dropdown-item" asp-controller="User" asp-action="Profile" asp-route-culture="@currentCulture">
                                             <i class="fas fa-user-edit me-2"></i> @Localizer["Menu_Profile"]

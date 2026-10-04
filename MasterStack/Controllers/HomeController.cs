@@ -23,16 +23,19 @@ namespace MasterStack.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        [HttpGet("/")]
+        [HttpGet("/{culture}")]
+        [HttpGet("/{culture}/Home/Index")]
+        public async Task<IActionResult> Index([FromRoute] string? culture)
         {
-            // 1. Busca os últimos artigos do blog sem a propriedade inexistente IsDeleted na entidade BlogPost
+            var currentCulture = !string.IsNullOrEmpty(culture) ? culture : "pt-BR";
+
             var latestPosts = await _context.BlogPosts
                 .Include(p => p.Translations)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(3)
                 .ToListAsync();
 
-            // 2. Busca as vagas em destaque da entidade JobPosting
             var featuredJobs = await _context.JobPostings
                 .OrderByDescending(j => j.CreatedAt)
                 .Take(3)
@@ -43,11 +46,9 @@ namespace MasterStack.Controllers
                     CompanyName = !string.IsNullOrWhiteSpace(j.CompanyName) 
                         ? j.CompanyName 
                         : "Empresa Confidencial",
-                        
                     Location = !string.IsNullOrWhiteSpace(j.Location) 
                         ? j.Location.Replace("[Adzuna]", "").Trim() 
                         : null,
-                        
                     JobType = "Home_Job_Type_FullTime_Remote", 
                     PostedDate = j.CreatedAt,
                     Skills = new List<string>(),
@@ -64,6 +65,8 @@ namespace MasterStack.Controllers
             return View(viewModel);
         }
 
+        [HttpGet("/Privacy")]
+        [HttpGet("/{culture}/Home/Privacy")]
         public IActionResult Privacy()
         {
             return View();
@@ -93,63 +96,55 @@ namespace MasterStack.Controllers
         }
 
         [AllowAnonymous]
-[Route("Home/Error/{statusCode?}")]
-[Route("/{culture}/Home/Error/{statusCode?}")]
-public async Task<IActionResult> Error(int? statusCode)
-{
-    string currentCulture = CultureInfo.CurrentCulture.Name;
-
-    var reExecuteFeature = HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
-    if (reExecuteFeature != null)
-    {
-        var originalPath = reExecuteFeature.OriginalPath;
-        var segments = originalPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-        if (segments.Length > 0)
+        [Route("Home/Error/{statusCode?}")]
+        [Route("/{culture}/Home/Error/{statusCode?}")]
+        public async Task<IActionResult> Error(int? statusCode)
         {
-            var urlCulture = segments[0];
-            var supportedCultures = new[] { "pt-BR", "en-US", "fr-CA" };
+            string currentCulture = CultureInfo.CurrentCulture.Name;
 
-            if (supportedCultures.Contains(urlCulture))
+            var reExecuteFeature = HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
+            if (reExecuteFeature != null)
             {
-                currentCulture = urlCulture;
+                var originalPath = reExecuteFeature.OriginalPath;
+                var segments = originalPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-                var cultureInfo = new CultureInfo(currentCulture);
-                CultureInfo.CurrentCulture = cultureInfo;
-                CultureInfo.CurrentUICulture = cultureInfo;
+                if (segments.Length > 0 && new[] { "pt-BR", "en-US", "fr-CA" }.Contains(segments[0]))
+                {
+                    currentCulture = segments[0];
 
-                HttpContext.Features.Set<IRequestCultureFeature>(
-                    new RequestCultureFeature(new RequestCulture(cultureInfo), null)
-                );
+                    var cultureInfo = new CultureInfo(currentCulture);
+                    CultureInfo.CurrentCulture = cultureInfo;
+                    CultureInfo.CurrentUICulture = cultureInfo;
+
+                    HttpContext.Features.Set<IRequestCultureFeature>(
+                        new RequestCultureFeature(new RequestCulture(cultureInfo), null)
+                    );
+                }
             }
+
+            List<BlogPostTranslation> sugestoes = new List<BlogPostTranslation>();
+            try
+            {
+                sugestoes = await _context.BlogPostTranslations
+                    .AsNoTracking()
+                    .Include(t => t.BlogPost)
+                    .Where(t => t.Culture.ToLower() == currentCulture.ToLower() && t.BlogPost != null && !t.IsDeleted && t.IsPublished)
+                    .OrderByDescending(t => t.BlogPost.CreatedAt)
+                    .Take(3)
+                    .ToListAsync();
+            }
+            catch
+            {
+                sugestoes = new List<BlogPostTranslation>();
+            }
+
+            if (statusCode == 404)
+            {
+                return View("~/Views/Home/NotFound.cshtml", sugestoes);
+            }
+
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
-    }
-
-    // 💡 Consulta simplificada e segura sem selecionar propriedades inexistentes
-    List<BlogPostTranslation> sugestoes = new List<BlogPostTranslation>();
-    try
-    {
-        sugestoes = await _context.BlogPostTranslations
-            .AsNoTracking()
-            .Include(t => t.BlogPost)
-            .Where(t => t.Culture.ToLower() == currentCulture.ToLower() && t.BlogPost != null && !t.IsDeleted && t.IsPublished)
-            .OrderByDescending(t => t.BlogPost.CreatedAt)
-            .Take(3)
-            .ToListAsync();
-    }
-    catch
-    {
-        // Fallback defensivo para garantir que a página de erro NUNCA quebre
-        sugestoes = new List<BlogPostTranslation>();
-    }
-
-    if (statusCode == 404)
-    {
-        return View("~/Views/Home/NotFound.cshtml", sugestoes);
-    }
-
-    return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-}
 
         [AllowAnonymous]
         [Route("Home/NotFound/{statusCode}")]

@@ -43,7 +43,7 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/BlogPosts
-     [HttpGet("/[controller]")]
+[HttpGet("/[controller]")]
 [HttpGet("/{culture}/[controller]")]
 public async Task<IActionResult> Index(string? culture, int page = 1, string? searchTerm = "", bool notfound = false)
 {
@@ -52,31 +52,21 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
     }
 
-    // 1. Identifica a cultura vinda da Rota ou da Query String (com fallback limpo)
     var routeCulture = RouteData.Values["culture"]?.ToString();
     var queryCulture = HttpContext.Request.Query["culture"].ToString();
 
-    // Se a URL veio no formato /BlogPosts?culture=fr-CA (sem /fr-CA/ no caminho),
-    // fazemos um redirecionamento 302 limpo para a rota elegante /fr-CA/BlogPosts?searchTerm=...
+    // Redireciona /BlogPosts?culture=fr-CA para /fr-CA/BlogPosts
     if (string.IsNullOrEmpty(routeCulture) && !string.IsNullOrEmpty(queryCulture))
     {
-        return RedirectToRoute(new { 
-            culture = queryCulture, 
-            controller = "BlogPosts", 
-            action = "Index", 
-            searchTerm = searchTerm, 
-            page = page 
-        });
+        return RedirectToAction("Index", "BlogPosts", new { culture = queryCulture, searchTerm = searchTerm, page = page });
     }
 
-    // Define a cultura ativa final
     var activeCulture = !string.IsNullOrWhiteSpace(routeCulture) 
         ? routeCulture 
         : (!string.IsNullOrWhiteSpace(culture) ? culture : "pt-BR");
 
     int pageSize = 6;
 
-    // 2. Monta a consulta de Posts com filtro seguro de traduções publicadas
     var query = _context.BlogPosts
         .AsNoTracking()
         .Include(p => p.Author)
@@ -84,7 +74,6 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         .Where(p => p.Translations.Any(t => t.IsPublished && !t.IsDeleted))
         .AsQueryable();
 
-    // 3. Aplica a busca por palavra-chave se informada
     if (!string.IsNullOrWhiteSpace(searchTerm))
     {
         var cleanSearch = System.Net.WebUtility.UrlDecode(searchTerm).Trim().TrimStart('#');
