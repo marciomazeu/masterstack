@@ -54,7 +54,7 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
 
     int pageSize = 6;
 
-    // 💡 1. Garante que activeCulture nunca fica nula, mesmo com query string /BlogPosts?culture=pt-BR
+    // 💡 Resolve a cultura sem falhar se vier via Query String
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
         : (RouteData.Values["culture"]?.ToString() ?? HttpContext.Request.Query["culture"].ToString());
@@ -64,12 +64,12 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         activeCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
     }
 
-    // 💡 2. Query simplificada sem Includes encadeados no Where para evitar erros de tradução SQL no EF Core
+    // 💡 Carrega as traduções sem forçar INNER JOIN restritivo no Where principal
     var query = _context.BlogPosts
         .AsNoTracking()
         .Include(p => p.Author)
-        .Include(p => p.Translations)
-        .Where(p => p.Translations.Any(t => t.Culture.ToLower() == activeCulture.ToLower() && t.IsPublished && !t.IsDeleted))
+        .Include(p => p.Translations.Where(t => !t.IsDeleted && t.IsPublished))
+        .Where(p => p.Translations.Any(t => t.IsPublished && !t.IsDeleted))
         .AsQueryable();
 
     if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -80,9 +80,8 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         {
             var searchPattern = $"%{cleanSearch.ToLower()}%";
             query = query.Where(p => p.Translations.Any(t =>
-                t.Culture.ToLower() == activeCulture.ToLower() &&
-                (EF.Functions.Like(t.Title.ToLower(), searchPattern) || 
-                 EF.Functions.Like(t.Content.ToLower(), searchPattern))
+                EF.Functions.Like(t.Title.ToLower(), searchPattern) || 
+                EF.Functions.Like(t.Content.ToLower(), searchPattern)
             ));
         }
     }

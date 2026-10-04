@@ -40,8 +40,6 @@ namespace MasterStack.Models
 
         public virtual Language? Language { get; set; }
 
-        // 💡 [NotMapped] adicionado para impedir o erro de coluna inexistente no SQL
-        [NotMapped]
         [StringLength(100)]
         [Display(Name = "Título SEO")]
         public string? MetaTitle { get; set; }

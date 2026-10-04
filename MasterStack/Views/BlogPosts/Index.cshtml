@@ -54,8 +54,10 @@
         {
             @foreach (var item in Model.Posts)
             {
-                var translation = item.Translations.FirstOrDefault(t => t.Culture == currentCulture)
-                ?? item.Translations.FirstOrDefault();
+               var translation = item.Translations?.FirstOrDefault(t => 
+        string.Equals(t.Culture, currentCulture, StringComparison.OrdinalIgnoreCase) && 
+        t.IsPublished && !t.IsDeleted)
+    ?? item.Translations?.FirstOrDefault(t => t.IsPublished && !t.IsDeleted);
 
                 if (translation != null)
                 {
