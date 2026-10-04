@@ -52,21 +52,16 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
     }
 
-    var routeCulture = RouteData.Values["culture"]?.ToString();
-    var queryCulture = HttpContext.Request.Query["culture"].ToString();
-
-    // Redireciona /BlogPosts?culture=fr-CA para /fr-CA/BlogPosts
-    if (string.IsNullOrEmpty(routeCulture) && !string.IsNullOrEmpty(queryCulture))
-    {
-        return RedirectToAction("Index", "BlogPosts", new { culture = queryCulture, searchTerm = searchTerm, page = page });
-    }
-
-    var activeCulture = !string.IsNullOrWhiteSpace(routeCulture) 
-        ? routeCulture 
-        : (!string.IsNullOrWhiteSpace(culture) ? culture : "pt-BR");
+    // 💡 Resolve a cultura com fallback sem fazer HTTP Redirect (impede ERR_TOO_MANY_REDIRECTS)
+    var activeCulture = !string.IsNullOrWhiteSpace(culture)
+        ? culture
+        : (RouteData.Values["culture"]?.ToString() 
+            ?? (string)HttpContext.Request.Query["culture"] 
+            ?? "pt-BR");
 
     int pageSize = 6;
 
+    // Consulta limpa no Entity Framework
     var query = _context.BlogPosts
         .AsNoTracking()
         .Include(p => p.Author)
