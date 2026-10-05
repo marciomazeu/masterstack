@@ -116,12 +116,12 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/Jobs/Enterprises
-       [AllowAnonymous]
+// GET: /{culture}/Jobs/Enterprises
+[AllowAnonymous]
 [HttpGet("Enterprises")]
 [HttpGet("/{culture}/Jobs/Enterprises")]
 public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string? searchTerm)
 {
-    // 1. Resolve a cultura sem permitir nulos
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
         : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
@@ -132,7 +132,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
     {
         var user = await _userManager.GetUserAsync(User);
         
-        // 2. Coordenadas padrão seguras para visitantes anónimos / Googlebot
+        // Coordenadas padrão seguras para visitantes anónimos / Googlebot (Québec, CA)
         double userLat = user?.Latitude ?? 46.8138;
         double userLng = user?.Longitude ?? -71.2080;
         int radiusKm = (user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50;
@@ -143,7 +143,6 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         }
 
-        // Bounding box para filtro no SQL
         double latDelta = radiusKm / 111.0;
         double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
 
@@ -156,6 +155,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         // --- CONSULTA 1: EMPRESAS ---
         var companiesQuery = _context.Companies
+            .AsNoTracking()
             .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
                         c.Latitude >= minLat && c.Latitude <= maxLat &&
                         c.Longitude >= minLon && c.Longitude <= maxLon);
@@ -170,23 +170,33 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         var companiesFromDb = await companiesQuery.ToListAsync();
 
-        var companiesList = companiesFromDb
-            .Select(c => new CompanyDistanceViewModel
+        // Cálculo defensivo de distância (Fórmula de Haversine nativa)
+        var companiesList = new List<CompanyDistanceViewModel>();
+        foreach (var c in companiesFromDb)
+        {
+            if (c.Latitude.HasValue && c.Longitude.HasValue)
             {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description,
-                City = c.City,
-                Latitude = c.Latitude!.Value,
-                Longitude = c.Longitude!.Value,
-                DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
-            })
-            .Where(c => c.DistanceInKm <= radiusKm)
-            .OrderBy(c => c.DistanceInKm)
-            .ToList();
+                double dist = CalculateHaversineDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value);
+                if (dist <= radiusKm)
+                {
+                    companiesList.Add(new CompanyDistanceViewModel
+                    {
+                        Id = c.Id,
+                        Name = c.Name ?? "Empresa",
+                        Description = c.Description ?? "",
+                        City = c.City ?? "",
+                        Latitude = c.Latitude.Value,
+                        Longitude = c.Longitude.Value,
+                        DistanceInKm = dist
+                    });
+                }
+            }
+        }
+        companiesList = companiesList.OrderBy(c => c.DistanceInKm).ToList();
 
         // --- CONSULTA 2: VAGAS PRÓPRIAS ---
         var localJobsQuery = _context.JobPostings
+            .AsNoTracking()
             .Include(j => j.Company)
             .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
 
@@ -206,6 +216,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         // --- CONSULTA 3: VAGAS EXTERNAS ---
         var externalJobsQuery = _context.JobPostings
+            .AsNoTracking()
             .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
         if (searchTokens != null && searchTokens.Length > 0)
@@ -230,8 +241,8 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         var viewModel = new EnterprisesPageViewModel
         {
-            User = user, // Pode ser null para visitantes
-            Companies = companiesList ?? new List<CompanyDistanceViewModel>(),
+            User = user,
+            Companies = companiesList,
             LocalJobs = localJobsList ?? new List<JobPosting>(),
             JobPosting = externalJobsList ?? new List<JobPosting>()
         };
@@ -240,16 +251,33 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, "Erro ao carregar a página de empresas/vagas.");
-        // Retorna a view com listas vazias para evitar travar a página com HTTP 500
+        Console.WriteLine($"[ENTERPRISES ERROR] {ex.Message}");
+
+        // Retorna a view limpa sem estourar Erro 500 para o Googlebot / Visitantes
         return View(new EnterprisesPageViewModel
         {
+            User = null,
             Companies = new List<CompanyDistanceViewModel>(),
             LocalJobs = new List<JobPosting>(),
             JobPosting = new List<JobPosting>()
         });
     }
 }
+
+// Método auxiliar privado de distância Haversine
+private static double CalculateHaversineDistanceKm(double lat1, double lon1, double lat2, double lon2)
+{
+    var R = 6371d; // Raio da Terra em km
+    var dLat = ToRadians(lat2 - lat1);
+    var dLon = ToRadians(lon2 - lon1);
+    var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+            Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+            Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+    var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    return R * c;
+}
+
+private static double ToRadians(double val) => (Math.PI / 180) * val;
 
         // GET: /{culture}/Jobs/CompaniesNearby
         [HttpGet("CompaniesNearby")]
