@@ -31,6 +31,7 @@ namespace MasterStack.Controllers
         private readonly IStringLocalizer<JobsController> _localizer;
         private readonly JobAggregatorService _jobAggregatorService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<JobsController> _logger;
 
         public JobsController(
             ApplicationDbContext context,
@@ -40,7 +41,8 @@ namespace MasterStack.Controllers
             IConfiguration configuration,
             IStringLocalizer<JobsController> localizer,
             JobAggregatorService jobAggregatorService,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ILogger<JobsController> logger)
         {
             _context = context;
             _userManager = userManager;
@@ -50,6 +52,7 @@ namespace MasterStack.Controllers
             _localizer = localizer;
             _jobAggregatorService = jobAggregatorService;
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
         // GET: /{culture}/Jobs
@@ -113,132 +116,140 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/Jobs/Enterprises
-        [AllowAnonymous]
-        [HttpGet("Enterprises")]
-        [HttpGet("/{culture}/Jobs/Enterprises")]
-        public async Task<IActionResult> Enterprises(string culture, [FromQuery] string? searchTerm)
-        {
-            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
-                ? culture 
-                : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
+       [AllowAnonymous]
+[HttpGet("Enterprises")]
+[HttpGet("/{culture}/Jobs/Enterprises")]
+public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string? searchTerm)
+{
+    // 1. Resolve a cultura sem permitir nulos
+    var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+        ? culture 
+        : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
 
-            // Garantia adicional: repassa a cultura ativa para a View
-            ViewData["CurrentCulture"] = activeCulture;
-            var user = await _userManager.GetUserAsync(User);
-            
-            // 1. Geolocalização: Se o usuário estiver deslogado ou sem coordenadas, usa Québec, CA como centro padrão
-            double userLat = user?.Latitude ?? 46.8138;
-            double userLng = user?.Longitude ?? -71.2080;
-            int radiusKm = (user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50;
+    ViewData["CurrentCulture"] = activeCulture;
 
-            if (user != null && (!user.Latitude.HasValue || !user.Longitude.HasValue))
-            {
-                TempData["Warning"] = _localizer["Enterprises_ProfileLocationRequired"].Value;
-            }
-
-            string[]? searchTokens = null;
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            }
-
-            // Bounding box para filtro no SQL
-            double latDelta = radiusKm / 111.0;
-            double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
-
-            double minLat = userLat - latDelta;
-            double maxLat = userLat + latDelta;
-            double minLon = userLng - lonDelta;
-            double maxLon = userLng + lonDelta;
-
-            string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
-
-            // --- CONSULTA 1: EMPRESAS ---
-            var companiesQuery = _context.Companies
-                .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
-                            c.Latitude >= minLat && c.Latitude <= maxLat &&
-                            c.Longitude >= minLon && c.Longitude <= maxLon);
-
-            if (cleanSearch != null)
-            {
-                companiesQuery = companiesQuery.Where(c => 
-                    c.Name.ToLower().Contains(cleanSearch) || 
-                    (c.City != null && c.City.ToLower().Contains(cleanSearch)) ||
-                    (c.Description != null && c.Description.ToLower().Contains(cleanSearch)));
-            }
-
-            var companiesFromDb = await companiesQuery.ToListAsync();
-
-            var companiesList = companiesFromDb
-                .Select(c => new CompanyDistanceViewModel
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Description = c.Description,
-                    City = c.City,
-                    Latitude = c.Latitude!.Value,
-                    Longitude = c.Longitude!.Value,
-                    DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
-                })
-                .Where(c => c.DistanceInKm <= radiusKm)
-                .OrderBy(c => c.DistanceInKm)
-                .ToList();
-
-            // --- CONSULTA 2: VAGAS PRÓPRIAS ---
-            var localJobsQuery = _context.JobPostings
-                .Include(j => j.Company)
-                .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
-
-            if (cleanSearch != null)
-            {
-                localJobsQuery = localJobsQuery.Where(j => 
-                    j.Title.ToLower().Contains(cleanSearch) || 
-                    (j.CompanyName != null && j.CompanyName.ToLower().Contains(cleanSearch)) || 
-                    (j.Location != null && j.Location.ToLower().Contains(cleanSearch)) ||
-                    (j.Description != null && j.Description.ToLower().Contains(cleanSearch)));
-            }
-
-            var localJobsList = await localJobsQuery
-                .OrderByDescending(j => j.CreatedAt)
-                .Take(50)
-                .ToListAsync();
-
-            // --- CONSULTA 3: VAGAS EXTERNAS / PARCEIROS ---
-            var externalJobsQuery = _context.JobPostings
-                .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
-
-            if (searchTokens != null && searchTokens.Length > 0)
-            {
-                foreach (var token in searchTokens)
-                {
-                    string pattern = $"%{token}%";
-                    
-                    externalJobsQuery = externalJobsQuery.Where(j =>
-                        (j.Title != null && EF.Functions.Like(j.Title.ToLower(), pattern)) ||
-                        (j.CompanyName != null && EF.Functions.Like(j.CompanyName.ToLower(), pattern)) ||
-                        (j.Location != null && j.Location.ToLower().Contains(pattern)) ||
-                        (j.Description != null && j.Description.ToLower().Contains(pattern))
-                    );
-                }
-            }
-
-            var externalJobsList = await externalJobsQuery
-                .OrderByDescending(j => j.CreatedAt)
-                .Take(50)
-                .ToListAsync();
-
-            // 4. Montagem limpa da ViewModel
-            var viewModel = new EnterprisesPageViewModel
-            {
-                User = user,
-                Companies = companiesList,
-                LocalJobs = localJobsList,
-                JobPosting = externalJobsList
-            };
-
-            return View(viewModel);
-        }
+    try
+    {
+        var user = await _userManager.GetUserAsync(User);
         
+        // 2. Coordenadas padrão seguras para visitantes anónimos / Googlebot
+        double userLat = user?.Latitude ?? 46.8138;
+        double userLng = user?.Longitude ?? -71.2080;
+        int radiusKm = (user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50;
+
+        string[]? searchTokens = null;
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        // Bounding box para filtro no SQL
+        double latDelta = radiusKm / 111.0;
+        double lonDelta = radiusKm / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
+
+        double minLat = userLat - latDelta;
+        double maxLat = userLat + latDelta;
+        double minLon = userLng - lonDelta;
+        double maxLon = userLng + lonDelta;
+
+        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
+
+        // --- CONSULTA 1: EMPRESAS ---
+        var companiesQuery = _context.Companies
+            .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
+                        c.Latitude >= minLat && c.Latitude <= maxLat &&
+                        c.Longitude >= minLon && c.Longitude <= maxLon);
+
+        if (cleanSearch != null)
+        {
+            companiesQuery = companiesQuery.Where(c => 
+                c.Name.ToLower().Contains(cleanSearch) || 
+                (c.City != null && c.City.ToLower().Contains(cleanSearch)) ||
+                (c.Description != null && c.Description.ToLower().Contains(cleanSearch)));
+        }
+
+        var companiesFromDb = await companiesQuery.ToListAsync();
+
+        var companiesList = companiesFromDb
+            .Select(c => new CompanyDistanceViewModel
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                City = c.City,
+                Latitude = c.Latitude!.Value,
+                Longitude = c.Longitude!.Value,
+                DistanceInKm = _geocodingService.CalculateDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value)
+            })
+            .Where(c => c.DistanceInKm <= radiusKm)
+            .OrderBy(c => c.DistanceInKm)
+            .ToList();
+
+        // --- CONSULTA 2: VAGAS PRÓPRIAS ---
+        var localJobsQuery = _context.JobPostings
+            .Include(j => j.Company)
+            .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
+
+        if (cleanSearch != null)
+        {
+            localJobsQuery = localJobsQuery.Where(j => 
+                j.Title.ToLower().Contains(cleanSearch) || 
+                (j.CompanyName != null && j.CompanyName.ToLower().Contains(cleanSearch)) || 
+                (j.Location != null && j.Location.ToLower().Contains(cleanSearch)) ||
+                (j.Description != null && j.Description.ToLower().Contains(cleanSearch)));
+        }
+
+        var localJobsList = await localJobsQuery
+            .OrderByDescending(j => j.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+
+        // --- CONSULTA 3: VAGAS EXTERNAS ---
+        var externalJobsQuery = _context.JobPostings
+            .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
+
+        if (searchTokens != null && searchTokens.Length > 0)
+        {
+            foreach (var token in searchTokens)
+            {
+                string pattern = $"%{token}%";
+                
+                externalJobsQuery = externalJobsQuery.Where(j =>
+                    (j.Title != null && EF.Functions.Like(j.Title.ToLower(), pattern)) ||
+                    (j.CompanyName != null && EF.Functions.Like(j.CompanyName.ToLower(), pattern)) ||
+                    (j.Location != null && j.Location.ToLower().Contains(pattern)) ||
+                    (j.Description != null && j.Description.ToLower().Contains(pattern))
+                );
+            }
+        }
+
+        var externalJobsList = await externalJobsQuery
+            .OrderByDescending(j => j.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+
+        var viewModel = new EnterprisesPageViewModel
+        {
+            User = user, // Pode ser null para anónimos
+            Companies = companiesList,
+            LocalJobs = localJobsList,
+            JobPosting = externalJobsList
+        };
+
+        return View(viewModel);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Erro ao carregar a página de empresas/vagas.");
+        // Retorna a view com listas vazias para evitar travar a página com HTTP 500
+        return View(new EnterprisesPageViewModel
+        {
+            Companies = new List<CompanyDistanceViewModel>(),
+            LocalJobs = new List<JobPosting>(),
+            JobPosting = new List<JobPosting>()
+        });
+    }
+}
 
         // GET: /{culture}/Jobs/CompaniesNearby
         [HttpGet("CompaniesNearby")]
