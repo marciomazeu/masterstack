@@ -18,8 +18,8 @@ using Microsoft.Extensions.Localization;
 
 namespace MasterStack.Controllers
 {
-    [Authorize] // 🔒 Exige login por padrão no controller
-    [Route("{culture}/[controller]")] // ✅ Define a rota base com suporte a cultura (/fr-CA/Jobs)
+    [Authorize]
+    [Route("{culture}/[controller]")]
     [Route("[controller]")]
     public class JobsController : Controller
     {
@@ -113,10 +113,17 @@ namespace MasterStack.Controllers
         }
 
         // GET: /{culture}/Jobs/Enterprises
-        [AllowAnonymous] // 🔓 Libera a busca de vagas/empresas para visitantes e buscadores (Google)
+        [AllowAnonymous]
         [HttpGet("Enterprises")]
+        [HttpGet("/{culture}/Jobs/Enterprises")]
         public async Task<IActionResult> Enterprises(string culture, [FromQuery] string? searchTerm)
         {
+            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+                ? culture 
+                : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
+
+            // Garantia adicional: repassa a cultura ativa para a View
+            ViewData["CurrentCulture"] = activeCulture;
             var user = await _userManager.GetUserAsync(User);
             
             // 1. Geolocalização: Se o usuário estiver deslogado ou sem coordenadas, usa Québec, CA como centro padrão

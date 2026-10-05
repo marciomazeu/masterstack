@@ -270,16 +270,36 @@ try
     app.UseRouting();
 
     // Redirecionamento da raiz sem idioma
-    app.Use(async (context, next) =>
+   // Redirecionamento Permanente (301) para URLs acessadas sem prefixo de idioma
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value;
+
+    if (!string.IsNullOrEmpty(path))
     {
-        var path = context.Request.Path.Value;
-        if (string.IsNullOrEmpty(path) || path == "/")
+        // 1. Caso seja a raiz do site
+        if (path == "/")
         {
-            context.Response.Redirect("/fr-CA");
+            context.Response.Redirect("/fr-CA", permanent: true); // 301
             return;
         }
-        await next();
-    });
+
+        // 2. Se acessar /Jobs ou /Jobs/Enterprises sem o idioma no início
+        var isCulturePrefixed = path.StartsWith("/pt-BR", StringComparison.OrdinalIgnoreCase) ||
+                                path.StartsWith("/en-US", StringComparison.OrdinalIgnoreCase) ||
+                                path.StartsWith("/fr-CA", StringComparison.OrdinalIgnoreCase);
+
+        if (!isCulturePrefixed && (path.Equals("/Jobs", StringComparison.OrdinalIgnoreCase) || 
+                                   path.StartsWith("/Jobs/", StringComparison.OrdinalIgnoreCase)))
+        {
+            // Redireciona em 1 salto para a versão canônica em fr-CA (idioma padrão)
+            context.Response.Redirect($"/fr-CA{path}", permanent: true); // 301
+            return;
+        }
+    }
+
+    await next();
+});
 
     // Aplicação da Localização
     var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
