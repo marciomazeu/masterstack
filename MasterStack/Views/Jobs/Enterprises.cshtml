@@ -18,9 +18,14 @@
 
     bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
     
+    // 💡 PROTEÇÃO CONTRA NULOS: Garante que as listas nunca sejam nulas antes de usar .Take() ou .Count
+    var localJobsList = Model?.LocalJobs ?? new List<MasterStack.Models.JobPosting>();
+    var externalJobsList = Model?.JobPosting ?? new List<MasterStack.Models.JobPosting>();
+    var companiesList = Model?.Companies ?? new List<MasterStack.ViewModels.CompanyDistanceViewModel>();
+
     // Filtro de prévia para usuários anônimos
-    var displayedLocalJobs = isAuthenticated ? Model.LocalJobs : Model.LocalJobs.Take(10).ToList();
-    var displayedExternalJobs = isAuthenticated ? Model.JobPosting : Model.JobPosting.Take(10).ToList();
+    var displayedLocalJobs = isAuthenticated ? localJobsList : localJobsList.Take(10).ToList();
+    var displayedExternalJobs = isAuthenticated ? externalJobsList : externalJobsList.Take(10).ToList();
 }
 
 @if (TempData["Warning"] != null)
@@ -138,17 +143,17 @@
                 <ul class="nav nav-pills nav-justified mb-3 small" id="exploreTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold px-2" id="local-jobs-tab" data-bs-toggle="pill" data-bs-target="#local-jobs-panel" type="button" role="tab">
-                            <i class="fas fa-star text-warning me-1"></i> @Localizer["Tab_LocalJobs"] (@Model.LocalJobs.Count)
+                            <i class="fas fa-star text-warning me-1"></i> @Localizer["Tab_LocalJobs"] (@localJobsList.Count)
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold px-2" id="external-jobs-tab" data-bs-toggle="pill" data-bs-target="#external-jobs-panel" type="button" role="tab">
-                            <i class="fas fa-briefcase text-success me-1"></i> @Localizer["Tab_PartnerJobs"] (@Model.JobPosting.Count)
+                            <i class="fas fa-briefcase text-success me-1"></i> @Localizer["Tab_PartnerJobs"] (@externalJobsList.Count)
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold px-2" id="companies-tab" data-bs-toggle="pill" data-bs-target="#companies-panel" type="button" role="tab">
-                            <i class="fas fa-building text-primary me-1"></i> @Localizer["Tab_Companies"] (@Model.Companies.Count)
+                            <i class="fas fa-building text-primary me-1"></i> @Localizer["Tab_Companies"] (@companiesList.Count)
                         </button>
                     </li>
                 </ul>

@@ -230,10 +230,10 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         var viewModel = new EnterprisesPageViewModel
         {
-            User = user, // Pode ser null para anónimos
-            Companies = companiesList,
-            LocalJobs = localJobsList,
-            JobPosting = externalJobsList
+            User = user, // Pode ser null para visitantes
+            Companies = companiesList ?? new List<CompanyDistanceViewModel>(),
+            LocalJobs = localJobsList ?? new List<JobPosting>(),
+            JobPosting = externalJobsList ?? new List<JobPosting>()
         };
 
         return View(viewModel);
