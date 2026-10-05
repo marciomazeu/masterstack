@@ -713,21 +713,44 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
             return parsedJobs;
         }
 
-        [AllowAnonymous]
-        [HttpGet("Search")]
-        public async Task<IActionResult> Search(string query, string location)
-        {
-            var filter = new JobSearchFilter
-            {
-                Query = query ?? "",
-                Location = location ?? "",
-                Page = 1
-            };
+       [AllowAnonymous]
+[HttpGet("Search")]
+public async Task<IActionResult> Search(string query, string location)
+{
+    var user = await _userManager.GetUserAsync(User);
 
-            List<JobDto> jobs = await _jobAggregatorService.AggregateJobsAsync(filter);
+    var filter = new JobSearchFilter
+    {
+        Query = query ?? "",
+        Location = location ?? "",
+        Page = 1
+    };
 
-            return View("Enterprises",jobs);
-        }
+    List<JobDto> aggregatedJobs = await _jobAggregatorService.AggregateJobsAsync(filter);
+
+    // Converte os JobDto retornados pela busca para a entidade JobPosting esperada na ViewModel
+    var convertedJobs = aggregatedJobs.Select(j => new JobPosting
+    {
+        Title = j.Title,
+        CompanyName = j.Company,
+        Location = j.Location,
+        RedirectUrl = j.Url,
+        SourceProvider = "SearchAggregator",
+        IsActive = true,
+        CreatedAt = DateTime.UtcNow
+    }).ToList();
+
+    // Instancia o modelo exatamente como esperado por Enterprises.cshtml
+    var viewModel = new EnterprisesPageViewModel
+    {
+        User = user,
+        Companies = new List<CompanyDistanceViewModel>(),
+        LocalJobs = new List<JobPosting>(),
+        JobPosting = convertedJobs
+    };
+
+    return View("Enterprises", viewModel);
+}
 
         [HttpGet("MyApplications")]
         [Authorize]
