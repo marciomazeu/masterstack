@@ -170,20 +170,24 @@ namespace MasterStack.Controllers
         [HttpPost("/User/UpdateProfile")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin,User,Author,Candidate,Recruiter")]
-        public async Task<IActionResult> UpdateProfile([FromRoute] string culture, ProfileViewModel model)
+        public async Task<IActionResult> UpdateProfile([FromRoute] string? culture, ProfileViewModel model)
         {
+            var activeCulture = !string.IsNullOrWhiteSpace(culture) ? culture : "pt-BR";
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return RedirectToAction("Login", "Account", new { culture });
+            
+            if (user == null) 
+                return RedirectToAction("Login", "Account", new { culture = activeCulture });
 
             if (!ModelState.IsValid) 
             {
                 model.AvatarUrl = user.ProfileImageUrl;
                 model.IsTwoFactorEnabled = user.TwoFactorEnabled;
                 
-                await PopulateCountriesViewBagAsync(culture);
-                ViewData["CurrentCulture"] = culture;
+                await PopulateCountriesViewBagAsync(activeCulture);
+                ViewData["CurrentCulture"] = activeCulture;
                 
-                return View("Index", model);
+                // 💡 CORRIGIDO: Retorna a View "Profile" em vez de "Index"
+                return View("Profile", model);
             }
 
             string? oldImageUrl = user.ProfileImageUrl;
@@ -195,14 +199,12 @@ namespace MasterStack.Controllers
             {
                 try
                 {
-                    // Upload direto para a pasta "profiles" no DigitalOcean Spaces
                     var uploadedUrl = await _cloudStorageService.UploadFileAsync(fileToUpload, "profiles");
 
                     if (!string.IsNullOrEmpty(uploadedUrl))
                     {
                         user.ProfileImageUrl = uploadedUrl;
 
-                        // Elimina a imagem antiga do Spaces se for uma imagem armazenada na nuvem
                         if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.Contains("digitaloceanspaces.com"))
                         {
                             _ = _cloudStorageService.DeleteFileAsync(oldImageUrl);
@@ -232,14 +234,14 @@ namespace MasterStack.Controllers
 
             // 4. Localização e Preferências
             user.Address = model.StreetAddress;
-            user.City = model.City;
+            user.City = model.City; // 💡 Captura a cidade atualizada enviada pelo form
             user.StateOrRegion = model.StateOrRegion;
             user.PostalCode = model.PostalCode;
             user.CountryCode = model.CountryCode;
             user.PreferredJobTitle = model.PreferredJobTitle;
             user.SearchRadiusKm = model.SearchRadiusKm;
 
-            // 5. Geocoding
+            // 5. Geocoding das Coordenadas
             if (!string.IsNullOrEmpty(model.CountryCode) && (!string.IsNullOrEmpty(model.PostalCode) || !string.IsNullOrEmpty(model.City)))
             {
                 try
@@ -289,8 +291,8 @@ namespace MasterStack.Controllers
             var result = await _userManager.UpdateAsync(user);
             if (result.Succeeded) 
             {
-                TempData["Success"] = GetLocalizedSuccessMessage(culture);
-                return RedirectToAction(nameof(Profile), new { culture });
+                TempData["Success"] = GetLocalizedSuccessMessage(activeCulture);
+                return RedirectToAction(nameof(Profile), new { culture = activeCulture });
             }
 
             foreach (var error in result.Errors)
@@ -298,9 +300,11 @@ namespace MasterStack.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            await PopulateCountriesViewBagAsync(culture);
-            ViewData["CurrentCulture"] = culture;
-            return View("Index", model);
+            await PopulateCountriesViewBagAsync(activeCulture);
+            ViewData["CurrentCulture"] = activeCulture;
+            
+            // 💡 CORRIGIDO: Retorna a View "Profile"
+            return View("Profile", model);
         }
     }
 }

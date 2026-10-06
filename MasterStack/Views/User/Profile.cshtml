@@ -237,7 +237,9 @@
 </div>
 
 
-    @section Scripts {
+   @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const countrySelect = document.getElementById('CountrySelect');
@@ -248,11 +250,14 @@
             const finalCityInput = document.getElementById('FinalCityInput');
             
             const savedCity = @Html.Raw(Json.Serialize(Model?.City ?? ""));
+            const currentCulture = "@(ViewData["CurrentCulture"] ?? "pt-BR")";
 
+            // Sincroniza o valor digitado no campo personalizado com o Hidden do ASP.NET
             customCityInput.addEventListener('input', function () {
                 finalCityInput.value = this.value;
             });
 
+            // Gerencia a troca de seleção no Dropdown de cidades
             citySelect.addEventListener('change', function () {
                 if (this.value === 'OTHER') {
                     customCityContainer.classList.remove('d-none');
@@ -264,92 +269,83 @@
             });
 
             async function loadCities(countryCode, stateOrRegion = '', selectedCity = '') {
-    const citySelect = document.getElementById('CitySelect');
-    const customCityContainer = document.getElementById('CustomCityContainer');
-    const customCityInput = document.getElementById('CustomCityInput');
-    const finalCityInput = document.getElementById('FinalCityInput');
-
-    citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
-    customCityContainer.classList.add('d-none');
-
-    if (!countryCode) {
-        citySelect.disabled = true;
-        finalCityInput.value = '';
-        return;
-    }
-
-    citySelect.disabled = true;
-    citySelect.innerHTML = '<option value="">@Localizer["Profile_LoadingCities"]</option>';
-
-    try {
-        const baseUrl = "@Url.Action("GetCitiesByCountry", "User", new { culture = currentCulture })";
-        const url = `${baseUrl}?countryCode=${encodeURIComponent(countryCode)}&state=${encodeURIComponent(stateOrRegion)}`;
-        
-        const response = await fetch(url);
-
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-        const cities = await response.json();
-        citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
-
-        let cityFoundInList = false;
-
-        if (cities && cities.length > 0) {
-            cities.forEach(city => {
-                const cityName = typeof city === 'string' ? city : (city.name || city.id);
-                const option = document.createElement('option');
-                option.value = cityName;
-                option.textContent = cityName;
-
-                if (selectedCity && cityName.toLowerCase() === selectedCity.toLowerCase()) {
-                    option.selected = true;
-                    cityFoundInList = true;
+                if (!countryCode) {
+                    citySelect.disabled = true;
+                    citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCountryFirst"]</option>';
+                    return;
                 }
 
-                citySelect.appendChild(option);
-            });
+                citySelect.disabled = true;
+                citySelect.innerHTML = '<option value="">@Localizer["Profile_LoadingCities"]</option>';
 
-            // Adiciona a opção "Outra..." no final da lista
-            const otherOption = document.createElement('option');
-            otherOption.value = 'OTHER';
-            otherOption.textContent = "Outra / Outre / Other...";
-            citySelect.appendChild(otherOption);
+                try {
+                    const url = `/${currentCulture}/User/GetCitiesByCountry?countryCode=${encodeURIComponent(countryCode)}&state=${encodeURIComponent(stateOrRegion)}`;
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-            citySelect.disabled = false;
+                    const cities = await response.json();
+                    citySelect.innerHTML = '<option value="">@Localizer["Profile_SelectCity"]</option>';
 
-            if (selectedCity && !cityFoundInList) {
-                citySelect.value = 'OTHER';
+                    let cityFoundInList = false;
+
+                    if (cities && cities.length > 0) {
+                        cities.forEach(city => {
+                            const cityName = typeof city === 'string' ? city : (city.name || city.id);
+                            const option = document.createElement('option');
+                            option.value = cityName;
+                            option.textContent = cityName;
+
+                            if (selectedCity && cityName.toLowerCase() === selectedCity.toLowerCase()) {
+                                option.selected = true;
+                                cityFoundInList = true;
+                            }
+
+                            citySelect.appendChild(option);
+                        });
+
+                        // Opção de entrada manual
+                        const otherOption = document.createElement('option');
+                        otherOption.value = 'OTHER';
+                        otherOption.textContent = "Outra / Outre / Other...";
+                        citySelect.appendChild(otherOption);
+
+                        citySelect.disabled = false;
+
+                        if (selectedCity && !cityFoundInList) {
+                            citySelect.value = 'OTHER';
+                            customCityContainer.classList.remove('d-none');
+                            customCityInput.value = selectedCity;
+                            finalCityInput.value = selectedCity;
+                        } else if (cityFoundInList) {
+                            finalCityInput.value = selectedCity;
+                        }
+                    } else {
+                        enableManualInput(selectedCity);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar cidades:', error);
+                    enableManualInput(selectedCity);
+                }
+            }
+
+            function enableManualInput(selectedCity) {
+                citySelect.innerHTML = '<option value="OTHER" selected>Outra / Outre / Other...</option>';
+                citySelect.disabled = false;
                 customCityContainer.classList.remove('d-none');
-                customCityInput.value = selectedCity;
-                finalCityInput.value = selectedCity;
-            } else if (cityFoundInList) {
-                finalCityInput.value = selectedCity;
+                if (selectedCity) {
+                    customCityInput.value = selectedCity;
+                    finalCityInput.value = selectedCity;
+                }
             }
-        } else {
-            // Se a API não retornar cidades para o país/estado, exibe opção para digitar livremente
-            citySelect.innerHTML = '<option value="OTHER" selected>Outra / Outre / Other...</option>';
-            citySelect.disabled = false;
-            customCityContainer.classList.remove('d-none');
-            if (selectedCity) {
-                customCityInput.value = selectedCity;
-                finalCityInput.value = selectedCity;
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao carregar cidades:', error);
-        citySelect.innerHTML = '<option value="OTHER" selected>Outra / Outre / Other...</option>';
-        citySelect.disabled = false;
-        customCityContainer.classList.remove('d-none');
-    }
-}
 
             // Recarrega cidades ao alterar o País
             countrySelect.addEventListener('change', function () {
                 const currentState = stateInput ? stateInput.value : '';
-                loadCities(this.value, currentState);
+                loadCities(this.value, currentState, finalCityInput.value);
             });
 
-            // Recarrega cidades ao alterar o Estado/Província (quando o utilizador sai do campo)
+            // Recarrega ao alterar Estado
             if (stateInput) {
                 stateInput.addEventListener('blur', function () {
                     if (countrySelect.value) {
