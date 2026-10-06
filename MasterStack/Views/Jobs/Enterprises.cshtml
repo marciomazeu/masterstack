@@ -440,7 +440,11 @@
     const externalJobs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(displayedExternalJobs));
     const allJobPostings = [...localJobs, ...externalJobs];
 
-    const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.Companies ?? new List<MasterStack.ViewModels.CompanyDistanceViewModel>()));
+    // Opções explícitas de serialização camelCase para evitar divergências
+const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    Model?.Companies ?? new List<MasterStack.ViewModels.CompanyDistanceViewModel>(),
+    new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }
+));
 
     function createCompanyIcon(officeType) {
         let iconClass = 'fa-building';
@@ -517,38 +521,41 @@
     });
 
     function addCompanyToMap(company) {
-        const lat = parseFloat(company.latitude ?? company.Latitude);
-        const lng = parseFloat(company.longitude ?? company.Longitude);
+    if (!company) return;
 
-        if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
-            const officeType = company.officeType || company.OfficeType || 'Empresa';
-            const companyName = company.name || company.Name || 'Empresa de TI';
-            const description = company.description || company.Description || '';
+    // Suporta camelCase e PascalCase com fallback seguro
+    const lat = parseFloat(company.latitude !== undefined ? company.latitude : company.Latitude);
+    const lng = parseFloat(company.longitude !== undefined ? company.longitude : company.Longitude);
 
-            const customIcon = createCompanyIcon(officeType);
-            const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        const officeType = company.officeType || company.OfficeType || 'Empresa';
+        const companyName = company.name || company.Name || 'Empresa de TI';
+        const description = company.description || company.Description || '';
 
-            marker.bindTooltip(`<b>${companyName}</b>`, {
-                permanent: false,
-                direction: 'top',
-                offset: [0, -15]
-            });
+        const customIcon = createCompanyIcon(officeType);
+        const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
 
-            marker.bindPopup(`
-                <div style="min-width: 190px;" class="p-1">
-                    <span class="badge bg-primary mb-1">${officeType}</span>
-                    <h6 class="fw-bold mb-1" style="color: #212529;">${companyName}</h6>
-                    <p class="small text-muted mb-2">${description}</p>
-                    <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" 
-                       target="_blank" class="btn btn-sm btn-outline-primary w-100 mt-1 fw-bold">
-                       <i class="fas fa-map-marked-alt me-1"></i> @Localizer["OpenGoogleMapsBtn"]
-                    </a>
-                </div>
-            `);
+        marker.bindTooltip(`<b>${companyName}</b>`, {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -15]
+        });
 
-            companyMarkers[`${lat}_${lng}`] = marker;
-        }
+        marker.bindPopup(`
+            <div style="min-width: 190px;" class="p-1">
+                <span class="badge bg-primary mb-1">${officeType}</span>
+                <h6 class="fw-bold mb-1" style="color: #212529;">${companyName}</h6>
+                <p class="small text-muted mb-2">${description}</p>
+                <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" 
+                   target="_blank" class="btn btn-sm btn-outline-primary w-100 mt-1 fw-bold">
+                   <i class="fas fa-map-marked-alt me-1"></i> Open Google Maps
+                </a>
+            </div>
+        `);
+
+        companyMarkers[`${lat}_${lng}`] = marker;
     }
+}
 
     function focusCompanyOnMap(lat, lng) {
         const parsedLat = parseFloat(lat);

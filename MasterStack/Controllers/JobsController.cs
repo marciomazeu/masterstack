@@ -312,14 +312,13 @@ namespace MasterStack.Controllers
             return Ok(nearbyCompanies);
         }
 // GET: /{culture}/Jobs/FetchNearbyCompaniesFromOSM
-[AllowAnonymous] // 👈 Permite que visitantes anônimos também consultem o OSM
+[AllowAnonymous]
 [HttpGet("FetchNearbyCompaniesFromOSM")]
 [HttpGet("/{culture}/Jobs/FetchNearbyCompaniesFromOSM")]
 public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
 {
     var user = await _userManager.GetUserAsync(User);
 
-    // 1. Coordenadas: Usa o perfil do usuário ou assume Québec/CA como padrão para anônimos
     double lat = user?.Latitude ?? 46.8138;
     double lon = user?.Longitude ?? -71.2080;
 
@@ -374,7 +373,8 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
     {
         using var doc = System.Text.Json.JsonDocument.Parse(jsonResponse);
         var root = doc.RootElement;
-        var companies = new List<CompanyDto>();
+        var companiesDto = new List<CompanyDto>();
+        var companiesToSave = new List<Company>();
 
         if (root.TryGetProperty("elements", out var elements))
         {
@@ -394,11 +394,8 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
                     companyLon = centerProp.GetProperty("lon").GetDouble();
                 }
 
-                string defaultName = _localizer["Osm_UnnamedCompany"].Value;
-                string defaultOffice = _localizer["Osm_Office"].Value;
-
-                string name = defaultName;
-                string officeType = defaultOffice;
+                string name = _localizer["Osm_UnnamedCompany"].Value;
+                string officeType = _localizer["Osm_Office"].Value;
 
                 if (element.TryGetProperty("tags", out var tags))
                 {
@@ -409,7 +406,7 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
                         officeType = officeProp.GetString() ?? officeType;
                 }
 
-                companies.Add(new CompanyDto
+                companiesDto.Add(new CompanyDto
                 {
                     Id = element.GetProperty("id").GetInt64(),
                     Name = name,
@@ -417,10 +414,32 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
                     Latitude = companyLat,
                     Longitude = companyLon
                 });
+
+                // Verifica se a empresa já existe no banco (para não duplicar)
+                bool exists = await _context.Companies.AnyAsync(c => c.Name == name && c.Latitude == companyLat && c.Longitude == companyLon);
+                if (!exists)
+                {
+                    companiesToSave.Add(new Company
+                    {
+                        Name = name,
+                        City = user?.City ?? "Québec",
+                        Latitude = companyLat,
+                        Longitude = companyLon,
+                        Description = $"Escritório ({officeType})",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            // Persiste as novas empresas no banco de dados
+            if (companiesToSave.Any())
+            {
+                await _context.Companies.AddRangeAsync(companiesToSave);
+                await _context.SaveChangesAsync();
             }
         }
 
-        return Ok(companies);
+        return Ok(companiesDto);
     }
     catch (System.Text.Json.JsonException)
     {
