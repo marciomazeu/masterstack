@@ -36,7 +36,7 @@
     var currentHost = $"{request.Scheme}://{request.Host}";
     var currentPath = request.Path.Value ?? "";
 
-    // Remove qualquer prefixo de cultura para isolar a rota limpa
+    // Remove prefixos de cultura do caminho
     var cleanPath = System.Text.RegularExpressions.Regex.Replace(
         currentPath, 
         @"^/(pt-BR|en-US|fr-CA)", 
@@ -44,10 +44,15 @@
         System.Text.RegularExpressions.RegexOptions.IgnoreCase
     );
 
-    // URL Canônica sempre com a cultura ativa
+    // 💡 LIMPEZA DE CANONICAL: Remove sufixos como /Home/Index para a Home e limpa query strings
+    if (cleanPath.Equals("/Home/Index", StringComparison.OrdinalIgnoreCase) || cleanPath.Equals("/Home", StringComparison.OrdinalIgnoreCase))
+    {
+        cleanPath = "";
+    }
+
+    // URL Canônica sempre limpa e sem parâmetros ruidosos
     var canonicalUrl = $"{currentHost}/{currentCulture}{cleanPath}";
 }
-
 <!DOCTYPE html>
 <html lang="@currentCulture">
 <head>

@@ -269,37 +269,49 @@ try
 
     app.UseRouting();
 
-    // Redirecionamento da raiz sem idioma
-   // Redirecionamento Permanente (301) para URLs acessadas sem prefixo de idioma
-app.Use(async (context, next) =>
-{
-    var path = context.Request.Path.Value;
-
-    if (!string.IsNullOrEmpty(path))
+    // Redirecionamento Permanente (301) para URLs acessadas sem prefixo de idioma ou com /Home/Index
+    app.Use(async (context, next) =>
     {
-        // 1. Caso seja a raiz do site
-        if (path == "/")
+        var path = context.Request.Path.Value;
+
+        if (!string.IsNullOrEmpty(path))
         {
-            context.Response.Redirect("/fr-CA", permanent: true); // 301
-            return;
+            // 1. Caso seja a raiz do site sem cultura
+            if (path == "/")
+            {
+                context.Response.Redirect("/fr-CA", permanent: true); // 301
+                return;
+            }
+
+            // 2. Elimina a rota /Home/Index ou /{culture}/Home/Index para a versão limpa /{culture}
+            var matchHomeIndex = System.Text.RegularExpressions.Regex.Match(
+                path, 
+                @"^/(?<culture>pt-BR|en-US|fr-CA)?/?Home(/Index)?$", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (matchHomeIndex.Success)
+            {
+                var targetCulture = matchHomeIndex.Groups["culture"].Value;
+                var redirectUrl = !string.IsNullOrEmpty(targetCulture) ? $"/{targetCulture}" : "/fr-CA";
+                context.Response.Redirect(redirectUrl, permanent: true); // 301
+                return;
+            }
+
+            // 3. Se acessar /Jobs ou /Jobs/Enterprises sem o idioma no início
+            var isCulturePrefixed = path.StartsWith("/pt-BR", StringComparison.OrdinalIgnoreCase) ||
+                                    path.StartsWith("/en-US", StringComparison.OrdinalIgnoreCase) ||
+                                    path.StartsWith("/fr-CA", StringComparison.OrdinalIgnoreCase);
+
+            if (!isCulturePrefixed && (path.Equals("/Jobs", StringComparison.OrdinalIgnoreCase) || 
+                                    path.StartsWith("/Jobs/", StringComparison.OrdinalIgnoreCase)))
+            {
+                context.Response.Redirect($"/fr-CA{path}", permanent: true); // 301
+                return;
+            }
         }
 
-        // 2. Se acessar /Jobs ou /Jobs/Enterprises sem o idioma no início
-        var isCulturePrefixed = path.StartsWith("/pt-BR", StringComparison.OrdinalIgnoreCase) ||
-                                path.StartsWith("/en-US", StringComparison.OrdinalIgnoreCase) ||
-                                path.StartsWith("/fr-CA", StringComparison.OrdinalIgnoreCase);
-
-        if (!isCulturePrefixed && (path.Equals("/Jobs", StringComparison.OrdinalIgnoreCase) || 
-                                   path.StartsWith("/Jobs/", StringComparison.OrdinalIgnoreCase)))
-        {
-            // Redireciona em 1 salto para a versão canônica em fr-CA (idioma padrão)
-            context.Response.Redirect($"/fr-CA{path}", permanent: true); // 301
-            return;
-        }
-    }
-
-    await next();
-});
+        await next();
+    });
 
     // Aplicação da Localização
     var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
