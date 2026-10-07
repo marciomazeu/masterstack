@@ -1,5 +1,14 @@
 ﻿@{
     ViewData["Title"] = "Privacy Policy";
+    var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "fr-CA";
+    var request = Context.Request;
+    var canonicalUrl = $"{request.Scheme}://{request.Host}/{culture}/Home/Privacy";
+}
+@section Head {
+    <meta name="description" content="Politique de confidentialité et protection des données - MasterStack Jobs" />
+    <meta property="og:title" content="@ViewData["Title"] - MasterStack" />
+    <meta property="og:url" content="@canonicalUrl" />
+    <link rel="canonical" href="@canonicalUrl" />
 }
 <h1>@ViewData["Title"]</h1>
 

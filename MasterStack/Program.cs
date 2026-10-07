@@ -308,6 +308,12 @@ try
                 context.Response.Redirect($"/fr-CA{path}", permanent: true); // 301
                 return;
             }
+            if (!isCulturePrefixed && (path.Equals("/Privacy", StringComparison.OrdinalIgnoreCase) || 
+                           path.Equals("/Home/Privacy", StringComparison.OrdinalIgnoreCase)))
+            {
+                context.Response.Redirect($"/fr-CA/Home/Privacy", permanent: true); // 301
+                return;
+            }
         }
 
         await next();
