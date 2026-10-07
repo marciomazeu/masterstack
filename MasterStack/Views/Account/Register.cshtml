@@ -9,6 +9,10 @@
     var culture = ViewContext.RouteData.Values["culture"]?.ToString() ?? "pt-BR";
     var siteKey = Configuration["ReCaptcha:SiteKey"];
 }
+@section Head {
+    <!-- 💡 Impede a indexação da página de registo pelo Googlebot -->
+    <meta name="robots" content="noindex, nofollow" />
+}
 
 <div class="container mt-5">
     <div class="row justify-content-center">

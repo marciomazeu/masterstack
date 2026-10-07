@@ -1,11 +1,15 @@
 User-agent: *
 Allow: /
 
-# Bloqueia páginas administrativas e de autenticação da indexação
-Disallow: /Account/
-Disallow: /*/Account/
+# Permite que o Google veja a tag noindex nas telas de autenticação sem gerar erro de bloqueio
+Allow: /Account/Login
+Allow: /*/Account/Login
+
+# Bloqueia áreas administrativas e internas privadas
 Disallow: /Admin/
 Disallow: /*/Admin/
+Disallow: /User/Profile
+Disallow: /*/User/Profile
 
-# Aponta a localização do Sitemap
+# Localização do Sitemap
 Sitemap: https://masterstackjobs.com/sitemap.xml

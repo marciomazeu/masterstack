@@ -52,12 +52,16 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
     }
 
-    // 💡 Resolve a cultura com fallback sem fazer HTTP Redirect (impede ERR_TOO_MANY_REDIRECTS)
+    // 💡 Redireciona 301 se a cultura vier na Query String em vez do caminho da Rota
+    if (HttpContext.Request.Query.ContainsKey("culture") && !RouteData.Values.ContainsKey("culture"))
+    {
+        var targetCulture = HttpContext.Request.Query["culture"].ToString();
+        return RedirectToActionPermanent("Index", new { culture = targetCulture, page = page != 1 ? (int?)page : null, searchTerm = !string.IsNullOrEmpty(searchTerm) ? searchTerm : null });
+    }
+
     var activeCulture = !string.IsNullOrWhiteSpace(culture)
         ? culture
-        : (RouteData.Values["culture"]?.ToString() 
-            ?? (string)HttpContext.Request.Query["culture"] 
-            ?? "pt-BR");
+        : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
 
     int pageSize = 6;
 
