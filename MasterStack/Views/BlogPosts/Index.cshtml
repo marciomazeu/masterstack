@@ -16,6 +16,13 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
+@section Head {
+    @if (!string.IsNullOrWhiteSpace(ViewBag.SearchTerm as string))
+    {
+        <!-- 💡 Evita a indexação de páginas de resultados de busca interna -->
+        <meta name="robots" content="noindex, follow" />
+    }
+}
 
 <div class="container py-5" style="max-width: 960px;">
     <div class="d-flex justify-content-between align-items-center mb-4">

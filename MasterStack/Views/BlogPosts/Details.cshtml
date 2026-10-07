@@ -70,8 +70,10 @@
 @section Head {
     <meta name="description" content="@ViewData["MetaDescription"]" />
     <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:description" content="@ViewData["MetaDescription"]" />
     <meta property="og:image" content="@ViewData["MetaImage"]" />
     <meta property="og:url" content="@ViewData["CanonicalUrl"]" />
+    <meta property="og:type" content="article" />
     <meta name="twitter:card" content="summary_large_image" />
 
     @if (Model.Translations != null)
@@ -81,6 +83,34 @@
             <link rel="alternate" hreflang="@alt.Culture.ToLower()"
                   href="@Url.Action("Details", "BlogPosts", new { culture = alt.Culture, slug = alt.Slug }, request.Scheme)" />
         }
+    }
+
+    <!-- 💡 Schema.org JSON-LD para indexação prioritária pelo Google -->
+    @if (t != null)
+    {
+        <script type="application/ld+json">
+        {
+          "@@context": "https://schema.org",
+          "@@type": "BlogPosting",
+          "headline": "@t.Title",
+          "image": "@ViewData["MetaImage"]",
+          "datePublished": "@Model.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")",
+          "dateModified": "@(Model.UpdatedAt != default ? Model.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ") : Model.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"))",
+          "author": {
+            "@@type": "Person",
+            "name": "@(Model.Author?.DisplayName ?? "MasterStack Team")"
+          },
+          "publisher": {
+            "@@type": "Organization",
+            "name": "MasterStack",
+            "logo": {
+              "@@type": "ImageObject",
+              "url": "@($"{request.Scheme}://{request.Host}/images/default-avatar.png")"
+            }
+          },
+          "description": "@ViewData["MetaDescription"]"
+        }
+        </script>
     }
 }
 

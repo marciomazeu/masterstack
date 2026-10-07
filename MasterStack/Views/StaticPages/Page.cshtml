@@ -2,25 +2,33 @@
 
 
 @{
-   // Definindo os dados que o Layout vai "pescar" lá em cima
+    var request = Context.Request;
     ViewData["Title"] = Model.Title;
     
-    // Se você ainda não tem um campo 'SeoDescription' no banco, 
-    // podemos extrair um resumo do conteúdo por enquanto:
-    var rawContent = System.Text.RegularExpressions.Regex.Replace(Model.Content, "<.*?>", string.Empty);
+    var rawContent = System.Text.RegularExpressions.Regex.Replace(Model.Content ?? "", "<.*?>", string.Empty);
     ViewData["Description"] = rawContent.Length > 150 ? rawContent.Substring(0, 150) + "..." : rawContent;
+    var canonicalUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+}
+
+@section Head {
+    <meta name="description" content="@ViewData["Description"]" />
+    <meta property="og:title" content="@Model.Title" />
+    <meta property="og:description" content="@ViewData["Description"]" />
+    <meta property="og:url" content="@canonicalUrl" />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href="@canonicalUrl" />
 }
 
 @if (User.IsInRole("Admin"))
 {
     <div class="container mt-2">
         <a asp-controller="StaticPages" 
-        asp-action="Edit" 
-        asp-route-culture="@Context.GetRouteValue("culture")" 
-        asp-route-id="@Model.Id" 
-        class="btn btn-sm btn-warning">
-        <i class="fas fa-edit"></i> Editar
-</a>
+           asp-action="Edit" 
+           asp-route-culture="@Context.GetRouteValue("culture")" 
+           asp-route-id="@Model.Id" 
+           class="btn btn-sm btn-warning">
+            <i class="fas fa-edit"></i> Editar
+        </a>
     </div>
 }
 <article class="container py-5" style="max-width: 800px;">
