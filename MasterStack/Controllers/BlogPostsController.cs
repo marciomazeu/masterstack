@@ -51,8 +51,13 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
     {
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
     }
+    // 💡 1. Garante que se page for <= 0 (ex: page=0), assume page = 1 para evitar erro no .Skip()
+    if (page < 1)
+    {
+        page = 1;
+    }
 
-    // 💡 Redireciona 301 se a cultura vier na Query String em vez do caminho da Rota
+    // 💡 2. Redireciona 301 se a cultura vier na Query String
     if (HttpContext.Request.Query.ContainsKey("culture") && !RouteData.Values.ContainsKey("culture"))
     {
         var targetCulture = HttpContext.Request.Query["culture"].ToString();
