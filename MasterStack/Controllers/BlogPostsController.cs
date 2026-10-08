@@ -42,7 +42,7 @@ namespace MasterStack.Controllers
             _logger = logger;            
         }
 
-        // GET: /{culture}/BlogPosts
+ // GET: /{culture}/BlogPosts
 [HttpGet("/{culture}/[controller]")]
 [HttpGet("/[controller]")]
 public async Task<IActionResult> Index(string? culture, int page = 1, string? searchTerm = "", bool notfound = false)
@@ -51,17 +51,21 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
     {
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
     }
-    // 💡 1. Garante que se page for <= 0 (ex: page=0), assume page = 1 para evitar erro no .Skip()
-    if (page < 1)
-    {
-        page = 1;
-    }
 
-    // 💡 2. Redireciona 301 se a cultura vier na Query String
+    // 💡 CORREÇÃO DO LOOP: Se a cultura vier via Query String (?culture=fr-CA), redireciona explicitamente para /fr-CA/BlogPosts
     if (HttpContext.Request.Query.ContainsKey("culture") && !RouteData.Values.ContainsKey("culture"))
     {
         var targetCulture = HttpContext.Request.Query["culture"].ToString();
-        return RedirectToActionPermanent("Index", new { culture = targetCulture, page = page != 1 ? (int?)page : null, searchTerm = !string.IsNullOrEmpty(searchTerm) ? searchTerm : null });
+        var cleanSearch = !string.IsNullOrEmpty(searchTerm) ? $"?searchTerm={Uri.EscapeDataString(searchTerm)}" : "";
+        var pageParam = page > 1 ? (string.IsNullOrEmpty(cleanSearch) ? $"?page={page}" : $"&page={page}") : "";
+        
+        return RedirectPermanent($"/{targetCulture}/BlogPosts{cleanSearch}{pageParam}");
+    }
+
+    // Garante que se page for <= 0, assume page = 1 para evitar erro no .Skip()
+    if (page < 1)
+    {
+        page = 1;
     }
 
     var activeCulture = !string.IsNullOrWhiteSpace(culture)

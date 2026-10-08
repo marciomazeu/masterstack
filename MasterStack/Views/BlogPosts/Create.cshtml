@@ -63,12 +63,6 @@
     <!-- Altera de ModelOnly para All -->
 <div asp-validation-summary="All" class="alert alert-danger"></div>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger fw-bold">
-        <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
-    </div>
-}
 
     <form asp-action="Create" asp-controller="BlogPosts" asp-route-culture="@currentCulture" method="post" enctype="multipart/form-data" id="createForm">
         @Html.AntiForgeryToken()
