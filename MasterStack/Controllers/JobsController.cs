@@ -796,21 +796,23 @@ public async Task<IActionResult> Search(string query, string location)
     return View("Enterprises", viewModel);
 }
 
-        [HttpGet("MyApplications")]
-        [Authorize]
-        public async Task<IActionResult> MyApplications(string culture)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge();
+        // GET: /{culture}/Jobs/MyApplications
+[HttpGet("MyApplications")]
+[HttpGet("/{culture}/Jobs/MyApplications")] // 💡 Garante o mapeamento correto com o prefixo do idioma
+[Authorize]
+public async Task<IActionResult> MyApplications(string? culture)
+{
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return Challenge();
 
-            var applications = await _context.JobApplications
-                .Include(a => a.JobPosting)
-                .Where(a => a.CandidateId == user.Id)
-                .OrderByDescending(a => a.AppliedAt)
-                .ToListAsync();
+    var applications = await _context.JobApplications
+        .Include(a => a.JobPosting)
+        .Where(a => a.CandidateId == user.Id)
+        .OrderByDescending(a => a.AppliedAt)
+        .ToListAsync();
 
-            return View(applications);
-        }
+    return View(applications);
+}
 
         [HttpPost]
         [ValidateAntiForgeryToken]
