@@ -515,7 +515,8 @@ const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         const rangeInput = document.getElementById('searchRadiusRange');
         if (rangeInput) {
             rangeInput.addEventListener('input', function() {
-                document.getElementById('searchRadius').value = this.value;
+                document.getElementById('radiusValue').innerText = this.value;
+                document.getElementById('searchRadius').value = this.value; // 💡 Garante a sincronização do valor enviado no form
             });
         }
     });

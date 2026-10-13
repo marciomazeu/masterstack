@@ -59,9 +59,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     @RenderSection("MetaTags", required: false)
-    <title>@(ViewData["Title"] ?? "MasterStack") - MasterStack</title>
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - " : "")MasterStack Jobs | Emplois en Technologies & TI au Québec</title>
 
-    <meta name="description" content="@(ViewData["Description"] ?? "Sua plataforma de tecnologia multilingue.")" />
+    <meta name="description" content="@(ViewData["Description"] ?? "Votre plateforme d'emplois en technologies et TI au Québec.")" />
     <meta property="og:title" content="@ViewData["Title"]" />
     <meta property="og:description" content="@ViewData["Description"]" />
     <meta property="og:type" content="website" />

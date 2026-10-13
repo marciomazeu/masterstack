@@ -539,19 +539,24 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
         }
 
        // POST: /{culture}/Jobs/UpdatePreferences
-        [AllowAnonymous] // 👈 Garante que a requisição seja capturada para fazermos o redirect correto
-        [HttpPost("UpdatePreferences")] // 👈 Mantém apenas UMA rota para evitar o erro de AmbiguousMatchException
+        [AllowAnonymous]
+        [HttpPost("UpdatePreferences")]
+        [HttpPost("/{culture}/Jobs/UpdatePreferences")] // 💡 ADICIONADO: Captura requisições com prefixo de idioma (ex: /fr-CA/Jobs/UpdatePreferences)
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdatePreferences([FromRoute] string culture, int searchRadiusKm, string preferredJobTitle, bool includeRemoteCanada = false)
         {
             var user = await _userManager.GetUserAsync(User);
 
+            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+                ? culture 
+                : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
+
             // 🔒 1. Se o usuário estiver deslogado, redireciona para o Login PRESERVANDO o idioma da URL
             if (user == null)
             {
                 return RedirectToAction("Login", "Account", new { 
-                    culture = culture, 
-                    returnUrl = Url.Action("Enterprises", "Jobs", new { culture = culture }) 
+                    culture = activeCulture, 
+                    returnUrl = Url.Action("Enterprises", "Jobs", new { culture = activeCulture }) 
                 });
             }
 
@@ -563,7 +568,7 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
             TempData["Success"] = _localizer["Preferences_SaveSuccess"].Value;
 
             // 3. Redireciona de volta para a tela de Empresas mantendo a cultura atual
-            return RedirectToAction("Enterprises", "Jobs", new { culture = culture });
+            return RedirectToAction("Enterprises", "Jobs", new { culture = activeCulture });
         }
 
         [HttpGet("GetCities/{countryCode}")]
