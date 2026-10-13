@@ -538,8 +538,6 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
             return RedirectToAction("Enterprises", new { culture });
         }
 
-       // POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
-// POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
 // POST: /Jobs/UpdatePreferences ou /{culture}/Jobs/UpdatePreferences
 [HttpPost("UpdatePreferences")]
 [HttpPost("{culture}/UpdatePreferences")]
