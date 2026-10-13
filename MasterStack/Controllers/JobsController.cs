@@ -538,38 +538,39 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
             return RedirectToAction("Enterprises", new { culture });
         }
 
-       // POST: /{culture}/Jobs/UpdatePreferences
-        [AllowAnonymous]
-        [HttpPost("UpdatePreferences")]
-        [HttpPost("/{culture}/Jobs/UpdatePreferences")] // 💡 ADICIONADO: Captura requisições com prefixo de idioma (ex: /fr-CA/Jobs/UpdatePreferences)
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdatePreferences([FromRoute] string culture, int searchRadiusKm, string preferredJobTitle, bool includeRemoteCanada = false)
-        {
-            var user = await _userManager.GetUserAsync(User);
+       // POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
+[AllowAnonymous]
+[HttpPost("UpdatePreferences")]
+[HttpPost("{culture}/UpdatePreferences")] // 💡 Sem a barra inicial '/' para herdar corretamente a rota base do controller
+[HttpPost("/[controller]/UpdatePreferences")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UpdatePreferences(string? culture, int searchRadiusKm, string preferredJobTitle, bool includeRemoteCanada = false)
+{
+    var user = await _userManager.GetUserAsync(User);
 
-            var activeCulture = !string.IsNullOrWhiteSpace(culture) 
-                ? culture 
-                : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
+    var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+        ? culture 
+        : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
 
-            // 🔒 1. Se o usuário estiver deslogado, redireciona para o Login PRESERVANDO o idioma da URL
-            if (user == null)
-            {
-                return RedirectToAction("Login", "Account", new { 
-                    culture = activeCulture, 
-                    returnUrl = Url.Action("Enterprises", "Jobs", new { culture = activeCulture }) 
-                });
-            }
+    // 🔒 1. Se o utilizador estiver deslogado, redireciona para o Login PRESERVANDO o idioma da URL
+    if (user == null)
+    {
+        return RedirectToAction("Login", "Account", new { 
+            culture = activeCulture, 
+            returnUrl = Url.Action("Enterprises", "Jobs", new { culture = activeCulture }) 
+        });
+    }
 
-            // 2. Atualiza as preferências do usuário autenticado
-            user.SearchRadiusKm = searchRadiusKm > 0 ? searchRadiusKm : 25;
-            user.PreferredJobTitle = string.IsNullOrWhiteSpace(preferredJobTitle) ? "developer" : preferredJobTitle.Trim();
+    // 2. Atualiza as preferências do utilizador autenticado
+    user.SearchRadiusKm = searchRadiusKm > 0 ? searchRadiusKm : 25;
+    user.PreferredJobTitle = string.IsNullOrWhiteSpace(preferredJobTitle) ? "developer" : preferredJobTitle.Trim();
 
-            await _userManager.UpdateAsync(user);
-            TempData["Success"] = _localizer["Preferences_SaveSuccess"].Value;
+    await _userManager.UpdateAsync(user);
+    TempData["Success"] = _localizer["Preferences_SaveSuccess"].Value;
 
-            // 3. Redireciona de volta para a tela de Empresas mantendo a cultura atual
-            return RedirectToAction("Enterprises", "Jobs", new { culture = activeCulture });
-        }
+    // 3. Redireciona de volta para a tela de Empresas mantendo a cultura atual
+    return RedirectToAction("Enterprises", "Jobs", new { culture = activeCulture });
+}
 
         [HttpGet("GetCities/{countryCode}")]
         public async Task<IActionResult> GetCities(string countryCode, string? state)
