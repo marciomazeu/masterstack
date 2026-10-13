@@ -540,22 +540,30 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
 
        // POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
 // POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
-[AllowAnonymous]
+// POST: /Jobs/UpdatePreferences ou /{culture}/Jobs/UpdatePreferences
 [HttpPost("UpdatePreferences")]
 [HttpPost("{culture}/UpdatePreferences")]
 [HttpPost("/[controller]/UpdatePreferences")]
 [ValidateAntiForgeryToken]
-public async Task<IActionResult> UpdatePreferences(string? culture, int searchRadiusKm, string preferredJobTitle, bool includeRemoteCanada = false)
+public async Task<IActionResult> UpdatePreferences(string? culture, int searchRadiusKm, string? preferredJobTitle, bool includeRemoteCanada = false)
 {
+    // Captura a cultura da rota, query string, form ou fallback para fr-CA
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
-        : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
+        : (RouteData.Values["culture"]?.ToString() 
+            ?? HttpContext.Request.Query["culture"].ToString() 
+            ?? "fr-CA");
+
+    if (string.IsNullOrWhiteSpace(activeCulture))
+    {
+        activeCulture = "fr-CA";
+    }
 
     try
     {
         var user = await _userManager.GetUserAsync(User);
 
-        // 🔒 1. Se o utilizador estiver deslogado, redireciona para o Login
+        // 1. Se o utilizador não estiver autenticado, redireciona para o Login no idioma correto
         if (user == null)
         {
             return RedirectToAction("Login", "Account", new { 
@@ -564,7 +572,7 @@ public async Task<IActionResult> UpdatePreferences(string? culture, int searchRa
             });
         }
 
-        // 2. Atualiza apenas as colunas de preferência diretamente no DbContext (evita falhas de validação de perfil incompleto no Identity)
+        // 2. Atualiza os dados via DbContext direto para evitar problemas de validação do Identity
         var dbUser = await _context.Users.FindAsync(user.Id);
         if (dbUser != null)
         {
@@ -583,7 +591,7 @@ public async Task<IActionResult> UpdatePreferences(string? culture, int searchRa
         TempData["Warning"] = "Une erreur est survenue lors de l'enregistrement.";
     }
 
-    // 3. Redireciona de volta para a tela de Empresas mantendo a cultura atual
+    // 3. Redireciona para a página Enterprises mantendo a cultura
     return RedirectToAction("Enterprises", "Jobs", new { culture = activeCulture });
 }
 
