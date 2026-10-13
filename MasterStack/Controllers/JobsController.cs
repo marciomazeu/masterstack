@@ -539,34 +539,49 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
         }
 
        // POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
+// POST: /{culture}/Jobs/UpdatePreferences ou /Jobs/UpdatePreferences
 [AllowAnonymous]
 [HttpPost("UpdatePreferences")]
-[HttpPost("{culture}/UpdatePreferences")] // 💡 Sem a barra inicial '/' para herdar corretamente a rota base do controller
+[HttpPost("{culture}/UpdatePreferences")]
 [HttpPost("/[controller]/UpdatePreferences")]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> UpdatePreferences(string? culture, int searchRadiusKm, string preferredJobTitle, bool includeRemoteCanada = false)
 {
-    var user = await _userManager.GetUserAsync(User);
-
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
         : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
 
-    // 🔒 1. Se o utilizador estiver deslogado, redireciona para o Login PRESERVANDO o idioma da URL
-    if (user == null)
+    try
     {
-        return RedirectToAction("Login", "Account", new { 
-            culture = activeCulture, 
-            returnUrl = Url.Action("Enterprises", "Jobs", new { culture = activeCulture }) 
-        });
+        var user = await _userManager.GetUserAsync(User);
+
+        // 🔒 1. Se o utilizador estiver deslogado, redireciona para o Login
+        if (user == null)
+        {
+            return RedirectToAction("Login", "Account", new { 
+                culture = activeCulture, 
+                returnUrl = Url.Action("Enterprises", "Jobs", new { culture = activeCulture }) 
+            });
+        }
+
+        // 2. Atualiza apenas as colunas de preferência diretamente no DbContext (evita falhas de validação de perfil incompleto no Identity)
+        var dbUser = await _context.Users.FindAsync(user.Id);
+        if (dbUser != null)
+        {
+            dbUser.SearchRadiusKm = searchRadiusKm > 0 ? searchRadiusKm : 25;
+            dbUser.PreferredJobTitle = string.IsNullOrWhiteSpace(preferredJobTitle) ? "developer" : preferredJobTitle.Trim();
+
+            _context.Users.Update(dbUser);
+            await _context.SaveChangesAsync();
+        }
+
+        TempData["Success"] = _localizer["Preferences_SaveSuccess"]?.Value ?? "Préférences enregistrées avec succès!";
     }
-
-    // 2. Atualiza as preferências do utilizador autenticado
-    user.SearchRadiusKm = searchRadiusKm > 0 ? searchRadiusKm : 25;
-    user.PreferredJobTitle = string.IsNullOrWhiteSpace(preferredJobTitle) ? "developer" : preferredJobTitle.Trim();
-
-    await _userManager.UpdateAsync(user);
-    TempData["Success"] = _localizer["Preferences_SaveSuccess"].Value;
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Erro ao atualizar preferências de busca do utilizador.");
+        TempData["Warning"] = "Une erreur est survenue lors de l'enregistrement.";
+    }
 
     // 3. Redireciona de volta para a tela de Empresas mantendo a cultura atual
     return RedirectToAction("Enterprises", "Jobs", new { culture = activeCulture });
