@@ -212,25 +212,52 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .ToListAsync();
 
         // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
-        var externalJobsQuery = _context.JobPostings
-            .AsNoTracking()
-            .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
+var externalJobsQuery = _context.JobPostings
+    .AsNoTracking()
+    .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
-        if (!string.IsNullOrEmpty(cleanSearch))
-        {
-            externalJobsQuery = externalJobsQuery.Where(j =>
-                EF.Functions.ILike(j.Title, searchPattern) ||
-                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) ||
-                (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
-                (j.SourceProvider != null && EF.Functions.ILike(j.SourceProvider, searchPattern)) ||
-                (j.Description != null && EF.Functions.ILike(j.Description, searchPattern))
-            );
-        }
+if (!string.IsNullOrWhiteSpace(cleanSearch))
+{
+    // Trata variações comuns de termos de busca (ex: "frontend" e "front-end")
+    string searchCleaned = cleanSearch.Trim().ToLower();
+    string searchNormalized = searchCleaned.Replace("-", "").Replace(" ", "");
+    
+    searchPattern = $"%{searchCleaned}%";
 
-        var externalJobsList = await externalJobsQuery
-            .OrderByDescending(j => j.CreatedAt)
-            .Take(50)
-            .ToListAsync();
+    externalJobsQuery = externalJobsQuery.Where(j =>
+        (j.Title != null && (
+            EF.Functions.ILike(j.Title, searchPattern) || 
+            EF.Functions.ILike(j.Title.Replace("-", "").Replace(" ", ""), $"%{searchNormalized}%")
+        )) ||
+        (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) ||
+        (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
+        (j.SourceProvider != null && EF.Functions.ILike(j.SourceProvider, searchPattern)) ||
+        (j.Description != null && EF.Functions.ILike(j.Description, searchPattern))
+    );
+}
+
+
+
+var externalJobsList = await externalJobsQuery
+    .OrderByDescending(j => j.CreatedAt)
+    .Take(50)
+    .ToListAsync();
+
+    // Se o usuário pesquisou por um termo e ainda não há vagas parceiras salvas no banco
+if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && user != null)
+{
+    // Atualiza o título preferido do usuário temporariamente para disparar as APIs de vagas
+    user.PreferredJobTitle = cleanSearch;
+    
+    // Executa a busca remota paralela (Adzuna, Jooble, JSearch)
+    await FetchTechJobsNearby(activeCulture);
+
+    // Recarrega as vagas parceiras atualizadas
+    externalJobsList = await externalJobsQuery
+        .OrderByDescending(j => j.CreatedAt)
+        .Take(50)
+        .ToListAsync();
+}
 
         // Se o utilizador estiver autenticado, cria uma cópia sem alterar a entidade rastreada
         var userViewModel = user != null ? new ApplicationUser 
