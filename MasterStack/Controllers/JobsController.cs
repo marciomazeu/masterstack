@@ -140,12 +140,6 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             ? radiusKm.Value 
             : ((user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50);
 
-        string[]? searchTokens = null;
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            searchTokens = searchTerm.Trim().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        }
-
         double latDelta = activeRadius / 111.0;
         double lonDelta = activeRadius / (111.0 * Math.Cos(userLat * Math.PI / 180.0));
 
@@ -154,7 +148,8 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         double minLon = userLng - lonDelta;
         double maxLon = userLng + lonDelta;
 
-        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
+        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim() : null;
+        string searchPattern = cleanSearch != null ? $"%{cleanSearch}%" : string.Empty;
 
         // --- CONSULTA 1: EMPRESAS ---
         var companiesQuery = _context.Companies
@@ -163,12 +158,12 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
                         c.Latitude >= minLat && c.Latitude <= maxLat &&
                         c.Longitude >= minLon && c.Longitude <= maxLon);
 
-        if (cleanSearch != null)
+        if (!string.IsNullOrEmpty(cleanSearch))
         {
             companiesQuery = companiesQuery.Where(c => 
-                c.Name.ToLower().Contains(cleanSearch) || 
-                (c.City != null && c.City.ToLower().Contains(cleanSearch)) ||
-                (c.Description != null && c.Description.ToLower().Contains(cleanSearch)));
+                EF.Functions.ILike(c.Name, searchPattern) || 
+                (c.City != null && EF.Functions.ILike(c.City, searchPattern)) ||
+                (c.Description != null && EF.Functions.ILike(c.Description, searchPattern)));
         }
 
         var companiesFromDb = await companiesQuery.ToListAsync();
@@ -202,13 +197,13 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .Include(j => j.Company)
             .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
 
-        if (cleanSearch != null)
+        if (!string.IsNullOrEmpty(cleanSearch))
         {
             localJobsQuery = localJobsQuery.Where(j => 
-                j.Title.ToLower().Contains(cleanSearch) || 
-                (j.CompanyName != null && j.CompanyName.ToLower().Contains(cleanSearch)) || 
-                (j.Location != null && j.Location.ToLower().Contains(cleanSearch)) ||
-                (j.Description != null && j.Description.ToLower().Contains(cleanSearch)));
+                EF.Functions.ILike(j.Title, searchPattern) || 
+                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) || 
+                (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
+                (j.Description != null && EF.Functions.ILike(j.Description, searchPattern)));
         }
 
         var localJobsList = await localJobsQuery
@@ -216,24 +211,20 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .Take(50)
             .ToListAsync();
 
-        // --- CONSULTA 3: VAGAS EXTERNAS ---
+        // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
         var externalJobsQuery = _context.JobPostings
             .AsNoTracking()
             .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
-        if (searchTokens != null && searchTokens.Length > 0)
+        if (!string.IsNullOrEmpty(cleanSearch))
         {
-            foreach (var token in searchTokens)
-            {
-                string pattern = $"%{token}%";
-                
-                externalJobsQuery = externalJobsQuery.Where(j =>
-                    (j.Title != null && EF.Functions.Like(j.Title.ToLower(), pattern)) ||
-                    (j.CompanyName != null && EF.Functions.Like(j.CompanyName.ToLower(), pattern)) ||
-                    (j.Location != null && j.Location.ToLower().Contains(pattern)) ||
-                    (j.Description != null && j.Description.ToLower().Contains(pattern))
-                );
-            }
+            externalJobsQuery = externalJobsQuery.Where(j =>
+                EF.Functions.ILike(j.Title, searchPattern) ||
+                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) ||
+                (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
+                (j.SourceProvider != null && EF.Functions.ILike(j.SourceProvider, searchPattern)) ||
+                (j.Description != null && EF.Functions.ILike(j.Description, searchPattern))
+            );
         }
 
         var externalJobsList = await externalJobsQuery
@@ -241,14 +232,19 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .Take(50)
             .ToListAsync();
 
-        if (user != null)
-        {
-            user.SearchRadiusKm = activeRadius;
-        }
+        // Se o utilizador estiver autenticado, cria uma cópia sem alterar a entidade rastreada
+        var userViewModel = user != null ? new ApplicationUser 
+        { 
+            Id = user.Id, 
+            UserName = user.UserName, 
+            Email = user.Email, 
+            SearchRadiusKm = activeRadius, 
+            PreferredJobTitle = user.PreferredJobTitle 
+        } : null;
 
         var viewModel = new EnterprisesPageViewModel
         {
-            User = user,
+            User = userViewModel,
             Companies = companiesList,
             LocalJobs = localJobsList ?? new List<JobPosting>(),
             JobPosting = externalJobsList ?? new List<JobPosting>()

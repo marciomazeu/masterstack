@@ -79,58 +79,6 @@
         </div>
     </div>
 
-    <!-- BARRA DE CONSULTA PÚBLICA COM RAIO INTEGRADO -->
-<div class="card shadow-sm border-0 mb-4 bg-light">
-    <div class="card-body p-3 p-md-4">
-        <form asp-controller="Jobs" 
-              asp-action="Enterprises" 
-              asp-route-culture="@currentCulture" 
-              method="get" 
-              class="row g-2 align-items-center">
-            
-            <!-- Campo de palavra-chave/busca -->
-            <div class="col-md-6 col-sm-12">
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search text-muted"></i>
-                    </span>
-                    <input type="text" 
-                           name="searchTerm" 
-                           class="form-control border-start-0 ps-0" 
-                           placeholder="@Localizer["Enterprise_Search_Placeholder"]" 
-                           value="@Context.Request.Query["searchTerm"]" />
-                </div>
-            </div>
-
-            <!-- NOVO: Seletor de Raio de Distância -->
-            <div class="col-md-3 col-sm-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-geo-alt text-muted"></i>
-                    </span>
-                    <select name="radiusKm" class="form-select border-start-0 ps-0">
-                        @{
-                            int currentRadius = int.TryParse(Context.Request.Query["radiusKm"], out int r) ? r : searchRadius;
-                            int[] radiusOptions = new[] { 10, 25, 50, 100 };
-                        }
-                        @foreach (var radius in radiusOptions)
-                        {
-                            <option value="@radius" selected="@(currentRadius == radius)">@radius km</option>
-                        }
-                    </select>
-                </div>
-            </div>
-
-            <!-- Botão de Buscar -->
-            <div class="col-md-3 col-sm-6 d-grid">
-                <button type="submit" class="btn btn-primary fw-bold">
-                    <i class="bi bi-search me-1"></i> @Localizer["Enterprise_Btn_SearchJobs"]
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
    <!-- BARRA DE CONSULTA PÚBLICA COM RAIO INTEGRADO -->
 <div class="card shadow-sm border-0 mb-4 bg-light">
     <div class="card-body p-3 p-md-4">
