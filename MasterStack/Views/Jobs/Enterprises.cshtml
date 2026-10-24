@@ -642,35 +642,43 @@ const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         `).openPopup();
     }
 
-        document.getElementById('btnUpdateOsm')?.addEventListener('click', async function () {
-        const btn = this;
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> @Localizer["SearchingStatus"]...`;
+       document.getElementById('btnUpdateOsm')?.addEventListener('click', async function () {
+    const btn = this;
+    const originalText = btn.innerHTML;
 
-        try {
-            const culture = '@currentCulture';
-            const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Recherche...`;
 
-            const data = await response.json();
-
-            if (response.ok && data.length > 0) {
-                showToast("@Html.Raw(Localizer["OsmSuccessText"].Value)", false, 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showToast(data.message || "@Html.Raw(Localizer["OsmNoCompaniesText"].Value)", false, 'warning');
+    try {
+        const culture = '@currentCulture';
+        const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`, {
+            headers: {
+                'Accept': 'application/json'
             }
-        } catch (err) {
-            console.error("OSM Error:", err);
-            showToast("@Html.Raw(Localizer["OsmConnectionErrorText"].Value)", false, 'danger');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
+        });
+
+        // 💡 PROTEÇÃO: Se o servidor responder 504 ou 500 em HTML, evita a exceção "Unexpected token <"
+        if (!response.ok) {
+            showToast("Les serveurs de cartes ne répondent pas actuellement. Réessayez dans un moment.", false, 'danger');
+            return;
         }
-    });
+
+        const data = await response.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+            showToast("Entreprises mises à jour avec succès!", false, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.message || "Aucune nouvelle entreprise trouvée.", false, 'warning');
+        }
+    } catch (error) {
+        console.error("OSM Error:", error);
+        showToast("Erreur de connexion lors de la recherche sur les cartes.", false, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
 
     function showToast(message, isLoading = false, type = 'dark') {
         const toastEl = document.getElementById('jobSyncToast');

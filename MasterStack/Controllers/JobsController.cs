@@ -448,106 +448,146 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
 }
 
         // GET: /{culture}/Jobs/FetchTechJobsNearby
-// GET: /{culture}/Jobs/FetchTechJobsNearby ou /Jobs/FetchTechJobsNearby
-[HttpGet("FetchTechJobsNearby")]
-[HttpGet("/{culture}/Jobs/FetchTechJobsNearby")]
-[Authorize]
-public async Task<IActionResult> FetchTechJobsNearby(string? culture)
+// GET: /{culture}/Jobs/FetchNearbyCompaniesFromOSM
+[AllowAnonymous]
+[HttpGet("FetchNearbyCompaniesFromOSM")]
+[HttpGet("/{culture}/Jobs/FetchNearbyCompaniesFromOSM")]
+public async Task<IActionResult> FetchNearbyCompaniesFromOSM(string? culture)
 {
-    // 1. Resolve a cultura com fallback seguro (evita redirecionamento nulo que gera 404)
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
-        : (RouteData.Values["culture"]?.ToString() 
-            ?? HttpContext.Request.Query["culture"].ToString() 
-            ?? "fr-CA");
+        : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
 
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null) 
+    try
     {
-        return RedirectToAction("Login", "Account", new { culture = activeCulture });
+        var user = await _userManager.GetUserAsync(User);
+
+        double lat = user?.Latitude ?? 46.8138;
+        double lon = user?.Longitude ?? -71.2080;
+
+        // Limita o raio a no máximo 8km para evitar requisições pesadas no Overpass
+        int radiusMeters = 8000;
+
+        string latStr = lat.ToString(CultureInfo.InvariantCulture);
+        string lonStr = lon.ToString(CultureInfo.InvariantCulture);
+
+        // Consulta ultra leve com limite curto de 25 resultados e timeout de 5s na query
+        string overpassQuery = $"[out:json][timeout:5];node(around:{radiusMeters},{latStr},{lonStr})[\"office\"];out 25;";
+
+        var endpoints = new[]
+        {
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+        };
+
+        var httpClient = _httpClientFactory.CreateClient("OsmClient");
+        httpClient.Timeout = TimeSpan.FromSeconds(6); // 💡 Timeout curto para não estourar o Nginx (504)
+
+        string? jsonResponse = null;
+
+        foreach (var endpoint in endpoints)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"{endpoint}?data={Uri.EscapeDataString(overpassQuery)}");
+                request.Headers.Add("User-Agent", "MasterStackJobs/1.0 (contact@masterstackjobs.com)");
+
+                var response = await httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    jsonResponse = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(jsonResponse) && jsonResponse.Contains("elements"))
+                    {
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Se der timeout em um servidor, tenta o próximo imediatamente
+                continue;
+            }
+        }
+
+        if (string.IsNullOrEmpty(jsonResponse))
+        {
+            return StatusCode(503, new { success = false, message = "Les serveurs de cartes sont occupés. Veuillez réespacer votre recherche." });
+        }
+
+        using var doc = System.Text.Json.JsonDocument.Parse(jsonResponse);
+        var root = doc.RootElement;
+        var companiesDto = new List<CompanyDto>();
+        var companiesToSave = new List<Company>();
+
+        if (root.TryGetProperty("elements", out var elements))
+        {
+            foreach (var element in elements.EnumerateArray())
+            {
+                double companyLat = 0;
+                double companyLon = 0;
+
+                if (element.TryGetProperty("lat", out var latProp))
+                {
+                    companyLat = latProp.GetDouble();
+                    companyLon = element.GetProperty("lon").GetDouble();
+                }
+
+                if (companyLat == 0 || companyLon == 0) continue;
+
+                string name = "Entreprise Tech";
+                string officeType = "Bureau";
+
+                if (element.TryGetProperty("tags", out var tags))
+                {
+                    if (tags.TryGetProperty("name", out var nameProp))
+                        name = nameProp.GetString() ?? name;
+
+                    if (tags.TryGetProperty("office", out var officeProp))
+                        officeType = officeProp.GetString() ?? officeType;
+                }
+
+                companiesDto.Add(new CompanyDto
+                {
+                    Id = element.GetProperty("id").GetInt64(),
+                    Name = name,
+                    OfficeType = officeType,
+                    Latitude = companyLat,
+                    Longitude = companyLon
+                });
+
+                bool exists = await _context.Companies.AnyAsync(c => c.Name == name && c.Latitude == companyLat && c.Longitude == companyLon);
+                if (!exists)
+                {
+                    companiesToSave.Add(new Company
+                    {
+                        Name = name,
+                        City = user?.City ?? "Québec",
+                        Latitude = companyLat,
+                        Longitude = companyLon,
+                        Description = $"Bureau ({officeType})",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            if (companiesToSave.Any())
+            {
+                await _context.Companies.AddRangeAsync(companiesToSave);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        return Ok(companiesDto);
     }
-
-    string country = !string.IsNullOrWhiteSpace(user.CountryCode) ? user.CountryCode.Trim().ToLower() : "";
-    string city = !string.IsNullOrWhiteSpace(user.City) ? user.City.Trim() : "";
-    string what = !string.IsNullOrWhiteSpace(user.PreferredJobTitle) ? user.PreferredJobTitle.Trim() : "developer";
-    int radiusKm = user.SearchRadiusKm > 0 ? user.SearchRadiusKm : 50;
-
-    if (string.IsNullOrEmpty(country))
+    catch (Exception ex)
     {
-        TempData["Warning"] = _localizer["FetchJobs_CountryCityRequired"].Value;
-        return RedirectToAction("Enterprises", new { culture = activeCulture });
+        _logger.LogError(ex, "Erro no OpenStreetMap.");
+        return StatusCode(500, new { success = false, message = "Erreur de traitement des données." });
     }
-
-    var httpClient = _httpClientFactory.CreateClient();
-
-    // 2. Busca paralela nas APIs parceiras
-    var adzunaTask = FetchAdzunaJobsAsync(httpClient, user, country, what, city, radiusKm);
-    var joobleTask = FetchJoobleJobsAsync(httpClient, user, country, what, city, radiusKm);
-
-    var jsearchFilter = new JobSearchFilter { Query = what, Location = city, Page = 1 };
-    var jsearchTask = _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
-
-    await Task.WhenAll(adzunaTask, joobleTask, jsearchTask);
-
-    var adzunaJobs = adzunaTask.Result ?? new List<JobPosting>();
-    var joobleJobs = joobleTask.Result ?? new List<JobPosting>();
-    
-    var jsearchRaw = jsearchTask.Result ?? new List<JobDto>();
-    var jsearchJobs = jsearchRaw.Select(j => new JobPosting
-    {
-        UserId = null,
-        IsInternal = false,
-        SourceProvider = "JSearch",
-        Title = j.Title,
-        CompanyName = j.Company,
-        Location = j.Location,
-        RedirectUrl = j.Url,
-        Latitude = user.Latitude ?? 0,
-        Longitude = user.Longitude ?? 0,
-        IsExactLocation = false,
-        CreatedAt = DateTime.UtcNow
-    }).ToList();
-
-    // 3. Unifica e remove duplicatas
-    var allJobs = new List<JobPosting>();
-    allJobs.AddRange(adzunaJobs);
-    allJobs.AddRange(joobleJobs);
-    allJobs.AddRange(jsearchJobs);
-
-    // 4. Salva no Banco APENAS se tiver retornado novas vagas
-    if (allJobs.Any())
-    {
-        var distinctJobs = allJobs
-            .GroupBy(j => string.IsNullOrEmpty(j.RedirectUrl) ? $"{j.Title}-{j.CompanyName}" : j.RedirectUrl)
-            .Select(g => g.First())
-            .Take(50)
-            .ToList();
-
-        // Apaga apenas as vagas externas antigas para dar lugar às novas
-        var oldExternalJobs = _context.JobPostings.Where(j => !j.IsInternal && j.SourceProvider != "Internal");
-        _context.JobPostings.RemoveRange(oldExternalJobs);
-
-        await _context.JobPostings.AddRangeAsync(distinctJobs);
-        await _context.SaveChangesAsync();
-    }
-
-    // 5. Feedback sobre os provedores
-    int totalProvidersFound = 0;
-    if (adzunaJobs.Any()) totalProvidersFound++;
-    if (joobleJobs.Any()) totalProvidersFound++;
-    if (jsearchJobs.Any()) totalProvidersFound++;
-
-    if (totalProvidersFound == 0)
-    {
-        TempData["Warning"] = _localizer["FetchJobs_NoJobsFound"].Value;
-    }
-    else if (totalProvidersFound < 3)
-    {
-        TempData["Warning"] = _localizer["FetchJobs_PartialJobsFound"].Value;
-    }
-
-    return RedirectToAction("Enterprises", new { culture = activeCulture });
 }
+
 // POST: /Jobs/UpdatePreferences ou /{culture}/Jobs/UpdatePreferences
 [HttpPost("UpdatePreferences")]
 [HttpPost("{culture}/UpdatePreferences")]
