@@ -122,9 +122,12 @@
 
         @if (isAuthenticated)
         {
-            <a asp-action="FetchTechJobsNearby" asp-controller="Jobs" asp-route-culture="@currentCulture" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
-                <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
-            </a>
+            <a asp-action="FetchTechJobsNearby" 
+                asp-controller="Jobs" 
+                asp-route-culture="@currentCulture" 
+                class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                    <i class="bi bi-briefcase-fill"></i> @Localizer["SearchJobsBtn"]
+                </a>
         }
         else
         {
@@ -639,40 +642,35 @@ const initialCompanies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         `).openPopup();
     }
 
-    document.getElementById('btnUpdateOsm')?.addEventListener('click', async function () {
-    const btn = this;
-    const originalText = btn.innerHTML;
+        document.getElementById('btnUpdateOsm')?.addEventListener('click', async function () {
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> @Localizer["SearchingStatus"]...`;
 
-    btn.disabled = true;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> @Html.Raw(Localizer["SearchingStatus"].Value)...`;
+        try {
+            const culture = '@currentCulture';
+            const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
 
-    try {
-        const culture = '@currentCulture';
-        const response = await fetch(`/${culture}/Jobs/FetchNearbyCompaniesFromOSM`);
+            const data = await response.json();
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            showToast(data.message || "@Html.Raw(Localizer["OsmErrorText"].Value)", false, 'danger');
-            return;
+            if (response.ok && data.length > 0) {
+                showToast("@Html.Raw(Localizer["OsmSuccessText"].Value)", false, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.message || "@Html.Raw(Localizer["OsmNoCompaniesText"].Value)", false, 'warning');
+            }
+        } catch (err) {
+            console.error("OSM Error:", err);
+            showToast("@Html.Raw(Localizer["OsmConnectionErrorText"].Value)", false, 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
-
-        if (!data || data.length === 0) {
-            showToast("@Html.Raw(Localizer["OsmNoCompaniesText"].Value)", false, 'warning');
-            return;
-        }
-
-        showToast("@Html.Raw(Localizer["OsmSuccessText"].Value)", false, 'success');
-        location.reload(); 
-
-    } catch (error) {
-        console.error("OSM Error:", error);
-        showToast("@Html.Raw(Localizer["OsmConnectionErrorText"].Value)", false, 'danger');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-});
+    });
 
     function showToast(message, isLoading = false, type = 'dark') {
         const toastEl = document.getElementById('jobSyncToast');

@@ -448,96 +448,106 @@ public async Task<IActionResult> FetchNearbyCompaniesFromOSM()
 }
 
         // GET: /{culture}/Jobs/FetchTechJobsNearby
-        [HttpGet("FetchTechJobsNearby")]
-        public async Task<IActionResult> FetchTechJobsNearby([FromRoute] string culture)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized(_localizer["UserNotAuthenticated"].Value);
+// GET: /{culture}/Jobs/FetchTechJobsNearby ou /Jobs/FetchTechJobsNearby
+[HttpGet("FetchTechJobsNearby")]
+[HttpGet("/{culture}/Jobs/FetchTechJobsNearby")]
+[Authorize]
+public async Task<IActionResult> FetchTechJobsNearby(string? culture)
+{
+    // 1. Resolve a cultura com fallback seguro (evita redirecionamento nulo que gera 404)
+    var activeCulture = !string.IsNullOrWhiteSpace(culture) 
+        ? culture 
+        : (RouteData.Values["culture"]?.ToString() 
+            ?? HttpContext.Request.Query["culture"].ToString() 
+            ?? "fr-CA");
 
-            string country = !string.IsNullOrWhiteSpace(user.CountryCode) ? user.CountryCode.Trim().ToLower() : "";
-            string city = !string.IsNullOrWhiteSpace(user.City) ? user.City.Trim() : "";
-            string what = !string.IsNullOrWhiteSpace(user.PreferredJobTitle) ? user.PreferredJobTitle.Trim() : "developer";
-            int radiusKm = user.SearchRadiusKm > 0 ? user.SearchRadiusKm : 50;
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) 
+    {
+        return RedirectToAction("Login", "Account", new { culture = activeCulture });
+    }
 
-            if (string.IsNullOrEmpty(country))
-            {
-                TempData["Warning"] = _localizer["FetchJobs_CountryCityRequired"].Value;
-                return RedirectToAction("Enterprises", new { culture });
-            }
+    string country = !string.IsNullOrWhiteSpace(user.CountryCode) ? user.CountryCode.Trim().ToLower() : "";
+    string city = !string.IsNullOrWhiteSpace(user.City) ? user.City.Trim() : "";
+    string what = !string.IsNullOrWhiteSpace(user.PreferredJobTitle) ? user.PreferredJobTitle.Trim() : "developer";
+    int radiusKm = user.SearchRadiusKm > 0 ? user.SearchRadiusKm : 50;
 
-            var httpClient = _httpClientFactory.CreateClient();
+    if (string.IsNullOrEmpty(country))
+    {
+        TempData["Warning"] = _localizer["FetchJobs_CountryCityRequired"].Value;
+        return RedirectToAction("Enterprises", new { culture = activeCulture });
+    }
 
-            // 1. Instanciar tasks para busca em paralelo
-            var adzunaTask = FetchAdzunaJobsAsync(httpClient, user, country, what, city, radiusKm);
-            var joobleTask = FetchJoobleJobsAsync(httpClient, user, country, what, city, radiusKm);
+    var httpClient = _httpClientFactory.CreateClient();
 
-            var jsearchFilter = new JobSearchFilter { Query = what, Location = city, Page = 1 };
-            var jsearchTask = _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
+    // 2. Busca paralela nas APIs parceiras
+    var adzunaTask = FetchAdzunaJobsAsync(httpClient, user, country, what, city, radiusKm);
+    var joobleTask = FetchJoobleJobsAsync(httpClient, user, country, what, city, radiusKm);
 
-            // 2. Aguardar a resolução das chamadas
-            await Task.WhenAll(adzunaTask, joobleTask, jsearchTask);
+    var jsearchFilter = new JobSearchFilter { Query = what, Location = city, Page = 1 };
+    var jsearchTask = _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
 
-            var adzunaJobs = adzunaTask.Result ?? new List<JobPosting>();
-            var joobleJobs = joobleTask.Result ?? new List<JobPosting>();
-            
-            var jsearchRaw = jsearchTask.Result ?? new List<JobDto>();
-            var jsearchJobs = jsearchRaw.Select(j => new JobPosting
-            {
-                UserId = null,
-                IsInternal = false,
-                SourceProvider = "JSearch", // 👈 Defina o provedor correto
-                Title = j.Title,
-                CompanyName = j.Company,
-                Location = j.Location,
-                RedirectUrl = j.Url,
-                Latitude = user.Latitude ?? 0,
-                Longitude = user.Longitude ?? 0,
-                IsExactLocation = false,
-                CreatedAt = DateTime.UtcNow
-            }).ToList();
+    await Task.WhenAll(adzunaTask, joobleTask, jsearchTask);
 
-            // 3. Unificar listas retornado das APIs
-            var allJobs = new List<JobPosting>();
-            allJobs.AddRange(adzunaJobs);
-            allJobs.AddRange(joobleJobs);
-            allJobs.AddRange(jsearchJobs);
+    var adzunaJobs = adzunaTask.Result ?? new List<JobPosting>();
+    var joobleJobs = joobleTask.Result ?? new List<JobPosting>();
+    
+    var jsearchRaw = jsearchTask.Result ?? new List<JobDto>();
+    var jsearchJobs = jsearchRaw.Select(j => new JobPosting
+    {
+        UserId = null,
+        IsInternal = false,
+        SourceProvider = "JSearch",
+        Title = j.Title,
+        CompanyName = j.Company,
+        Location = j.Location,
+        RedirectUrl = j.Url,
+        Latitude = user.Latitude ?? 0,
+        Longitude = user.Longitude ?? 0,
+        IsExactLocation = false,
+        CreatedAt = DateTime.UtcNow
+    }).ToList();
 
-            // 4. Salvar no Banco sem duplicatas de Link/Título
-            if (allJobs.Any())
-            {
-                var distinctJobs = allJobs
-                    .GroupBy(j => string.IsNullOrEmpty(j.RedirectUrl) ? $"{j.Title}-{j.CompanyName}" : j.RedirectUrl)
-                    .Select(g => g.First())
-                    .Take(50)
-                    .ToList();
+    // 3. Unifica e remove duplicatas
+    var allJobs = new List<JobPosting>();
+    allJobs.AddRange(adzunaJobs);
+    allJobs.AddRange(joobleJobs);
+    allJobs.AddRange(jsearchJobs);
 
-               // ✅ AGORA (Apaga APENAS as vagas antigas de APIs/Parceiros):
-                var oldExternalJobs = _context.JobPostings.Where(j => !j.IsInternal);
-                _context.JobPostings.RemoveRange(oldExternalJobs);
+    // 4. Salva no Banco APENAS se tiver retornado novas vagas
+    if (allJobs.Any())
+    {
+        var distinctJobs = allJobs
+            .GroupBy(j => string.IsNullOrEmpty(j.RedirectUrl) ? $"{j.Title}-{j.CompanyName}" : j.RedirectUrl)
+            .Select(g => g.First())
+            .Take(50)
+            .ToList();
 
-                // Adiciona o novo lote retornado pelas APIs
-                await _context.JobPostings.AddRangeAsync(distinctJobs);
-                await _context.SaveChangesAsync();
-            }
+        // Apaga apenas as vagas externas antigas para dar lugar às novas
+        var oldExternalJobs = _context.JobPostings.Where(j => !j.IsInternal && j.SourceProvider != "Internal");
+        _context.JobPostings.RemoveRange(oldExternalJobs);
 
-            // 5. Feedback sobre a disponibilidade dos provedores
-            int totalProvidersFound = 0;
-            if (adzunaJobs.Any()) totalProvidersFound++;
-            if (joobleJobs.Any()) totalProvidersFound++;
-            if (jsearchJobs.Any()) totalProvidersFound++;
+        await _context.JobPostings.AddRangeAsync(distinctJobs);
+        await _context.SaveChangesAsync();
+    }
 
-            if (totalProvidersFound == 0)
-            {
-                TempData["Warning"] = _localizer["FetchJobs_NoJobsFound"].Value;
-            }
-            else if (totalProvidersFound < 3)
-            {
-                TempData["Warning"] = _localizer["FetchJobs_PartialJobsFound"].Value;
-            }
+    // 5. Feedback sobre os provedores
+    int totalProvidersFound = 0;
+    if (adzunaJobs.Any()) totalProvidersFound++;
+    if (joobleJobs.Any()) totalProvidersFound++;
+    if (jsearchJobs.Any()) totalProvidersFound++;
 
-            return RedirectToAction("Enterprises", new { culture });
-        }
+    if (totalProvidersFound == 0)
+    {
+        TempData["Warning"] = _localizer["FetchJobs_NoJobsFound"].Value;
+    }
+    else if (totalProvidersFound < 3)
+    {
+        TempData["Warning"] = _localizer["FetchJobs_PartialJobsFound"].Value;
+    }
 
+    return RedirectToAction("Enterprises", new { culture = activeCulture });
+}
 // POST: /Jobs/UpdatePreferences ou /{culture}/Jobs/UpdatePreferences
 [HttpPost("UpdatePreferences")]
 [HttpPost("{culture}/UpdatePreferences")]
