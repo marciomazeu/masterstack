@@ -211,21 +211,31 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .ToListAsync();
 
         // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
-        var externalJobsQuery = _context.JobPostings
-    .AsNoTracking()
-    .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
+       var externalJobsQuery = _context.JobPostings
+            .AsNoTracking()
+            .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
-        if (!string.IsNullOrEmpty(cleanSearch))
+        if (!string.IsNullOrWhiteSpace(cleanSearch))
         {
-            // Normaliza termos compostos como "front-end" ou "frontend"
-            string altPattern = $"%{cleanSearch.Replace("-", "").Replace(" ", "")}%";
+            // Divide o texto buscado em palavras principais para evitar falha se houver caracteres especiais
+            var keywords = cleanSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                    .Where(k => k.Length > 2)
+                                    .Take(4)
+                                    .ToList();
 
-            externalJobsQuery = externalJobsQuery.Where(j =>
-                (j.Title != null && EF.Functions.ILike(j.Title, searchPattern)) ||
-                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) ||
-                (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
-                (j.Description != null && EF.Functions.ILike(j.Description, searchPattern))
-            );
+            if (keywords.Any())
+            {
+                foreach (var kw in keywords)
+                {
+                    string pattern = $"%{kw}%";
+                    externalJobsQuery = externalJobsQuery.Where(j =>
+                        (j.Title != null && EF.Functions.ILike(j.Title, pattern)) ||
+                        (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) ||
+                        (j.Location != null && EF.Functions.ILike(j.Location, pattern)) ||
+                        (j.Description != null && EF.Functions.ILike(j.Description, pattern))
+                    );
+                }
+            }
         }
 
         var externalJobsList = await externalJobsQuery

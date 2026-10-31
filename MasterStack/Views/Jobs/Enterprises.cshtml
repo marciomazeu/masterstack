@@ -25,6 +25,17 @@
     var displayedLocalJobs = isAuthenticated ? localJobsList : localJobsList.Take(10).ToList();
     var displayedExternalJobs = isAuthenticated ? externalJobsList : externalJobsList.Take(10).ToList();
 }
+@{
+    // Define qual aba deve iniciar ativa após a busca
+    bool hasLocal = displayedLocalJobs.Any();
+    bool hasExternal = displayedExternalJobs.Any();
+
+    string localTabClass = hasLocal || (!hasLocal && !hasExternal) ? "active" : "";
+    string externalTabClass = !hasLocal && hasExternal ? "active" : "";
+
+    string localPanelClass = hasLocal || (!hasLocal && !hasExternal) ? "show active" : "";
+    string externalPanelClass = !hasLocal && hasExternal ? "show active" : "";
+}
 
 @if (TempData["Warning"] != null)
 {
@@ -131,14 +142,15 @@
         <div class="col-lg-5 col-md-6">
             <div class="card border-0 shadow-sm p-3" style="max-height: 75vh; display: flex; flex-direction: column;">
                 
+                <!-- MENU DE NAVEGAÇÃO POR ABAS COM SELEÇÃO AUTOMÁTICA -->
                 <ul class="nav nav-pills nav-justified mb-3 small" id="exploreTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold px-2" id="local-jobs-tab" data-bs-toggle="pill" data-bs-target="#local-jobs-panel" type="button" role="tab">
+                        <button class="nav-link @localTabClass fw-bold px-2" id="local-jobs-tab" data-bs-toggle="pill" data-bs-target="#local-jobs-panel" type="button" role="tab">
                             <i class="fas fa-star text-warning me-1"></i> @Localizer["Tab_LocalJobs"] (@localJobsList.Count)
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold px-2" id="external-jobs-tab" data-bs-toggle="pill" data-bs-target="#external-jobs-panel" type="button" role="tab">
+                        <button class="nav-link @externalTabClass fw-bold px-2" id="external-jobs-tab" data-bs-toggle="pill" data-bs-target="#external-jobs-panel" type="button" role="tab">
                             <i class="fas fa-briefcase text-success me-1"></i> @Localizer["Tab_PartnerJobs"] (@externalJobsList.Count)
                         </button>
                     </li>
@@ -152,7 +164,7 @@
                 <div class="tab-content flex-grow-1 overflow-auto pe-1" id="exploreTabsContent">
                     
                     <!-- ABA 1: VAGAS PRÓPRIAS (MASTERSTACK) -->
-                    <div class="tab-pane fade show active" id="local-jobs-panel" role="tabpanel">
+                    <div class="tab-pane fade @localPanelClass" id="local-jobs-panel" role="tabpanel">
                         @if (!Model.LocalJobs.Any())
                         {
                             <div class="text-center py-4 text-muted">
@@ -237,7 +249,7 @@
                     </div>
 
                     <!-- ABA 2: VAGAS DE PARCEIROS -->
-                    <div class="tab-pane fade" id="external-jobs-panel" role="tabpanel">
+                    <div class="tab-pane fade @externalPanelClass" id="external-jobs-panel" role="tabpanel">
                         @if (!Model.JobPosting.Any())
                         {
                             <div class="text-center py-4 text-muted">
