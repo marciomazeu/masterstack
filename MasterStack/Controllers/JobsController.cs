@@ -135,7 +135,6 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         double userLat = user?.Latitude ?? 46.8138;
         double userLng = user?.Longitude ?? -71.2080;
 
-        // Prioridade do Raio: QueryString > Perfil do Utilizador > Padrão 50km
         int activeRadius = (radiusKm.HasValue && radiusKm.Value > 0) 
             ? radiusKm.Value 
             : ((user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50);
@@ -148,7 +147,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         double minLon = userLng - lonDelta;
         double maxLon = userLng + lonDelta;
 
-        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim() : null;
+        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
         string searchPattern = cleanSearch != null ? $"%{cleanSearch}%" : string.Empty;
 
         // --- CONSULTA 1: EMPRESAS ---
@@ -161,7 +160,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         if (!string.IsNullOrEmpty(cleanSearch))
         {
             companiesQuery = companiesQuery.Where(c => 
-                EF.Functions.ILike(c.Name, searchPattern) || 
+                (c.Name != null && EF.Functions.ILike(c.Name, searchPattern)) || 
                 (c.City != null && EF.Functions.ILike(c.City, searchPattern)) ||
                 (c.Description != null && EF.Functions.ILike(c.Description, searchPattern)));
         }
@@ -191,7 +190,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         }
         companiesList = companiesList.OrderBy(c => c.DistanceInKm).ToList();
 
-        // --- CONSULTA 2: VAGAS PRÓPRIAS ---
+        // --- CONSULTA 2: VAGAS PRÓPRIAS (MASTERSTACK) ---
         var localJobsQuery = _context.JobPostings
             .AsNoTracking()
             .Include(j => j.Company)
@@ -200,7 +199,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         if (!string.IsNullOrEmpty(cleanSearch))
         {
             localJobsQuery = localJobsQuery.Where(j => 
-                EF.Functions.ILike(j.Title, searchPattern) || 
+                (j.Title != null && EF.Functions.ILike(j.Title, searchPattern)) || 
                 (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) || 
                 (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
                 (j.Description != null && EF.Functions.ILike(j.Description, searchPattern)));
@@ -212,54 +211,28 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .ToListAsync();
 
         // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
-var externalJobsQuery = _context.JobPostings
+        var externalJobsQuery = _context.JobPostings
     .AsNoTracking()
     .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
-if (!string.IsNullOrWhiteSpace(cleanSearch))
-{
-    // Trata variações comuns de termos de busca (ex: "frontend" e "front-end")
-    string searchCleaned = cleanSearch.Trim().ToLower();
-    string searchNormalized = searchCleaned.Replace("-", "").Replace(" ", "");
-    
-    searchPattern = $"%{searchCleaned}%";
+        if (!string.IsNullOrEmpty(cleanSearch))
+        {
+            // Normaliza termos compostos como "front-end" ou "frontend"
+            string altPattern = $"%{cleanSearch.Replace("-", "").Replace(" ", "")}%";
 
-    externalJobsQuery = externalJobsQuery.Where(j =>
-        (j.Title != null && (
-            EF.Functions.ILike(j.Title, searchPattern) || 
-            EF.Functions.ILike(j.Title.Replace("-", "").Replace(" ", ""), $"%{searchNormalized}%")
-        )) ||
-        (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) ||
-        (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
-        (j.SourceProvider != null && EF.Functions.ILike(j.SourceProvider, searchPattern)) ||
-        (j.Description != null && EF.Functions.ILike(j.Description, searchPattern))
-    );
-}
+            externalJobsQuery = externalJobsQuery.Where(j =>
+                (j.Title != null && EF.Functions.ILike(j.Title, searchPattern)) ||
+                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) ||
+                (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
+                (j.Description != null && EF.Functions.ILike(j.Description, searchPattern))
+            );
+        }
 
+        var externalJobsList = await externalJobsQuery
+            .OrderByDescending(j => j.CreatedAt)
+            .Take(50)
+            .ToListAsync();
 
-
-var externalJobsList = await externalJobsQuery
-    .OrderByDescending(j => j.CreatedAt)
-    .Take(50)
-    .ToListAsync();
-
-    // Se o usuário pesquisou por um termo e ainda não há vagas parceiras salvas no banco
-if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && user != null)
-{
-    // Atualiza o título preferido do usuário temporariamente para disparar as APIs de vagas
-    user.PreferredJobTitle = cleanSearch;
-    
-    // Executa a busca remota paralela (Adzuna, Jooble, JSearch)
-    await FetchTechJobsNearby(activeCulture);
-
-    // Recarrega as vagas parceiras atualizadas
-    externalJobsList = await externalJobsQuery
-        .OrderByDescending(j => j.CreatedAt)
-        .Take(50)
-        .ToListAsync();
-}
-
-        // Se o utilizador estiver autenticado, cria uma cópia sem alterar a entidade rastreada
         var userViewModel = user != null ? new ApplicationUser 
         { 
             Id = user.Id, 
@@ -499,8 +472,8 @@ public async Task<IActionResult> FetchTechJobsNearby(string? culture)
         return RedirectToAction("Login", "Account", new { culture = activeCulture });
     }
 
-    string country = !string.IsNullOrWhiteSpace(user.CountryCode) ? user.CountryCode.Trim().ToLower() : "";
-    string city = !string.IsNullOrWhiteSpace(user.City) ? user.City.Trim() : "";
+    string country = !string.IsNullOrWhiteSpace(user.CountryCode) ? user.CountryCode.Trim().ToLower() : "ca";
+    string locationSearch = !string.IsNullOrWhiteSpace(user.City) ? user.City.Trim() : "Canada";
     string what = !string.IsNullOrWhiteSpace(user.PreferredJobTitle) ? user.PreferredJobTitle.Trim() : "developer";
     int radiusKm = user.SearchRadiusKm > 0 ? user.SearchRadiusKm : 50;
 
@@ -513,10 +486,10 @@ public async Task<IActionResult> FetchTechJobsNearby(string? culture)
     var httpClient = _httpClientFactory.CreateClient();
 
     // 1. Busca paralela nas APIs parceiras
-    var adzunaTask = FetchAdzunaJobsAsync(httpClient, user, country, what, city, radiusKm);
-    var joobleTask = FetchJoobleJobsAsync(httpClient, user, country, what, city, radiusKm);
+    var adzunaTask = FetchAdzunaJobsAsync(httpClient, user, country, what, locationSearch, radiusKm);
+    var joobleTask = FetchJoobleJobsAsync(httpClient, user, country, what, locationSearch, radiusKm);
 
-    var jsearchFilter = new JobSearchFilter { Query = what, Location = city, Page = 1 };
+    var jsearchFilter = new JobSearchFilter { Query = $"{what} Canada", Location = locationSearch, Page = 1 };
     var jsearchTask = _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
 
     await Task.WhenAll(adzunaTask, joobleTask, jsearchTask);
