@@ -146,7 +146,7 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         double minLon = userLng - lonDelta;
         double maxLon = userLng + lonDelta;
 
-        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim().ToLower() : null;
+        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim() : null;
 
         // --- CONSULTA 1: EMPRESAS ---
         var companiesQuery = _context.Companies
@@ -157,11 +157,11 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         if (!string.IsNullOrEmpty(cleanSearch))
         {
-            string searchPattern = $"%{cleanSearch}%";
+            string pattern = $"%{cleanSearch}%";
             companiesQuery = companiesQuery.Where(c => 
-                (c.Name != null && EF.Functions.ILike(c.Name, searchPattern)) || 
-                (c.City != null && EF.Functions.ILike(c.City, searchPattern)) ||
-                (c.Description != null && EF.Functions.ILike(c.Description, searchPattern)));
+                (c.Name != null && EF.Functions.ILike(c.Name, pattern)) || 
+                (c.City != null && EF.Functions.ILike(c.City, pattern)) ||
+                (c.Description != null && EF.Functions.ILike(c.Description, pattern)));
         }
 
         var companiesFromDb = await companiesQuery.ToListAsync();
@@ -197,12 +197,12 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         if (!string.IsNullOrEmpty(cleanSearch))
         {
-            string searchPattern = $"%{cleanSearch}%";
+            string pattern = $"%{cleanSearch}%";
             localJobsQuery = localJobsQuery.Where(j => 
-                (j.Title != null && EF.Functions.ILike(j.Title, searchPattern)) || 
-                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, searchPattern)) || 
-                (j.Location != null && EF.Functions.ILike(j.Location, searchPattern)) ||
-                (j.Description != null && EF.Functions.ILike(j.Description, searchPattern)));
+                (j.Title != null && EF.Functions.ILike(j.Title, pattern)) || 
+                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) || 
+                (j.Location != null && EF.Functions.ILike(j.Location, pattern)) ||
+                (j.Description != null && EF.Functions.ILike(j.Description, pattern)));
         }
 
         var localJobsList = await localJobsQuery
@@ -217,20 +217,16 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         if (!string.IsNullOrWhiteSpace(cleanSearch))
         {
-            // 💡 BUSCA COMPLETA PELA FRASE OU PELAS PALAVRAS (OR em vez de AND)
-            string fullPattern = $"%{cleanSearch}%";
-            var tokens = cleanSearch.Split(new[] { ' ', '-', '/', '.' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Where(t => t.Length > 2)
-                                    .ToList();
+            // Pega a frase inteira e a primeira palavra relevante para buscas por palavras soltas
+            string mainPattern = $"%{cleanSearch}%";
+            var words = cleanSearch.Split(new[] { ' ', '-', '/', '.' }, StringSplitOptions.RemoveEmptyEntries);
+            string firstWordPattern = words.Length > 0 ? $"%{words[0]}%" : mainPattern;
 
             externalJobsQuery = externalJobsQuery.Where(j =>
-                (j.Title != null && EF.Functions.ILike(j.Title, fullPattern)) ||
-                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, fullPattern)) ||
-                (j.Location != null && EF.Functions.ILike(j.Location, fullPattern)) ||
-                tokens.Any(token => 
-                    (j.Title != null && EF.Functions.ILike(j.Title, $"%{token}%")) ||
-                    (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, $"%{token}%"))
-                )
+                (j.Title != null && (EF.Functions.ILike(j.Title, mainPattern) || EF.Functions.ILike(j.Title, firstWordPattern))) ||
+                (j.CompanyName != null && (EF.Functions.ILike(j.CompanyName, mainPattern) || EF.Functions.ILike(j.CompanyName, firstWordPattern))) ||
+                (j.Location != null && EF.Functions.ILike(j.Location, mainPattern)) ||
+                (j.Description != null && EF.Functions.ILike(j.Description, mainPattern))
             );
         }
 
@@ -239,13 +235,12 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .Take(50)
             .ToListAsync();
 
-        // 💡 BUSCA DINÂMICA SOB DEMANDA: Se pesquisou e não encontrou no banco, consulta APIs parceiras
+        // Se o utilizador pesquisou e a base não retornou nada, busca dinamicamente nas APIs
         if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && !localJobsList.Any() && user != null)
         {
             user.PreferredJobTitle = cleanSearch;
             await FetchTechJobsNearby(activeCulture);
 
-            // Recarrega as novas vagas encontradas
             externalJobsList = await externalJobsQuery
                 .OrderByDescending(j => j.CreatedAt)
                 .Take(50)
