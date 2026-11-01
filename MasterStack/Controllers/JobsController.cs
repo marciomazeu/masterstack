@@ -211,29 +211,33 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
             .ToListAsync();
 
         // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
-        var externalJobsQuery = _context.JobPostings
-            .AsNoTracking()
-            .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
+        // Substitua o trecho da CONSULTA 3 no JobsController.cs por:
+var externalJobsQuery = _context.JobPostings
+    .AsNoTracking()
+    .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
 
-        if (!string.IsNullOrWhiteSpace(cleanSearch))
-        {
-            // Pega a frase inteira e a primeira palavra relevante para buscas por palavras soltas
-            string mainPattern = $"%{cleanSearch}%";
-            var words = cleanSearch.Split(new[] { ' ', '-', '/', '.' }, StringSplitOptions.RemoveEmptyEntries);
-            string firstWordPattern = words.Length > 0 ? $"%{words[0]}%" : mainPattern;
+if (!string.IsNullOrWhiteSpace(cleanSearch))
+{
+    // Remove pontuações e caracteres especiais que travam o ILike no PostgreSQL
+    string safeTerm = cleanSearch.Trim().Replace("'", "''");
+    string pattern = $"%{safeTerm}%";
 
-            externalJobsQuery = externalJobsQuery.Where(j =>
-                (j.Title != null && (EF.Functions.ILike(j.Title, mainPattern) || EF.Functions.ILike(j.Title, firstWordPattern))) ||
-                (j.CompanyName != null && (EF.Functions.ILike(j.CompanyName, mainPattern) || EF.Functions.ILike(j.CompanyName, firstWordPattern))) ||
-                (j.Location != null && EF.Functions.ILike(j.Location, mainPattern)) ||
-                (j.Description != null && EF.Functions.ILike(j.Description, mainPattern))
-            );
-        }
+    _logger.LogInformation("Executando busca por termo: {SearchTerm}", safeTerm);
 
-        var externalJobsList = await externalJobsQuery
-            .OrderByDescending(j => j.CreatedAt)
-            .Take(50)
-            .ToListAsync();
+    externalJobsQuery = externalJobsQuery.Where(j =>
+        (j.Title != null && EF.Functions.ILike(j.Title, pattern)) ||
+        (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) ||
+        (j.Location != null && EF.Functions.ILike(j.Location, pattern)) ||
+        (j.Description != null && EF.Functions.ILike(j.Description, pattern))
+    );
+}
+
+var externalJobsList = await externalJobsQuery
+    .OrderByDescending(j => j.CreatedAt)
+    .Take(50)
+    .ToListAsync();
+
+_logger.LogInformation("Vagas encontradas na busca: {Count}", externalJobsList.Count);
 
         // Se o utilizador pesquisou e a base não retornou nada, busca dinamicamente nas APIs
         if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && !localJobsList.Any() && user != null)
