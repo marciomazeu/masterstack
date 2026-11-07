@@ -3001,4 +3001,8 @@
     <value>Région / À distance</value>
     <comment/>
   </data>
+  <data name="Filter_AllModes" xml:space="preserve">
+    <value>Toutes les modalités</value>
+    <comment/>
+  </data>
 </root>

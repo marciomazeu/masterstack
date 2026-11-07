@@ -3005,4 +3005,8 @@
     <value>Regional / À distância</value>
     <comment/>
   </data>
+  <data name="Filter_AllModes" xml:space="preserve">
+    <value>Todas as modalidades</value>
+    <comment/>
+  </data>
 </root>

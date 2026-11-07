@@ -3001,4 +3001,8 @@
     <value>Regional / Remote</value>
     <comment/>
   </data>
+  <data name="Filter_AllModes" xml:space="preserve">
+    <value>All work modes</value>
+    <comment/>
+  </data>
 </root>

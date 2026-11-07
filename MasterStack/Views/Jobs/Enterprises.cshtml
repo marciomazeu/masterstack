@@ -566,46 +566,45 @@
     }
 
     function loadJobsAndMap(jobs) {
-        if (!map || !Array.isArray(jobs)) return;
+    if (!map || !Array.isArray(jobs)) return;
 
-        const userLat = parseFloat("@userLat");
-        const userLng = parseFloat("@userLng");
+    const userLat = parseFloat("@userLat");
+    const userLng = parseFloat("@userLng");
 
-        jobs.forEach(job => {
-            const isExact = job.isExactLocation ?? job.IsExactLocation;
-            const lat = parseFloat(job.latitude ?? job.Latitude);
-            const lng = parseFloat(job.longitude ?? job.Longitude);
-            const jobId = job.id ?? job.Id;
-            const title = job.title || job.Title || '';
-            const companyName = job.companyName || job.CompanyName || '';
-            const location = job.location || job.Location || '';
-            const redirectUrl = job.redirectUrl || job.RedirectUrl || '';
-            const isRemote = job.isRemote || job.IsRemote || (location && location.toLowerCase().includes('télétravail'));
+    jobs.forEach(job => {
+        // Trata a capitalização das propriedades C# no JSON (Latitude vs latitude)
+        const lat = parseFloat(job.latitude !== undefined ? job.latitude : job.Latitude);
+        const lng = parseFloat(job.longitude !== undefined ? job.longitude : job.Longitude);
+        const jobId = job.id || job.Id;
+        const title = job.title || job.Title || '';
+        const companyName = job.companyName || job.CompanyName || '';
+        const location = job.location || job.Location || '';
+        const redirectUrl = job.redirectUrl || job.RedirectUrl || '';
+        const isRemote = job.isRemote || job.IsRemote || (location && location.toLowerCase().includes('télétravail'));
 
-            const isGenericCoordinates = Math.abs(lat - userLat) < 0.001 && Math.abs(lng - userLng) < 0.001;
+        const workTypeBadge = isRemote 
+            ? `<span class="badge bg-success mb-1">🏠 Télétravail</span>`
+            : `<span class="badge bg-primary mb-1">🏢 Présentiel / Hybride</span>`;
 
-            const workTypeBadge = isRemote 
-                ? `<span class="badge bg-success mb-1">🏠 Télétravail</span>`
-                : `<span class="badge bg-primary mb-1">🏢 Présentiel / Hybride</span>`;
+        // Se houver coordenadas válidas, desenha o marcador no mapa
+        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+            const marker = L.marker([lat, lng], { icon: jobIcon }).addTo(map)
+                .bindPopup(`
+                    <div style="min-width: 200px;" class="p-1">
+                        ${workTypeBadge}
+                        <h6 class="fw-bold mb-1 text-primary">${title}</h6>
+                        <p class="small mb-1"><b>Société:</b> ${companyName}</p>
+                        <p class="small text-muted mb-2"><i class="fas fa-location-dot me-1"></i>${location}</p>
+                        ${redirectUrl ? `<a href="${redirectUrl}" target="_blank" class="btn btn-sm btn-success text-white w-100 fw-bold">Voir l'offre <i class="fas fa-external-link-alt ms-1"></i></a>` : ''}
+                    </div>
+                `);
 
-            if (isExact && !isGenericCoordinates && !isNaN(lat) && !isNaN(lng)) {
-                const marker = L.marker([lat, lng], { icon: jobIcon }).addTo(map)
-                    .bindPopup(`
-                        <div style="min-width: 200px;" class="p-1">
-                            ${workTypeBadge}
-                            <h6 class="fw-bold mb-1 text-primary">${title}</h6>
-                            <p class="small mb-1"><b>@Localizer["CompanyLabel"]:</b> ${companyName}</p>
-                            <p class="small text-muted mb-2"><i class="fas fa-location-dot me-1"></i>${location}</p>
-                            ${redirectUrl ? `<a href="${redirectUrl}" target="_blank" class="btn btn-sm btn-success text-white w-100 fw-bold">@Localizer["ViewJobBtn"] <i class="fas fa-external-link-alt ms-1"></i></a>` : ''}
-                        </div>
-                    `);
-
-                if (jobId) {
-                    jobMarkers[jobId] = marker;
-                }
+            if (jobId) {
+                jobMarkers[jobId] = marker;
             }
-        });
-    }
+        }
+    });
+}
 
     function focusJobOnMap(jobId, lat, lng, isExactLocation) {
         const userLat = parseFloat("@userLat");
