@@ -3009,4 +3009,24 @@
     <value>Todas as modalidades</value>
     <comment/>
   </data>
+  <data name="LinkedIn_SectionTitle" xml:space="preserve">
+    <value>Publicação Automática no LinkedIn</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PostTextLabel" xml:space="preserve">
+    <value>Texto do Post para o LinkedIn</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PostTextPlaceholder" xml:space="preserve">
+    <value>Cole aqui o texto gerado na Etapa 4 do PROMPT MESTRE (com gancho, bullets e hashtags)...</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PostTextHelpText" xml:space="preserve">
+    <value>Este texto será publicado diretamente no perfil/página do LinkedIn associado ao MasterStack Jobs.</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PublishCheckboxLabel" xml:space="preserve">
+    <value>Publicar no LinkedIn imediatamente ao guardar</value>
+    <comment/>
+  </data>
 </root>

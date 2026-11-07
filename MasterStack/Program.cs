@@ -39,6 +39,7 @@ try
         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
     });
     builder.Services.AddHostedService<MasterStack.Services.JobSyncBackgroundService>();
+    builder.Services.AddHttpClient<ILinkedInService, LinkedInService>();
 
     builder.Host.UseSerilog();
 

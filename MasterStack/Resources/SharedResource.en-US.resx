@@ -3005,4 +3005,24 @@
     <value>All work modes</value>
     <comment/>
   </data>
+  <data name="LinkedIn_SectionTitle" xml:space="preserve">
+    <value>Automatic LinkedIn Publishing</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PostTextLabel" xml:space="preserve">
+    <value>LinkedIn Post Copy</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PostTextPlaceholder" xml:space="preserve">
+    <value>Paste the generated text from Step 4 of the MASTER PROMPT here (hook, bullets, and hashtags)...</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PostTextHelpText" xml:space="preserve">
+    <value>This text will be posted directly to the LinkedIn profile/page associated with MasterStack Jobs.</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_PublishCheckboxLabel" xml:space="preserve">
+    <value>Publish to LinkedIn immediately upon saving</value>
+    <comment/>
+  </data>
 </root>

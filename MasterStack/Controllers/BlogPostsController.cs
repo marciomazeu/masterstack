@@ -25,6 +25,7 @@ namespace MasterStack.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<BlogPostsController> _logger;
         private readonly ICloudStorageService _cloudStorageService;
+        private readonly ILinkedInService _linkedInService;
 
         public BlogPostsController(
             ApplicationDbContext context, 
@@ -32,7 +33,8 @@ namespace MasterStack.Controllers
             IStringLocalizer<BlogPostsController> localizer, 
             UserManager<ApplicationUser> userManager, 
             ICloudStorageService cloudStorageService,
-            ILogger<BlogPostsController> logger)
+            ILogger<BlogPostsController> logger,
+            ILinkedInService linkedInService)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
@@ -40,6 +42,7 @@ namespace MasterStack.Controllers
             _userManager = userManager;
             _cloudStorageService = cloudStorageService;
             _logger = logger;            
+            _linkedInService = linkedInService;
         }
 
  // GET: /{culture}/BlogPosts
@@ -173,115 +176,142 @@ public async Task<IActionResult> Index(string? culture, int page = 1, string? se
             return View();
         }
 
-        // POST: /{culture}/BlogPosts/Create
-        [HttpPost("Create")]
-        [HttpPost("/{culture}/BlogPosts/Create")]
-        [Authorize(Roles = "Admin,Author")]
-        [ValidateAntiForgeryToken]
-        [RequestSizeLimit(52428800)]
-        public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture = null)
+       // POST: /{culture}/BlogPosts/Create
+[HttpPost("Create")]
+[HttpPost("/{culture}/BlogPosts/Create")]
+[Authorize(Roles = "Admin,Author")]
+[ValidateAntiForgeryToken]
+[RequestSizeLimit(52428800)]
+public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? culture = null)
+{
+    // 1. Remove parâmetros opcionais para não travar a validação do formulário
+    ModelState.Remove("culture");
+    ModelState.Remove("ImageFile");
+
+    // 💡 VALIDAÇÃO ESTRITA DE IDIOMA
+    var activeCulture = !string.IsNullOrWhiteSpace(model.SelectedCulture) 
+        ? model.SelectedCulture 
+        : culture;
+
+    if (string.IsNullOrWhiteSpace(activeCulture))
+    {
+        ModelState.AddModelError("SelectedCulture", "É obrigatório selecionar um idioma para o artigo.");
+    }
+
+    if (!ModelState.IsValid) 
+    {
+        var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+        ViewBag.Languages = new SelectList(languages, "Culture", "Name", model.SelectedCulture);
+        return View(model);
+    }
+
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) 
+    {
+        return RedirectToAction("Login", "Account", new { culture = activeCulture });
+    }
+
+    // 2. Upload da imagem para o DigitalOcean Spaces
+    string? imagePath = null;
+    if (model.ImageFile != null && model.ImageFile.Length > 0)
+    {
+        imagePath = await _cloudStorageService.UploadFileAsync(model.ImageFile, "blog");
+    }
+
+    var postCulture = activeCulture!;
+    string uniqueSlug = string.Empty;
+    BlogPost? post = null;
+
+    // 3. PERSISTÊNCIA NA BASE DE DADOS (TRANSAÇÃO)
+    using (var transaction = await _context.Database.BeginTransactionAsync())
+    {
+        try
         {
-            // 🔴 DEBUG TEMPORÁRIO: Captura todos os erros de validação
-            // Ignores o parâmetro da URL para não travar o envio do formulário
-                ModelState.Remove("culture");
-                ModelState.Remove("ImageFile");
+            var sanitizer = new HtmlSanitizer();
+            sanitizer.AllowedAttributes.Add("class");
+            string cleanHtml = sanitizer.Sanitize(model.Content ?? string.Empty);
 
-                // 💡 VALIDAÇÃO ESTRITA: Garante que a cultura venha do Select do formulário ou da Rota
-                var activeCulture = !string.IsNullOrWhiteSpace(model.SelectedCulture) 
-                    ? model.SelectedCulture 
-                    : culture;
+            string baseSlug = !string.IsNullOrWhiteSpace(model.Slug) ? model.Slug : model.Title;
+            uniqueSlug = await GetUniqueSlugAsync(baseSlug, postCulture);
 
-                // Se por algum motivo NENHUMA cultura for informada, bloqueia o salvamento
-                if (string.IsNullOrWhiteSpace(activeCulture))
-                {
-                    ModelState.AddModelError("SelectedCulture", "É obrigatório selecionar um idioma para o artigo.");
-                }
+            post = new BlogPost 
+            { 
+                CreatedAt = DateTime.UtcNow,
+                AuthorId = user.Id,
+                LinkedInPostText = model.LinkedInPostText,
+                PublishToLinkedIn = model.PublishToLinkedIn,
+                IsLinkedInPublished = false
+            };
+            
+            _context.BlogPosts.Add(post);
+            await _context.SaveChangesAsync();
 
-                if (!ModelState.IsValid) 
-                {
-                    var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-                    ViewBag.Languages = new SelectList(languages, "Culture", "Name", model.SelectedCulture);
-                    return View(model);
-                }
-
-            ModelState.Remove("ImageFile");
-            if (!ModelState.IsValid) 
+            var translation = new BlogPostTranslation
             {
-                var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
-                ViewBag.Languages = new SelectList(languages, "Culture", "Name", model.SelectedCulture);
-                return View(model);
+                BlogPostId = post.Id,
+                Culture = postCulture,
+                Title = model.Title,
+                Content = cleanHtml,
+                MetaDescription = model.MetaDescription,
+                MetaKeywords = model.MetaKeywords,
+                Slug = uniqueSlug,
+                IsPublished = model.IsPublished,
+                ImageUrl = !string.IsNullOrEmpty(imagePath) ? imagePath : "/images/default-post.jpg"
+            }; 
+
+            _context.BlogPostTranslations.Add(translation);
+            await _context.SaveChangesAsync();
+
+            // Confirma a gravação local na base de dados
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+
+            if (!string.IsNullOrEmpty(imagePath) && imagePath.Contains("digitaloceanspaces.com"))
+            {
+                _ = _cloudStorageService.DeleteFileAsync(imagePath);
             }
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) 
+            _logger.LogError(ex, "Erro ao criar BlogPost");
+            ModelState.AddModelError("", $"Erro ao salvar o post: {ex.Message}");
+            
+            var languages = await _context.Languages.Where(l => l.IsActive).ToListAsync();
+            ViewBag.Languages = new SelectList(languages, "Culture", "Name", model.SelectedCulture);
+            return View(model);
+        }
+    }
+
+    // 4. ENVIO AUTOMÁTICO PARA O LINKEDIN (FORA DA TRANSAÇÃO DA BASE DE DADOS)
+    if (post != null && model.PublishToLinkedIn && !string.IsNullOrWhiteSpace(model.LinkedInPostText))
+    {
+        try
+        {
+            string articleUrl = $"https://masterstackjobs.com/{postCulture}/Blog/{uniqueSlug}";
+            
+            bool success = await _linkedInService.SharePostAsync(model.LinkedInPostText, articleUrl);
+            if (success)
             {
-                return RedirectToAction("Login", "Account", new { culture = culture });
-            }
-
-            // Upload via DigitalOcean Spaces
-            string? imagePath = null;
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
-            {
-                imagePath = await _cloudStorageService.UploadFileAsync(model.ImageFile, "blog");
-            }
-
-            var postCulture = !string.IsNullOrWhiteSpace(model.SelectedCulture) ? model.SelectedCulture : culture;
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var sanitizer = new HtmlSanitizer();
-                sanitizer.AllowedAttributes.Add("class");
-                string cleanHtml = sanitizer.Sanitize(model.Content ?? string.Empty);
-
-                string baseSlug = !string.IsNullOrWhiteSpace(model.Slug) ? model.Slug : model.Title;
-                string uniqueSlug = await GetUniqueSlugAsync(baseSlug, postCulture);
-
-                var post = new BlogPost 
-                { 
-                    CreatedAt = DateTime.UtcNow,
-                    AuthorId = user.Id 
-                };
-                
-                _context.BlogPosts.Add(post);
+                post.IsLinkedInPublished = true;
+                _context.BlogPosts.Update(post);
                 await _context.SaveChangesAsync();
-
-                var translation = new BlogPostTranslation
-                {
-                    BlogPostId = post.Id,
-                    Culture = postCulture,
-                    Title = model.Title,
-                    Content = cleanHtml,
-                    MetaDescription = model.MetaDescription,
-                    MetaKeywords = model.MetaKeywords,
-                    Slug = uniqueSlug,
-                    IsPublished = model.IsPublished,
-                    ImageUrl = !string.IsNullOrEmpty(imagePath) ? imagePath : "/images/default-post.jpg"
-                }; 
-
-                _context.BlogPostTranslations.Add(translation);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                TempData["Success"] = "Post criado com sucesso!";
-                return RedirectToAction("Dashboard", "Admin", new { culture = postCulture });
             }
-            catch (Exception ex)
+            else
             {
-                await transaction.RollbackAsync();
-
-                if (!string.IsNullOrEmpty(imagePath) && imagePath.Contains("digitaloceanspaces.com"))
-                {
-                    _ = _cloudStorageService.DeleteFileAsync(imagePath);
-                }
-
-                _logger.LogError(ex, "Erro ao criar BlogPost");
-                ModelState.AddModelError("", $"Erro ao salvar o post: {ex.Message}");
-                
-                return View(model);
+                TempData["Warning"] = "O post foi publicado no blog, mas ocorreu uma falha ao enviar para o LinkedIn.";
             }
         }
+        catch (Exception exLinkedIn)
+        {
+            _logger.LogError(exLinkedIn, "Erro ao publicar o artigo no LinkedIn.");
+            TempData["Warning"] = "Artigo criado com sucesso, mas não foi possível publicar no LinkedIn no momento.";
+        }
+    }
+
+    TempData["Success"] = "Post criado com sucesso!";
+    return RedirectToAction("Dashboard", "Admin", new { culture = postCulture });
+}
 
         // GET: /{culture}/BlogPosts/EditTranslation/{id}
         [HttpGet("EditTranslation/{id}")]

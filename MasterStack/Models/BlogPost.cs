@@ -13,6 +13,12 @@ namespace MasterStack.Models
 
         public DateTime UpdatedAt { get; set; } = DateTime.Now; // Adicione esta linha
 
+        // Novo campo para a versão curta do LinkedIn
+        public string? LinkedInPostText { get; set; }
+        public bool PublishToLinkedIn { get; set; } = false;
+        public bool IsLinkedInPublished { get; set; } = false;
+        public string? LinkedInPostUrl { get; set; }
+
         // O Post Pai não tem mais Título, Conteúdo ou ImageUrl.
         // Tudo isso agora vive na lista abaixo (BlogPostTranslations).
         public virtual ICollection<BlogPostTranslation> Translations { get; set; } = new List<BlogPostTranslation>();

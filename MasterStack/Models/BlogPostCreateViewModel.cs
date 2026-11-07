@@ -24,6 +24,9 @@ namespace MasterStack.Models // O namespace deve ser este
 
         public bool IsPublished { get; set; }
 
+        public string? LinkedInPostText { get; set; }
+        public bool PublishToLinkedIn { get; set; } = false;
+
         public List<SelectListItem> AvailableCultures { get; set; } = new List<SelectListItem>
     {
         new SelectListItem { Value = "pt-BR", Text = "Português (Brasil)" },
