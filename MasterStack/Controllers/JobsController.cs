@@ -119,7 +119,11 @@ namespace MasterStack.Controllers
 [AllowAnonymous]
 [HttpGet("Enterprises")]
 [HttpGet("/{culture}/Jobs/Enterprises")]
-public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string? searchTerm, [FromQuery] int? radiusKm)
+public async Task<IActionResult> Enterprises(
+    string? culture, 
+    [FromQuery] string? searchTerm, 
+    [FromQuery] int? radiusKm, 
+    [FromQuery] string? workMode) // 💡 Novo filtro adicional de modalidade
 {
     var activeCulture = !string.IsNullOrWhiteSpace(culture) 
         ? culture 
@@ -146,9 +150,10 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         double minLon = userLng - lonDelta;
         double maxLon = userLng + lonDelta;
 
-        string? cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim() : null;
+        string cleanSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim() : string.Empty;
+        string safeSearchPattern = $"%{cleanSearch.Replace("'", "''")}%";
 
-        // --- CONSULTA 1: EMPRESAS ---
+        // --- CONSULTA 1: EMPRESAS (SQL Nativo) ---
         var companiesQuery = _context.Companies
             .AsNoTracking()
             .Where(c => c.Latitude.HasValue && c.Longitude.HasValue &&
@@ -157,11 +162,12 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
 
         if (!string.IsNullOrEmpty(cleanSearch))
         {
-            string pattern = $"%{cleanSearch}%";
-            companiesQuery = companiesQuery.Where(c => 
-                (c.Name != null && EF.Functions.ILike(c.Name, pattern)) || 
-                (c.City != null && EF.Functions.ILike(c.City, pattern)) ||
-                (c.Description != null && EF.Functions.ILike(c.Description, pattern)));
+            companiesQuery = _context.Companies.FromSqlRaw(
+                @"SELECT * FROM ""Companies"" 
+                  WHERE (""Name"" ILIKE {0} OR ""City"" ILIKE {0} OR ""Description"" ILIKE {0})
+                    AND ""Latitude"" BETWEEN {1} AND {2} 
+                    AND ""Longitude"" BETWEEN {3} AND {4}", 
+                safeSearchPattern, minLat, maxLat, minLon, maxLon);
         }
 
         var companiesFromDb = await companiesQuery.ToListAsync();
@@ -189,66 +195,98 @@ public async Task<IActionResult> Enterprises(string? culture, [FromQuery] string
         }
         companiesList = companiesList.OrderBy(c => c.DistanceInKm).ToList();
 
-        // --- CONSULTA 2: VAGAS PRÓPRIAS (MASTERSTACK) ---
-        var localJobsQuery = _context.JobPostings
-            .AsNoTracking()
-            .Include(j => j.Company)
-            .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
-
+        // --- CONSULTA 2: VAGAS PRÓPRIAS (MASTERSTACK - SQL Nativo) ---
+        IQueryable<JobPosting> localJobsQuery;
         if (!string.IsNullOrEmpty(cleanSearch))
         {
-            string pattern = $"%{cleanSearch}%";
-            localJobsQuery = localJobsQuery.Where(j => 
-                (j.Title != null && EF.Functions.ILike(j.Title, pattern)) || 
-                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) || 
-                (j.Location != null && EF.Functions.ILike(j.Location, pattern)) ||
-                (j.Description != null && EF.Functions.ILike(j.Description, pattern)));
+            localJobsQuery = _context.JobPostings.FromSqlRaw(
+                @"SELECT * FROM ""JobPostings"" 
+                  WHERE ""IsActive"" = true AND (""IsInternal"" = true OR ""SourceProvider"" = 'Internal')
+                    AND (""Title"" ILIKE {0} OR ""CompanyName"" ILIKE {0} OR ""Location"" ILIKE {0} OR ""Description"" ILIKE {0})", 
+                safeSearchPattern);
+        }
+        else
+        {
+            localJobsQuery = _context.JobPostings
+                .AsNoTracking()
+                .Where(j => j.IsActive && (j.IsInternal || j.SourceProvider == "Internal"));
         }
 
-        var localJobsList = await localJobsQuery
-            .OrderByDescending(j => j.CreatedAt)
-            .Take(50)
-            .ToListAsync();
-
-        // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
-        // Substitua o trecho da CONSULTA 3 no JobsController.cs por:
-var externalJobsQuery = _context.JobPostings
-    .AsNoTracking()
-    .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
-
-if (!string.IsNullOrWhiteSpace(cleanSearch))
-{
-    // Remove pontuações e caracteres especiais que travam o ILike no PostgreSQL
-    string safeTerm = cleanSearch.Trim().Replace("'", "''");
-    string pattern = $"%{safeTerm}%";
-
-    _logger.LogInformation("Executando busca por termo: {SearchTerm}", safeTerm);
-
-    externalJobsQuery = externalJobsQuery.Where(j =>
-        (j.Title != null && EF.Functions.ILike(j.Title, pattern)) ||
-        (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) ||
-        (j.Location != null && EF.Functions.ILike(j.Location, pattern)) ||
-        (j.Description != null && EF.Functions.ILike(j.Description, pattern))
-    );
-}
-
-var externalJobsList = await externalJobsQuery
-    .OrderByDescending(j => j.CreatedAt)
-    .Take(50)
-    .ToListAsync();
-
-_logger.LogInformation("Vagas encontradas na busca: {Count}", externalJobsList.Count);
-
-        // Se o utilizador pesquisou e a base não retornou nada, busca dinamicamente nas APIs
-        if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && !localJobsList.Any() && user != null)
+        // Aplicação do filtro de modalidade (opcional)
+        if (!string.IsNullOrEmpty(workMode))
         {
-            user.PreferredJobTitle = cleanSearch;
-            await FetchTechJobsNearby(activeCulture);
+            if (workMode == "remote") 
+                localJobsQuery = localJobsQuery.Where(j => j.IsRemote || j.Location.ToLower().Contains("remote") || j.Location.ToLower().Contains("télétravail"));
+            else if (workMode == "hybrid") 
+                localJobsQuery = localJobsQuery.Where(j => j.Location.ToLower().Contains("hybride"));
+            else if (workMode == "onsite") 
+                localJobsQuery = localJobsQuery.Where(j => !j.IsRemote && !j.Location.ToLower().Contains("hybride") && !j.Location.ToLower().Contains("télétravail"));
+        }
 
-            externalJobsList = await externalJobsQuery
-                .OrderByDescending(j => j.CreatedAt)
-                .Take(50)
-                .ToListAsync();
+        var localJobsList = await localJobsQuery.OrderByDescending(j => j.CreatedAt).Take(50).ToListAsync();
+
+        // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS - SQL Nativo) ---
+        IQueryable<JobPosting> externalJobsQuery;
+        if (!string.IsNullOrEmpty(cleanSearch))
+        {
+            // Busca palavras-chave independentes no SQL nativo com ILIKE
+            string firstWord = cleanSearch.Split(' ')[0];
+            string firstWordPattern = $"%{firstWord}%";
+
+            externalJobsQuery = _context.JobPostings.FromSqlRaw(
+                @"SELECT * FROM ""JobPostings"" 
+                  WHERE ""IsActive"" = true AND ""IsInternal"" = false AND ""SourceProvider"" != 'Internal'
+                    AND (""Title"" ILIKE {0} OR ""Title"" ILIKE {1} 
+                         OR ""CompanyName"" ILIKE {0} OR ""Location"" ILIKE {0} 
+                         OR ""Description"" ILIKE {0})", 
+                safeSearchPattern, firstWordPattern);
+        }
+        else
+        {
+            externalJobsQuery = _context.JobPostings
+                .AsNoTracking()
+                .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
+        }
+
+        if (!string.IsNullOrEmpty(workMode))
+        {
+            if (workMode == "remote") 
+                externalJobsQuery = externalJobsQuery.Where(j => j.IsRemote || j.Location.ToLower().Contains("remote") || j.Location.ToLower().Contains("télétravail"));
+            else if (workMode == "hybrid") 
+                externalJobsQuery = externalJobsQuery.Where(j => j.Location.ToLower().Contains("hybride"));
+            else if (workMode == "onsite") 
+                externalJobsQuery = externalJobsQuery.Where(j => !j.IsRemote && !j.Location.ToLower().Contains("hybride") && !j.Location.ToLower().Contains("télétravail"));
+        }
+
+        var externalJobsList = await externalJobsQuery.OrderByDescending(j => j.CreatedAt).Take(50).ToListAsync();
+
+        // 💡 BUSCA EM TEMPO REAL NAS APIS (Dispara para logados E anônimos se o banco local estiver vazio)
+        if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && !localJobsList.Any())
+        {
+            _logger.LogInformation("Nenhuma vaga local encontrada para '{Search}'. Consultando APIs remotas...", cleanSearch);
+            
+            // Simula busca remota rápida com o termo pesquisado
+            var jsearchFilter = new JobSearchFilter { Query = $"{cleanSearch} Canada", Location = "Canada", Page = 1 };
+            var apiJobs = await _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
+
+            if (apiJobs != null && apiJobs.Any())
+            {
+                var newJobs = apiJobs.Select(j => new JobPosting
+                {
+                    Title = j.Title,
+                    CompanyName = j.Company,
+                    Location = j.Location,
+                    RedirectUrl = j.Url,
+                    SourceProvider = "JSearch",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                await _context.JobPostings.AddRangeAsync(newJobs);
+                await _context.SaveChangesAsync();
+
+                externalJobsList = newJobs;
+            }
         }
 
         var userViewModel = user != null ? new ApplicationUser 

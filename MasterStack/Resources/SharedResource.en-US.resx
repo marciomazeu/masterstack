@@ -2518,7 +2518,7 @@
     <comment/>
   </data>
   <data name="UnlockMoreJobsDesc" xml:space="preserve">
-    <value>Displaying 3 of {0} jobs. Log in to access the full list.</value>
+    <value>Displaying jobs of {0} jobs. Log in to access the full list.</value>
     <comment/>
   </data>
   <data name="LoginBtn" xml:space="preserve">

@@ -2522,7 +2522,7 @@
     <comment/>
   </data>
   <data name="UnlockMoreJobsDesc" xml:space="preserve">
-    <value>Exibindo 3 de {0} vagas. Faça login para acessar a lista completa no mapa.</value>
+    <value>Exibindo vagas de {0} vagas. Faça login para acessar a lista completa no mapa.</value>
     <comment/>
   </data>
   <data name="LoginBtn" xml:space="preserve">
