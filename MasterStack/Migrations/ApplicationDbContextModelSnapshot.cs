@@ -257,6 +257,18 @@ namespace MasterStack.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsLinkedInPublished")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LinkedInPostText")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LinkedInPostUrl")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PublishToLinkedIn")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
