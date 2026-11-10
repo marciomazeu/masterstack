@@ -59,9 +59,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     @RenderSection("MetaTags", required: false)
-    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - " : "")MasterStack Jobs | Emplois en Technologies & TI au Québec</title>
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - " : "")MasterStack Jobs | Tech & Software Developer Jobs in Canada</title>
 
-    <meta name="description" content="@(ViewData["Description"] ?? "Votre plateforme d'emplois en technologies et TI au Québec.")" />
+    <meta name="description" content="@(ViewData["Description"] ?? "Find remote, hybrid, and on-site IT jobs in Québec and across Canada. Top developer opportunities for C#, React, and DevOps.")" />
     <meta property="og:title" content="@ViewData["Title"]" />
     <meta property="og:description" content="@ViewData["Description"]" />
     <meta property="og:type" content="website" />
@@ -69,7 +69,11 @@
     <meta name="google-site-verification" content="418qHRKHMy7OVZ5IaYpkkgPPZ5RuXchI0wHLjsIa8aA" />
 
     <!-- SEO Canónico e Multilingue -->
-    <link rel="canonical" href="@canonicalUrl" />
+    <link rel="canonical" href="https://masterstackjobs.com/@(ViewBag.CurrentCulture)/Blog/@(ViewBag.CurrentSlug)" />
+<link rel="alternate" hreflang="en-CA" href="https://masterstackjobs.com/en-US/Blog/@(ViewBag.SlugEn)" />
+<link rel="alternate" hreflang="fr-CA" href="https://masterstackjobs.com/fr-CA/Blog/@(ViewBag.SlugFr)" />
+<link rel="alternate" hreflang="pt-BR" href="https://masterstackjobs.com/pt-BR/Blog/@(ViewBag.SlugPt)" />
+<link rel="alternate" hreflang="x-default" href="https://masterstackjobs.com/fr-CA/Blog/@(ViewBag.SlugFr)" />
     @foreach (var lang in dbLanguages)
     {
         <link rel="alternate" hreflang="@lang.Culture.ToLower()" href="@($"{currentHost}/{lang.Culture}{cleanPath}")" />

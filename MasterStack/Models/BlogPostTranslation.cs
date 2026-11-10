@@ -1,9 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace MasterStack.Models
 {
+    [Index(nameof(Culture), nameof(Slug), IsUnique = true)]
+    [Index(nameof(BlogPostId))]
     public class BlogPostTranslation
     {
         [Key]
@@ -17,27 +20,32 @@ namespace MasterStack.Models
 
         [Required]
         [StringLength(15)]
-        public string Culture { get; set; }
+        public string Culture { get; set; } = string.Empty;
 
         [Required]
         [StringLength(200)]
         [Display(Name = "Título")]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [Required]
         [Display(Name = "Conteúdo")]
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
 
         [Required]
         [StringLength(250)]
         [Display(Name = "SEO Slug")]
-        public string Slug { get; set; }
+        public string Slug { get; set; } = string.Empty;
 
         public string? ImageUrl { get; set; }
+
+        [StringLength(200)]
+        [Display(Name = "Texto Alternativo da Imagem (SEO)")]
+        public string? ImageAltText { get; set; }
 
         [NotMapped]
         public IFormFile? ImageFile { get; set; }
 
+        [ForeignKey("Culture")]
         public virtual Language? Language { get; set; }
 
         [StringLength(100)]
@@ -45,8 +53,10 @@ namespace MasterStack.Models
         public string? MetaTitle { get; set; }
 
         [StringLength(160)]
+        [Display(Name = "Descrição SEO")]
         public string? MetaDescription { get; set; }
 
+        [Display(Name = "Palavras-chave SEO")]
         public string? MetaKeywords { get; set; }
 
         [Display(Name = "Publicado")]

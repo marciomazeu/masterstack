@@ -181,67 +181,86 @@ namespace MasterStack.Controllers
         }
 
       [HttpGet("/sitemap.xml")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Sitemap()
+[AllowAnonymous]
+public async Task<IActionResult> Sitemap()
+{
+    var baseUrl = "https://masterstackjobs.com";
+    var cultures = new[] { "fr-CA", "en-US", "pt-BR" };
+
+    var sb = new StringBuilder();
+    sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">");
+
+    // 1. Páginas Estáticas Principais (Com tags de idiomas cruzadas)
+    foreach (var culture in cultures)
+    {
+        // Home Page
+        sb.AppendLine("  <url>");
+        sb.AppendLine($"    <loc>{baseUrl}/{culture}</loc>");
+        sb.AppendLine("    <changefreq>daily</changefreq>");
+        sb.AppendLine("    <priority>1.0</priority>");
+        foreach (var c in cultures)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var sb = new StringBuilder();
-
-            sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
-
-            // 1. URLs Institucionais e Raiz por Idioma
-            var culturas = new[] { "pt-BR", "en-US", "fr-CA" };
-            foreach (var culture in culturas)
-            {
-                // Home Page
-                sb.AppendLine("  <url>");
-                sb.AppendLine($"    <loc>{baseUrl}/{culture}</loc>");
-                sb.AppendLine("    <changefreq>daily</changefreq>");
-                sb.AppendLine("    <priority>1.0</priority>");
-                sb.AppendLine("  </url>");
-
-                // Vagas
-                sb.AppendLine("  <url>");
-                sb.AppendLine($"    <loc>{baseUrl}/{culture}/Jobs</loc>");
-                sb.AppendLine("    <changefreq>daily</changefreq>");
-                sb.AppendLine("    <priority>0.9</priority>");
-                sb.AppendLine("  </url>");
-
-                // Index do Blog
-                sb.AppendLine("  <url>");
-                sb.AppendLine($"    <loc>{baseUrl}/{culture}/BlogPosts</loc>");
-                sb.AppendLine("    <changefreq>daily</changefreq>");
-                sb.AppendLine("    <priority>0.8</priority>");
-                sb.AppendLine("  </url>");
-            }
-
-            // 2. Artigos do Blog Publicados
-            var posts = await _context.BlogPosts
-                .AsNoTracking()
-                .Include(p => p.Translations)
-                .Where(p => p.Translations.Any(t => t.IsPublished && !t.IsDeleted))
-                .ToListAsync();
-
-            foreach (var post in posts)
-            {
-                foreach (var trans in post.Translations.Where(t => t.IsPublished && !t.IsDeleted))
-                {
-                    // 💡 Correção do CS0019: Usa a data de criação se a de atualização não for aplicável
-                    var lastMod = post.UpdatedAt != default ? post.UpdatedAt : post.CreatedAt;
-
-                    sb.AppendLine("  <url>");
-                    sb.AppendLine($"    <loc>{baseUrl}/{trans.Culture}/blog/{trans.Slug}</loc>");
-                    sb.AppendLine($"    <lastmod>{lastMod:yyyy-MM-dd}</lastmod>");
-                    sb.AppendLine("    <changefreq>monthly</changefreq>");
-                    sb.AppendLine("    <priority>0.7</priority>");
-                    sb.AppendLine("  </url>");
-                }
-            }
-
-            sb.AppendLine("</urlset>");
-
-            return Content(sb.ToString(), "application/xml", Encoding.UTF8);
+            sb.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"{c}\" href=\"{baseUrl}/{c}\" />");
         }
+        sb.AppendLine("  </url>");
+
+        // Vagas
+        sb.AppendLine("  <url>");
+        sb.AppendLine($"    <loc>{baseUrl}/{culture}/Jobs</loc>");
+        sb.AppendLine("    <changefreq>daily</changefreq>");
+        sb.AppendLine("    <priority>0.9</priority>");
+        foreach (var c in cultures)
+        {
+            sb.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"{c}\" href=\"{baseUrl}/{c}/Jobs\" />");
+        }
+        sb.AppendLine("  </url>");
+
+        // Listagem do Blog (Rota corrigida de /BlogPosts para /Blog)
+        sb.AppendLine("  <url>");
+        sb.AppendLine($"    <loc>{baseUrl}/{culture}/Blog</loc>");
+        sb.AppendLine("    <changefreq>daily</changefreq>");
+        sb.AppendLine("    <priority>0.8</priority>");
+        foreach (var c in cultures)
+        {
+            sb.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"{c}\" href=\"{baseUrl}/{c}/Blog\" />");
+        }
+        sb.AppendLine("  </url>");
+    }
+
+    // 2. Artigos do Blog Publicados (Com mapeamento Hreflang por post)
+    var posts = await _context.BlogPosts
+        .AsNoTracking()
+        .Include(p => p.Translations)
+        .Where(p => p.Translations.Any(t => t.IsPublished && !t.IsDeleted))
+        .ToListAsync();
+
+    foreach (var post in posts)
+    {
+        var publishedTranslations = post.Translations.Where(t => t.IsPublished && !t.IsDeleted).ToList();
+        var lastMod = post.UpdatedAt != default ? post.UpdatedAt : post.CreatedAt;
+
+        foreach (var trans in publishedTranslations)
+        {
+            sb.AppendLine("  <url>");
+            sb.AppendLine($"    <loc>{baseUrl}/{trans.Culture}/blog/{trans.Slug}</loc>");
+            sb.AppendLine($"    <lastmod>{lastMod:yyyy-MM-dd}</lastmod>");
+            sb.AppendLine("    <changefreq>monthly</changefreq>");
+            sb.AppendLine("    <priority>0.7</priority>");
+
+            // Adiciona a relação cruzada de idiomas (hreflang) para o Google Search Console
+            foreach (var alt in publishedTranslations)
+            {
+                sb.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"{alt.Culture}\" href=\"{baseUrl}/{alt.Culture}/blog/{alt.Slug}\" />");
+            }
+
+            sb.AppendLine("  </url>");
+        }
+    }
+
+    sb.AppendLine("</urlset>");
+
+    return Content(sb.ToString(), "application/xml", Encoding.UTF8);
+}
     }
 }

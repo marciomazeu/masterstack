@@ -257,6 +257,9 @@ namespace MasterStack.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsLinkedInPublished")
                         .HasColumnType("boolean");
 
@@ -299,6 +302,10 @@ namespace MasterStack.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("character varying(15)");
 
+                    b.Property<string>("ImageAltText")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
@@ -331,9 +338,12 @@ namespace MasterStack.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Culture");
+                    b.HasIndex("BlogPostId");
 
                     b.HasIndex("BlogPostId", "Culture")
+                        .IsUnique();
+
+                    b.HasIndex("Culture", "Slug")
                         .IsUnique();
 
                     b.ToTable("BlogPostTranslations");
