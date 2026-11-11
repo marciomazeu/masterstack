@@ -124,6 +124,59 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="card mb-4 border-primary shadow-sm">
+    <div class="card-header bg-primary text-white font-weight-bold d-flex align-items-center justify-content-between">
+        <div>
+            <i class="bi bi-linkedin me-2" aria-hidden="true"></i> 
+            <span>@Localizer["LinkedIn_SectionTitle"]</span>
+        </div>
+        @if (Model.IsLinkedInPublished)
+        {
+            <span class="badge bg-success text-white">
+                <i class="bi bi-check-circle-fill me-1"></i> @Localizer["LinkedIn_StatusPublished"]
+            </span>
+        }
+        else
+        {
+            <span class="badge bg-warning text-dark">
+                <i class="bi bi-clock-history me-1"></i> @Localizer["LinkedIn_StatusDraft"]
+            </span>
+        }
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <label asp-for="LinkedInPostText" class="form-label font-weight-bold">
+                @Localizer["LinkedIn_PostTextLabel"]
+            </label>
+            <textarea asp-for="LinkedInPostText" 
+                      class="form-control" 
+                      rows="6" 
+                      placeholder="@Localizer["LinkedIn_PostTextPlaceholder"]"></textarea>
+            <span asp-validation-for="LinkedInPostText" class="text-danger"></span>
+            <small class="form-text text-muted">
+                @Localizer["LinkedIn_PostTextHelpText"]
+            </small>
+        </div>
+
+        @if (!Model.IsLinkedInPublished)
+        {
+            <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" asp-for="PublishToLinkedIn" id="PublishToLinkedIn">
+                <label class="form-check-label font-weight-bold" for="PublishToLinkedIn">
+                    @Localizer["LinkedIn_PublishCheckboxLabel"]
+                </label>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-0 mt-3 d-flex align-items-center">
+                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                <span>@Localizer["LinkedIn_AlreadyPublishedNotice"]</span>
+            </div>
+        }
+    </div>
+</div>
                     </div>
                 </div>
             </div>

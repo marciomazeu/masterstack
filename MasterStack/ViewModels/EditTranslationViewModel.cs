@@ -23,6 +23,16 @@ namespace MasterStack.ViewModels
         public string? MetaKeywords { get; set; }
         // ---------------------------
 
+        // 🔗 Campos do LinkedIn
+        [Display(Name = "LinkedIn_PostTextLabel")]
+        public string? LinkedInPostText { get; set; }
+
+        [Display(Name = "LinkedIn_PublishCheckboxLabel")]
+        public bool PublishToLinkedIn { get; set; } = false;
+
+        public bool IsLinkedInPublished { get; set; } = false;
+        public string? LinkedInPostUrl { get; set; }
+
         public string? CurrentImageUrl { get; set; }
         
         [MaxFileSize(5 * 1024 * 1024)]

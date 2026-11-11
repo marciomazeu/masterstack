@@ -3022,11 +3022,23 @@
     <comment/>
   </data>
   <data name="LinkedIn_PostTextHelpText" xml:space="preserve">
-    <value>Este texto será publicado diretamente no perfil/página do LinkedIn associado ao MasterStack Jobs.</value>
+    <value>Este texto é guardado no artigo. Se marcar a opção abaixo ao guardar, ele será enviado para o perfil/página do LinkedIn.</value>
     <comment/>
   </data>
   <data name="LinkedIn_PublishCheckboxLabel" xml:space="preserve">
-    <value>Publicar no LinkedIn imediatamente ao guardar</value>
+    <value>Publicar no LinkedIn agora ao guardar</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_StatusPublished" xml:space="preserve">
+    <value>Publicado no LinkedIn</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_StatusDraft" xml:space="preserve">
+    <value>Não publicado no LinkedIn</value>
+    <comment/>
+  </data>
+  <data name="LinkedIn_AlreadyPublishedNotice" xml:space="preserve">
+    <value>Este artigo já foi publicado no LinkedIn.</value>
     <comment/>
   </data>
 </root>

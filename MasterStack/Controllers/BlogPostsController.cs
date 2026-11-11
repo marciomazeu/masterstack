@@ -313,36 +313,49 @@ public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? c
     return RedirectToAction("Dashboard", "Admin", new { culture = postCulture });
 }
 
-        // GET: /{culture}/BlogPosts/EditTranslation/{id}
-        [HttpGet("EditTranslation/{id}")]
-        [HttpGet("/{culture}/BlogPosts/EditTranslation/{id}")]
-        [Authorize(Roles = "Admin,Author")]
-        public async Task<IActionResult> EditTranslation(int id)
-        {
-            var translation = await _context.BlogPostTranslations.FirstOrDefaultAsync(t => t.Id == id);
-            if (translation == null) return NotFound();
+      [HttpGet("EditTranslation/{id}")]
+[HttpGet("/{culture}/BlogPosts/EditTranslation/{id}")]
+[Authorize(Roles = "Admin,Author")]
+public async Task<IActionResult> EditTranslation(int id, string? culture = null)
+{
+    var translation = await _context.BlogPostTranslations
+        .Include(t => t.BlogPost)
+        .FirstOrDefaultAsync(t => t.Id == id);
 
-            var model = new EditTranslationViewModel {
-                TranslationId = translation.Id,
-                Culture = translation.Culture,
-                Title = translation.Title,
-                Content = translation.Content,
-                Slug = translation.Slug, 
-                MetaDescription = translation.MetaDescription,
-                MetaKeywords = translation.MetaKeywords, 
-                CurrentImageUrl = translation.ImageUrl
-            };
-            return View(model);
-        }
+    if (translation == null) return NotFound();
+
+    var post = translation.BlogPost;
+
+    var viewModel = new EditTranslationViewModel
+    {
+        TranslationId = translation.Id,
+        Culture = translation.Culture,
+        Title = translation.Title,
+        Content = translation.Content,
+        Slug = translation.Slug,
+        MetaDescription = translation.MetaDescription,
+        MetaKeywords = translation.MetaKeywords,
+        IsPublished = translation.IsPublished,
+        CurrentImageUrl = translation.ImageUrl,
+
+        // 🔗 Carrega os dados do LinkedIn guardados no Post Pai
+        LinkedInPostText = post?.LinkedInPostText,
+        IsLinkedInPublished = post?.IsLinkedInPublished ?? false,
+        PublishToLinkedIn = false
+    };
+
+    return View(viewModel);
+}
 
        [HttpPost("EditTranslation/{id}")]
-        [HttpPost("/{culture}/BlogPosts/EditTranslation/{id}")] // 💡 Corrigido para BlogPosts com B e P maiúsculos
-        [Authorize(Roles = "Admin,Author")]
-        [ValidateAntiForgeryToken]
-public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model)
+[HttpPost("/{culture}/BlogPosts/EditTranslation/{id}")]
+[Authorize(Roles = "Admin,Author")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> EditTranslation(int id, EditTranslationViewModel model, string? culture = null)
 {
-    // 💡 Procura diretamente pelo ID da tradução
+    // 💡 Carrega a Tradução e o BlogPost Pai correspondente
     var translation = await _context.BlogPostTranslations
+        .Include(t => t.BlogPost)
         .FirstOrDefaultAsync(t => t.Id == model.TranslationId);
 
     if (translation == null) return NotFound();
@@ -356,8 +369,10 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
         return View(model);
     }
 
+    var activeCulture = !string.IsNullOrWhiteSpace(model.Culture) ? model.Culture : (culture ?? "fr-CA");
+
     var slugExists = await _context.BlogPostTranslations
-        .AnyAsync(t => t.Slug == model.Slug && t.Culture == model.Culture && t.Id != model.TranslationId);
+        .AnyAsync(t => t.Slug == model.Slug && t.Culture == activeCulture && t.Id != model.TranslationId);
 
     if (slugExists)
     {
@@ -379,8 +394,17 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
     translation.MetaKeywords = model.MetaKeywords;
     translation.IsPublished = model.IsPublished;
 
-    var fileToProcess = model.ImageFile;
+    // 🔗 1. Atualiza os dados do LinkedIn no Post Pai (Persiste mesmo que rascunho)
+    var post = translation.BlogPost;
+    if (post != null)
+    {
+        post.LinkedInPostText = model.LinkedInPostText;
+        post.UpdatedAt = DateTime.UtcNow;
+        _context.BlogPosts.Update(post);
+    }
 
+    // Processamento de Upload de Imagem
+    var fileToProcess = model.ImageFile;
     if (fileToProcess != null && fileToProcess.Length > 0)
     {
         try
@@ -390,13 +414,11 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
 
             if (!string.IsNullOrEmpty(uploadedUrl))
             {
-                // 💡 Apaga a imagem antiga do Spaces se for uma URL remota válida
                 if (!string.IsNullOrEmpty(oldImageUrl) && oldImageUrl.StartsWith("http"))
                 {
-                    await _cloudStorageService.DeleteFileAsync(oldImageUrl);
+                    _ = _cloudStorageService.DeleteFileAsync(oldImageUrl);
                 }
 
-                // 💡 Procura TODAS as traduções vinculadas ao mesmo BlogPost
                 var siblingTranslations = await _context.BlogPostTranslations
                     .Where(t => t.BlogPostId == translation.BlogPostId)
                     .ToListAsync();
@@ -404,7 +426,6 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
                 foreach (var sibling in siblingTranslations)
                 {
                     sibling.ImageUrl = uploadedUrl;
-                    // Força a alteração do estado da entidade no DbContext
                     _context.Entry(sibling).Property(x => x.ImageUrl).IsModified = true;
                 }
             }
@@ -420,11 +441,40 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
 
     try
     {
-        // 💡 Garante a persistência síncrona na base de dados
         await _context.SaveChangesAsync();
-        TempData["Success"] = "Tradução atualizada com sucesso!";
-        
-        return RedirectToAction("Dashboard", "Admin", new { culture = model.Culture });
+
+        // 🔗 2. Dispara a publicação no LinkedIn se a opção foi marcada e ainda não foi enviado
+        if (post != null && model.PublishToLinkedIn && !post.IsLinkedInPublished && !string.IsNullOrWhiteSpace(post.LinkedInPostText))
+        {
+            try
+            {
+                string articleUrl = $"https://masterstackjobs.com/{activeCulture}/Blog/{translation.Slug}";
+
+                bool success = await _linkedInService.SharePostAsync(post.LinkedInPostText, articleUrl);
+                if (success)
+                {
+                    post.IsLinkedInPublished = true;
+                    _context.BlogPosts.Update(post);
+                    await _context.SaveChangesAsync();
+                    TempData["Success"] = "Tradução atualizada e enviada para o LinkedIn com sucesso!";
+                }
+                else
+                {
+                    TempData["Warning"] = "Tradução salva com sucesso, mas ocorreu uma falha ao enviar para o LinkedIn.";
+                }
+            }
+            catch (Exception exLinkedIn)
+            {
+                _logger.LogError(exLinkedIn, "Erro ao publicar no LinkedIn na Edição.");
+                TempData["Warning"] = "Tradução salva com sucesso, mas não foi possível conectar ao LinkedIn.";
+            }
+        }
+        else
+        {
+            TempData["Success"] = "Tradução atualizada com sucesso!";
+        }
+
+        return RedirectToAction("Dashboard", "Admin", new { culture = activeCulture });
     }
     catch (DbUpdateConcurrencyException)
     {
@@ -595,14 +645,27 @@ private async Task PopulateLanguagesViewBagAsync(string selectedCulture)
 
         #region Helpers
         private string GenerateSlug(string phrase)
+{
+    if (string.IsNullOrWhiteSpace(phrase)) return string.Empty;
+
+    string str = RemoveAccents(phrase).ToLower();
+    str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
+    str = Regex.Replace(str, @"\s+", " ").Trim();
+    
+    // 💡 Permite até 130 caracteres sem cortar palavras ao meio
+    if (str.Length > 130)
+    {
+        str = str.Substring(0, 130);
+        int lastSpace = str.LastIndexOf(' ');
+        if (lastSpace > 0)
         {
-            string str = RemoveAccents(phrase).ToLower();
-            str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
-            str = Regex.Replace(str, @"\s+", " ").Trim();
-            str = str.Substring(0, str.Length <= 45 ? str.Length : 45).Trim();
-            str = Regex.Replace(str, @"\s", "-");
-            return str;
+            str = str.Substring(0, lastSpace);
         }
+    }
+
+    str = Regex.Replace(str, @"\s", "-");
+    return str.Trim('-');
+}
 
         private string RemoveAccents(string text)
         {
