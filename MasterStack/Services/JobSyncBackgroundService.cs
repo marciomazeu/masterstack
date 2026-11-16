@@ -17,11 +17,13 @@ namespace MasterStack.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<JobSyncBackgroundService> _logger;
+        private readonly IDynamicJsonJobCollectorService _dynamicJsonJobCollectorService;
 
-        public JobSyncBackgroundService(IServiceProvider serviceProvider, ILogger<JobSyncBackgroundService> logger)
+        public JobSyncBackgroundService(IServiceProvider serviceProvider, ILogger<JobSyncBackgroundService> logger, IDynamicJsonJobCollectorService dynamicJsonJobCollectorService)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _dynamicJsonJobCollectorService = dynamicJsonJobCollectorService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -51,6 +53,7 @@ namespace MasterStack.Services
 
                     await jobAggregator.AggregateJobsAsync(canadaFilter);
                     _logger.LogInformation("Sincronização de vagas do Canadá concluída.");
+                    await _dynamicJsonJobCollectorService.SyncAllActiveSourcesAsync(stoppingToken);
                 }
             }
         }

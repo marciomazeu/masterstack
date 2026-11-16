@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using MasterStack.Services.JobProviders;
 using MasterStack.ViewModels;
 using Serilog;
@@ -21,11 +20,14 @@ public class JSearchJobProvider : IJobProvider
 
     public async Task<List<JobDto>> SearchJobsAsync(JobSearchFilter filter)
     {
+        var baseQuery = string.IsNullOrWhiteSpace(filter.Query) ? "software developer" : filter.Query;
         var fullQuery = string.IsNullOrWhiteSpace(filter.Location)
-            ? filter.Query
-            : $"{filter.Query} in {filter.Location}";
+            ? baseQuery
+            : $"{baseQuery} in {filter.Location}";
 
-        var relativeUrl = $"search-v2?query={Uri.EscapeDataString(fullQuery)}&page={filter.Page}&num_pages=1";
+        var page = filter.Page < 1 ? 1 : filter.Page;
+        // Endpoint padrão estável da JSearch API
+        var relativeUrl = $"search?query={Uri.EscapeDataString(fullQuery)}&page={page}&num_pages=1";
 
         var apiKey = _configuration["RapidAPI:Key"];
 
@@ -38,7 +40,6 @@ public class JSearchJobProvider : IJobProvider
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, relativeUrl);
-            
             request.Headers.TryAddWithoutValidation("x-rapidapi-key", apiKey.Trim());
             request.Headers.TryAddWithoutValidation("x-rapidapi-host", "jsearch.p.rapidapi.com");
 
@@ -46,40 +47,54 @@ public class JSearchJobProvider : IJobProvider
 
             if (!response.IsSuccessStatusCode)
             {
-                Log.Warning("[JSearch] Falha na requisição. Status: {StatusCode} - Motivo: {Reason}", 
+                Log.Warning("[JSearch] Falha na requisição. Status: {StatusCode} - Motivo: {Reason}",
                     response.StatusCode, response.ReasonPhrase);
                 return new List<JobDto>();
             }
 
             var jsonString = await response.Content.ReadAsStringAsync();
 
-            // 1. Desserializa o JSON retornado pela API
-            var jsearchResponse = JsonSerializer.Deserialize<JSearchApiResponse>(jsonString, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            using var doc = JsonDocument.Parse(jsonString);
+            var root = doc.RootElement;
 
-            if (jsearchResponse?.Data == null)
+            // Garante que 'data' existe e é realmente um Array JSON
+            if (!root.TryGetProperty("data", out var dataElement) || dataElement.ValueKind != JsonValueKind.Array)
             {
+                Log.Warning("[JSearch] Resposta inesperada da API (propriedade 'data' não é um array). Payload parcial: {Payload}",
+                    jsonString.Length > 200 ? jsonString[..200] : jsonString);
                 return new List<JobDto>();
             }
 
-            // 2. Mapeia os dados da API para o seu DTO
-            var mappedJobs = jsearchResponse.Data.Select(job => new JobDto
-            {
-                Id = job.JobId ?? string.Empty,
-                Title = job.JobTitle ?? string.Empty,
-                Company = job.EmployerName ?? string.Empty,
-                Location = job.JobCity ?? job.JobCountry ?? string.Empty,
-                Description = job.JobDescription ?? string.Empty,
-                Url = job.JobApplyLink ?? string.Empty,
-                SourceProvider = ProviderName,
-                PostedDate = job.JobPostedAtTimestamp.HasValue 
-                    ? DateTimeOffset.FromUnixTimeSeconds(job.JobPostedAtTimestamp.Value).DateTime 
-                    : null
-            }).ToList();
+            var mappedJobs = new List<JobDto>();
 
-            // 3. Retorna a lista mapeada declarada acima
+            foreach (var job in dataElement.EnumerateArray())
+            {
+                if (job.ValueKind != JsonValueKind.Object) continue;
+
+                var city = GetString(job, "job_city");
+                var country = GetString(job, "job_country");
+
+                DateTime? postedDate = null;
+                if (job.TryGetProperty("job_posted_at_timestamp", out var tsProp) &&
+                    tsProp.ValueKind == JsonValueKind.Number &&
+                    tsProp.TryGetInt64(out var unixSeconds))
+                {
+                    postedDate = DateTimeOffset.FromUnixTimeSeconds(unixSeconds).UtcDateTime;
+                }
+
+                mappedJobs.Add(new JobDto
+                {
+                    Id = GetString(job, "job_id"),
+                    Title = GetString(job, "job_title"),
+                    Company = GetString(job, "employer_name"),
+                    Location = !string.IsNullOrWhiteSpace(city) ? city : country,
+                    Description = GetString(job, "job_description"),
+                    Url = GetString(job, "job_apply_link"),
+                    SourceProvider = ProviderName,
+                    PostedDate = postedDate
+                });
+            }
+
             return mappedJobs;
         }
         catch (Exception ex)
@@ -88,38 +103,13 @@ public class JSearchJobProvider : IJobProvider
             return new List<JobDto>();
         }
     }
-}
 
-// DTOs auxiliares para deserialização do JSON do JSearch
-public class JSearchApiResponse
-{
-    [JsonPropertyName("data")]
-    public List<JSearchJobItem>? Data { get; set; }
-}
-
-public class JSearchJobItem
-{
-    [JsonPropertyName("job_id")]
-    public string? JobId { get; set; }
-
-    [JsonPropertyName("job_title")]
-    public string? JobTitle { get; set; }
-
-    [JsonPropertyName("employer_name")]
-    public string? EmployerName { get; set; }
-
-    [JsonPropertyName("job_city")]
-    public string? JobCity { get; set; }
-
-    [JsonPropertyName("job_country")]
-    public string? JobCountry { get; set; }
-
-    [JsonPropertyName("job_description")]
-    public string? JobDescription { get; set; }
-
-    [JsonPropertyName("job_apply_link")]
-    public string? JobApplyLink { get; set; }
-
-    [JsonPropertyName("job_posted_at_timestamp")]
-    public long? JobPostedAtTimestamp { get; set; }
+    private static string GetString(JsonElement el, string propName)
+    {
+        if (el.TryGetProperty(propName, out var prop) && prop.ValueKind != JsonValueKind.Null)
+        {
+            return prop.ToString();
+        }
+        return string.Empty;
+    }
 }

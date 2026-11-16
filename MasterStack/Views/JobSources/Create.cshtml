@@ -1,0 +1,128 @@
+@model MasterStack.Models.ExternalJobSource
+@using MasterStack.Models
+@{
+    ViewData["Title"] = "Adicionar Fonte Externa";
+    var culture = ViewBag.Culture as string ?? "fr-CA";
+}
+
+<div class="container py-4" style="max-width: 850px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="bi bi-plus-circle text-primary me-2"></i>Nova Fonte de Vagas</h3>
+        <a asp-action="Index" asp-route-culture="@culture" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form asp-action="Create" asp-route-culture="@culture" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label fw-bold"></label>
+                        <input asp-for="Name" class="form-control" placeholder="Ex: Coveo, Lightspeed ou Remotive" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ProviderType" class="form-label fw-bold"></label>
+                        <select asp-for="ProviderType" asp-items="Html.GetEnumSelectList<JobSourceProviderType>()" class="form-select" id="providerSelect"></select>
+                        <span asp-validation-for="ProviderType" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="EndpointOrSlug" class="form-label fw-bold" id="endpointLabel">Slug do Board ou URL JSON</label>
+                        <input asp-for="EndpointOrSlug" class="form-control" id="endpointInput" placeholder="Ex: coveo" />
+                        <small class="text-muted" id="endpointHelp">Para Greenhouse/Lever/Ashby, informe apenas o identificador da empresa na URL.</small>
+                        <span asp-validation-for="EndpointOrSlug" class="text-danger d-block"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="LocationFilter" class="form-label fw-bold"></label>
+                        <input asp-for="LocationFilter" class="form-control" placeholder="Montreal, Quebec, Canada, Remote" />
+                        <small class="text-muted">Deixe vazio para importar todas as localizações.</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="TechKeywordsFilter" class="form-label fw-bold"></label>
+                        <input asp-for="TechKeywordsFilter" class="form-control" placeholder="developer, engineer, software, data, qa" />
+                        <small class="text-muted">Filtra pelo título da vaga (separado por vírgula).</small>
+                    </div>
+                </div>
+
+                <!-- Bloco exibido apenas quando CustomJson (4) é selecionado -->
+                <div id="customJsonSection" class="mt-4 p-3 bg-light border rounded d-none">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-braces me-1"></i> Mapeamento de Propriedades JSON</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Caminho do Array Raiz (JsonRootArrayPath)</label>
+                            <input asp-for="JsonRootArrayPath" class="form-control" placeholder="Ex: jobs ou data.results" />
+                            <small class="text-muted">Deixe vazio se a resposta já começar com <code>[...]</code>.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Campo Título (MapTitleField)</label>
+                            <input asp-for="MapTitleField" class="form-control" placeholder="title" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Campo URL da Vaga (MapUrlField)</label>
+                            <input asp-for="MapUrlField" class="form-control" placeholder="url" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Campo Empresa (MapCompanyField)</label>
+                            <input asp-for="MapCompanyField" class="form-control" placeholder="company_name (opcional)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Campo Localização (MapLocationField)</label>
+                            <input asp-for="MapLocationField" class="form-control" placeholder="location" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Campo Descrição (MapDescriptionField)</label>
+                            <input asp-for="MapDescriptionField" class="form-control" placeholder="description" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check form-switch mt-4">
+                    <input class="form-check-input" type="checkbox" asp-for="IsActive" checked>
+                    <label class="form-check-label fw-bold" asp-for="IsActive">Fonte Ativa para Sincronização</label>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a asp-action="Index" asp-route-culture="@culture" class="btn btn-light">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4">Salvar Fonte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const select = document.getElementById("providerSelect");
+            const customSection = document.getElementById("customJsonSection");
+            const endpointLabel = document.getElementById("endpointLabel");
+            const endpointInput = document.getElementById("endpointInput");
+            const endpointHelp = document.getElementById("endpointHelp");
+
+            function toggleProviderFields() {
+                // 4 = CustomJson
+                if (select.value === "4") {
+                    customSection.classList.remove("d-none");
+                    endpointLabel.innerText = "URL Completa do Endpoint JSON";
+                    endpointInput.placeholder = "https://remotive.com/api/remote-jobs?category=software-dev";
+                    endpointHelp.innerText = "Informe a URL pública completa que retorna o JSON.";
+                } else {
+                    customSection.classList.add("d-none");
+                    endpointLabel.innerText = "Slug do Board da Empresa";
+                    endpointInput.placeholder = "Ex: coveo, lightspeed, hopper, dialogue";
+                    endpointHelp.innerText = "Informe apenas o identificador (slug) da empresa no ATS.";
+                }
+            }
+
+            select.addEventListener("change", toggleProviderFields);
+            toggleProviderFields();
+        });
+    </script>
+}

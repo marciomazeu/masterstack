@@ -1,0 +1,133 @@
+@model IEnumerable<MasterStack.Models.ExternalJobSource>
+@{
+    ViewData["Title"] = "Fontes Externas e Parceiros (APIs)";
+    var culture = ViewBag.Culture as string ?? "fr-CA";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Fontes Externas de Vagas</h2>
+            <p class="text-muted mb-0">Gerencie empresas diretas (Greenhouse, Lever, Ashby) e feeds JSON customizados.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form asp-action="SyncAll" asp-route-culture="@culture" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-repeat me-1"></i> Sincronizar Todas
+                </button>
+            </form>
+            <a asp-action="Create" asp-route-culture="@culture" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nova Fonte
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Warning"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Empresa / Fonte</th>
+                        <th>Provedor</th>
+                        <th>Endpoint / Slug</th>
+                        <th>Última Sincronização</th>
+                        <th class="text-center">Importadas</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                Nenhuma fonte externa configurada ainda. Clique em <strong>Nova Fonte</strong> para começar.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold">@item.Name</td>
+                                <td>
+                                    <span class="badge bg-secondary">@item.ProviderType</span>
+                                </td>
+                                <td class="text-truncate" style="max-width: 240px;" title="@item.EndpointOrSlug">
+                                    <code>@item.EndpointOrSlug</code>
+                                </td>
+                                <td>
+                                    @if (item.LastSyncedAt.HasValue)
+                                    {
+                                        <span>@item.LastSyncedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Nunca sincronizado</span>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(item.LastErrorMessage))
+                                    {
+                                        <div class="text-danger small mt-1" title="@item.LastErrorMessage">
+                                            <i class="bi bi-exclamation-circle-fill"></i> Falha na última execução
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark">@item.LastImportedCount</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success">Ativo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inativo</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <form asp-action="SyncNow" asp-route-id="@item.Id" asp-route-culture="@culture" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Sincronizar Agora">
+                                                <i class="bi bi-play-fill"></i>
+                                            </button>
+                                        </form>
+                                        <a asp-action="Edit" asp-route-id="@item.Id" asp-route-culture="@culture" class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" asp-route-culture="@culture" method="post" onsubmit="return confirm('Remover esta fonte?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

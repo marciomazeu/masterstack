@@ -33,6 +33,8 @@ namespace MasterStack.Data
         public DbSet<ResumeEducation> ResumeEducations { get; set; }
         public DbSet<ResumeSkill> ResumeSkills { get; set; }
 
+        public DbSet<ExternalJobSource> ExternalJobSources { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // MANTENHA ESTA LINHA SEMPRE NO TOPO (Configura as tabelas do Identity)

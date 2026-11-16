@@ -50,6 +50,12 @@ namespace MasterStack.Controllers
 [HttpGet("/[controller]")]
 public async Task<IActionResult> Index(string? culture, int page = 1, string? searchTerm = "", bool notfound = false)
 {
+    // Se o usuário não for Admin/Author, remove TempData de erro/aviso de publicação do LinkedIn para não exibir aos leitores
+    if (!User.Identity?.IsAuthenticated ?? true)
+    {
+        TempData.Remove("Warning");
+        TempData.Remove("Success");
+    }
     if (notfound)
     {
         TempData["Warning"] = _localizer["TranslationNotFoundMessage"].Value;
@@ -290,7 +296,12 @@ public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? c
         {
             string articleUrl = $"https://masterstackjobs.com/{postCulture}/Blog/{uniqueSlug}";
             
-            bool success = await _linkedInService.SharePostAsync(model.LinkedInPostText, articleUrl);
+             // 💡 Substitui automaticamente o [LINK] pela URL real do artigo
+        string finalLinkedInText = post.LinkedInPostText.Contains("[LINK]")
+            ? post.LinkedInPostText.Replace("[LINK]", articleUrl)
+            : $"{post.LinkedInPostText}\n\n{articleUrl}";
+
+        bool success = await _linkedInService.SharePostAsync(finalLinkedInText, articleUrl);
             if (success)
             {
                 post.IsLinkedInPublished = true;
@@ -299,6 +310,7 @@ public async Task<IActionResult> Create(BlogPostCreateViewModel model, string? c
             }
             else
             {
+                _logger.LogError("Falha na chamada _linkedInService.SharePostAsync para o PostId {PostId}", post.Id);
                 TempData["Warning"] = "O post foi publicado no blog, mas ocorreu uma falha ao enviar para o LinkedIn.";
             }
         }
@@ -450,7 +462,12 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
             {
                 string articleUrl = $"https://masterstackjobs.com/{activeCulture}/Blog/{translation.Slug}";
 
-                bool success = await _linkedInService.SharePostAsync(post.LinkedInPostText, articleUrl);
+                // 💡 Substitui automaticamente o [LINK] pela URL real do artigo
+        string finalLinkedInText = post.LinkedInPostText.Contains("[LINK]")
+            ? post.LinkedInPostText.Replace("[LINK]", articleUrl)
+            : $"{post.LinkedInPostText}\n\n{articleUrl}";
+
+        bool success = await _linkedInService.SharePostAsync(finalLinkedInText, articleUrl);
                 if (success)
                 {
                     post.IsLinkedInPublished = true;
@@ -460,6 +477,7 @@ public async Task<IActionResult> EditTranslation(int id, EditTranslationViewMode
                 }
                 else
                 {
+                    _logger.LogError("Falha na chamada _linkedInService.SharePostAsync para o PostId {PostId}", post.Id);
                     TempData["Warning"] = "Tradução salva com sucesso, mas ocorreu uma falha ao enviar para o LinkedIn.";
                 }
             }

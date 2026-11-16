@@ -40,6 +40,10 @@ try
     });
     builder.Services.AddHostedService<MasterStack.Services.JobSyncBackgroundService>();
     builder.Services.AddHttpClient<ILinkedInService, LinkedInService>();
+    builder.Services.AddHttpClient<IDynamicJsonJobCollectorService, DynamicJsonJobCollectorService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
     builder.Host.UseSerilog();
 
