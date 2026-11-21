@@ -115,31 +115,35 @@ namespace MasterStack.Controllers
             return View("~/Views/Recruiter/Details.cshtml", job);
         }
 
-// GET: /{culture}/Jobs/Enterprises
 [AllowAnonymous]
 [HttpGet("Enterprises")]
 [HttpGet("/{culture}/Jobs/Enterprises")]
 public async Task<IActionResult> Enterprises(
-    string? culture, 
-    [FromQuery] string? searchTerm, 
-    [FromQuery] int? radiusKm, 
-    [FromQuery] string? workMode)
+    string? culture,
+    [FromQuery] string? searchTerm,
+    [FromQuery] int? radiusKm,
+    [FromQuery] string? workMode,
+    [FromQuery] int page = 1,
+    [FromQuery] string? tab = null)
 {
-    var activeCulture = !string.IsNullOrWhiteSpace(culture) 
-        ? culture 
+    var activeCulture = !string.IsNullOrWhiteSpace(culture)
+        ? culture
         : (RouteData.Values["culture"]?.ToString() ?? "fr-CA");
 
     ViewData["CurrentCulture"] = activeCulture;
 
+    int pageSize = 25;
+    int currentPage = page < 1 ? 1 : page;
+
     try
     {
         var user = await _userManager.GetUserAsync(User);
-        
+
         double userLat = user?.Latitude ?? 46.8138;
         double userLng = user?.Longitude ?? -71.2080;
 
-        int activeRadius = (radiusKm.HasValue && radiusKm.Value > 0) 
-            ? radiusKm.Value 
+        int activeRadius = (radiusKm.HasValue && radiusKm.Value > 0)
+            ? radiusKm.Value
             : ((user != null && user.SearchRadiusKm > 0) ? user.SearchRadiusKm : 50);
 
         double latDelta = activeRadius / 111.0;
@@ -162,8 +166,8 @@ public async Task<IActionResult> Enterprises(
         if (!string.IsNullOrEmpty(cleanSearch))
         {
             string pattern = $"%{cleanSearch}%";
-            companiesQuery = companiesQuery.Where(c => 
-                (c.Name != null && EF.Functions.ILike(c.Name, pattern)) || 
+            companiesQuery = companiesQuery.Where(c =>
+                (c.Name != null && EF.Functions.ILike(c.Name, pattern)) ||
                 (c.City != null && EF.Functions.ILike(c.City, pattern)) ||
                 (c.Description != null && EF.Functions.ILike(c.Description, pattern)));
         }
@@ -202,26 +206,31 @@ public async Task<IActionResult> Enterprises(
         if (!string.IsNullOrEmpty(cleanSearch))
         {
             string pattern = $"%{cleanSearch}%";
-            localJobsQuery = localJobsQuery.Where(j => 
-                (j.Title != null && EF.Functions.ILike(j.Title, pattern)) || 
-                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) || 
+            localJobsQuery = localJobsQuery.Where(j =>
+                (j.Title != null && EF.Functions.ILike(j.Title, pattern)) ||
+                (j.CompanyName != null && EF.Functions.ILike(j.CompanyName, pattern)) ||
                 (j.Location != null && EF.Functions.ILike(j.Location, pattern)) ||
                 (j.Description != null && EF.Functions.ILike(j.Description, pattern)));
         }
 
         if (!string.IsNullOrEmpty(workMode))
         {
-            if (workMode == "remote") 
+            if (workMode == "remote")
                 localJobsQuery = localJobsQuery.Where(j => j.IsRemote || (j.Location != null && (EF.Functions.ILike(j.Location, "%remote%") || EF.Functions.ILike(j.Location, "%télétravail%"))));
-            else if (workMode == "hybrid") 
+            else if (workMode == "hybrid")
                 localJobsQuery = localJobsQuery.Where(j => j.Location != null && EF.Functions.ILike(j.Location, "%hybride%"));
-            else if (workMode == "onsite") 
+            else if (workMode == "onsite")
                 localJobsQuery = localJobsQuery.Where(j => !j.IsRemote && (j.Location == null || (!EF.Functions.ILike(j.Location, "%hybride%") && !EF.Functions.ILike(j.Location, "%télétravail%"))));
         }
 
-        var localJobsList = await localJobsQuery.OrderByDescending(j => j.CreatedAt).Take(50).ToListAsync();
+        int totalLocalJobs = await localJobsQuery.CountAsync();
+        var localJobsList = await localJobsQuery
+            .OrderByDescending(j => j.CreatedAt)
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
-        // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS - FILTRAGEM ESTRITA) ---
+        // --- CONSULTA 3: VAGAS EXTERNAS (PARCEIROS) ---
         var externalJobsQuery = _context.JobPostings
             .AsNoTracking()
             .Where(j => j.IsActive && !j.IsInternal && j.SourceProvider != "Internal");
@@ -239,29 +248,31 @@ public async Task<IActionResult> Enterprises(
 
         if (!string.IsNullOrEmpty(workMode))
         {
-            if (workMode == "remote") 
+            if (workMode == "remote")
                 externalJobsQuery = externalJobsQuery.Where(j => j.IsRemote || (j.Location != null && (EF.Functions.ILike(j.Location, "%remote%") || EF.Functions.ILike(j.Location, "%télétravail%"))));
-            else if (workMode == "hybrid") 
+            else if (workMode == "hybrid")
                 externalJobsQuery = externalJobsQuery.Where(j => j.Location != null && EF.Functions.ILike(j.Location, "%hybride%"));
-            else if (workMode == "onsite") 
+            else if (workMode == "onsite")
                 externalJobsQuery = externalJobsQuery.Where(j => !j.IsRemote && (j.Location == null || (!EF.Functions.ILike(j.Location, "%hybride%") && !EF.Functions.ILike(j.Location, "%télétravail%"))));
         }
 
+        int totalExternalJobs = await externalJobsQuery.CountAsync();
         var externalJobsList = await externalJobsQuery
             .OrderByDescending(j => j.CreatedAt)
-            .Take(50)
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         // --- BUSCA EM TEMPO REAL SE NÃO HOUVER RESULTADOS LOCAIS ---
-        if (!string.IsNullOrWhiteSpace(cleanSearch) && !externalJobsList.Any() && !localJobsList.Any())
+        if (!string.IsNullOrWhiteSpace(cleanSearch) && totalExternalJobs == 0 && totalLocalJobs == 0)
         {
             _logger.LogInformation("Nenhuma vaga parceira local para '{Search}'. Consultando APIs remotas...", cleanSearch);
 
-            var jsearchFilter = new JobSearchFilter 
-            { 
-                Query = $"{cleanSearch} Canada", 
-                Location = "Canada", 
-                Page = 1 
+            var jsearchFilter = new JobSearchFilter
+            {
+                Query = $"{cleanSearch} Canada",
+                Location = "Canada",
+                Page = 1
             };
 
             var remoteJobs = await _jobAggregatorService.AggregateJobsAsync(jsearchFilter);
@@ -282,38 +293,46 @@ public async Task<IActionResult> Enterprises(
                     CreatedAt = DateTime.UtcNow
                 }).ToList();
 
-                // Limpa o cache antigo de parceiros para evitar mistura de termos
-                var oldPartnerJobs = _context.JobPostings.Where(j => !j.IsInternal && j.SourceProvider != "Internal");
-                _context.JobPostings.RemoveRange(oldPartnerJobs);
-
                 await _context.JobPostings.AddRangeAsync(newJobs);
                 await _context.SaveChangesAsync();
 
-                // Garante a filtragem insensível a maiúsculas/minúsculas em memória para a resposta imediata
                 string searchLower = cleanSearch.ToLowerInvariant();
-                externalJobsList = newJobs.Where(j => 
+                var matched = newJobs.Where(j =>
                     (j.Title != null && j.Title.ToLowerInvariant().Contains(searchLower)) ||
                     (j.CompanyName != null && j.CompanyName.ToLowerInvariant().Contains(searchLower)) ||
                     (j.Location != null && j.Location.ToLowerInvariant().Contains(searchLower))
                 ).ToList();
+
+                totalExternalJobs = matched.Count;
+                externalJobsList = matched.Take(pageSize).ToList();
             }
         }
 
-        var userViewModel = user != null ? new ApplicationUser 
-        { 
-            Id = user.Id, 
-            UserName = user.UserName, 
-            Email = user.Email, 
-            SearchRadiusKm = activeRadius, 
-            PreferredJobTitle = user.PreferredJobTitle 
+        var userViewModel = user != null ? new ApplicationUser
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            Email = user.Email,
+            SearchRadiusKm = activeRadius,
+            PreferredJobTitle = user.PreferredJobTitle
         } : null;
+
+        // Determina aba ativa: respeita o parâmetro ?tab= ou escolhe a que tem vagas
+        string resolvedTab = !string.IsNullOrWhiteSpace(tab)
+            ? tab
+            : (totalLocalJobs > 0 || totalExternalJobs == 0 ? "local" : "external");
 
         var viewModel = new EnterprisesPageViewModel
         {
             User = userViewModel,
             Companies = companiesList,
-            LocalJobs = localJobsList ?? new List<JobPosting>(),
-            JobPosting = externalJobsList ?? new List<JobPosting>()
+            LocalJobs = localJobsList,
+            JobPosting = externalJobsList,
+            CurrentPage = currentPage,
+            PageSize = pageSize,
+            TotalLocalJobsCount = totalLocalJobs,
+            TotalExternalJobsCount = totalExternalJobs,
+            ActiveTab = resolvedTab
         };
 
         return View(viewModel);

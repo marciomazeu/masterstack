@@ -15,6 +15,14 @@ namespace MasterStack.ViewModels
 
         // 👤 Dados do Usuário Logado
         public ApplicationUser? User { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 25;
+        public int TotalLocalJobsCount { get; set; }
+        public int TotalExternalJobsCount { get; set; }
+        public string ActiveTab { get; set; } = "local";
+
+        public int TotalLocalPages => (int)Math.Ceiling((double)TotalLocalJobsCount / PageSize);
+        public int TotalExternalPages => (int)Math.Ceiling((double)TotalExternalJobsCount / PageSize);
 
         // 🛠️ Propriedades auxiliares facilitadoras para a View
         public string PreferredJobTitle => User?.PreferredJobTitle ?? "developer";

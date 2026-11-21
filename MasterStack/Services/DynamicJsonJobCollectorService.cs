@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using Ganss.Xss;
 using MasterStack.Data;
@@ -56,13 +58,24 @@ namespace MasterStack.Services
 
             try
             {
-                string targetUrl = source.ProviderType switch
+                string rawEndpoint = source.EndpointOrSlug.Trim();
+                string targetUrl;
+
+                if (rawEndpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                    rawEndpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 {
-                    JobSourceProviderType.Greenhouse => $"https://boards-api.greenhouse.io/v1/boards/{source.EndpointOrSlug.Trim()}/jobs?content=true",
-                    JobSourceProviderType.Lever => $"https://api.lever.co/v0/postings/{source.EndpointOrSlug.Trim()}?mode=json",
-                    JobSourceProviderType.Ashby => $"https://api.ashbyhq.com/posting-api/job-board/{source.EndpointOrSlug.Trim()}",
-                    _ => source.EndpointOrSlug.Trim()
-                };
+                    targetUrl = rawEndpoint;
+                }
+                else
+                {
+                    targetUrl = source.ProviderType switch
+                    {
+                        JobSourceProviderType.Greenhouse => $"https://boards-api.greenhouse.io/v1/boards/{rawEndpoint}/jobs?content=true",
+                        JobSourceProviderType.Lever => $"https://api.lever.co/v0/postings/{rawEndpoint}?mode=json",
+                        JobSourceProviderType.Ashby => $"https://api.ashbyhq.com/posting-api/job-board/{rawEndpoint}",
+                        _ => rawEndpoint
+                    };
+                }
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
                 request.Headers.Add("User-Agent", "MasterStackJobs-Aggregator/1.0");
@@ -147,6 +160,26 @@ namespace MasterStack.Services
             }
         }
 
+        private static string ExtractJsonString(JsonElement element, string? fieldPath)
+        {
+            if (string.IsNullOrWhiteSpace(fieldPath)) return string.Empty;
+
+            JsonElement current = element;
+            foreach (var part in fieldPath.Split('.', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(part, out var next))
+                    return string.Empty;
+                current = next;
+            }
+
+            return current.ValueKind switch
+            {
+                JsonValueKind.String => current.GetString() ?? string.Empty,
+                JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => current.ToString(),
+                _ => string.Empty
+            };
+        }
+
         private JsonElement ResolveRootArray(JsonElement root, ExternalJobSource source)
         {
             if (source.ProviderType == JobSourceProviderType.Greenhouse || source.ProviderType == JobSourceProviderType.Ashby)
@@ -173,10 +206,11 @@ namespace MasterStack.Services
         {
             if (source.ProviderType == JobSourceProviderType.Greenhouse)
             {
-                string title = GetString(item, "title");
-                string url = GetString(item, "absolute_url");
-                string desc = GetString(item, "content");
-                string loc = item.TryGetProperty("location", out var locObj) ? GetString(locObj, "name") : "Québec, Canada";
+                string title = ExtractJsonString(item, "title");
+                string url = ExtractJsonString(item, "absolute_url");
+                string desc = ExtractJsonString(item, "content");
+                string loc = ExtractJsonString(item, "location.name");
+                if (string.IsNullOrWhiteSpace(loc)) loc = "Québec, Canada";
 
                 if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)) return null;
                 return (title, source.Name, loc, desc, url);
@@ -184,10 +218,11 @@ namespace MasterStack.Services
 
             if (source.ProviderType == JobSourceProviderType.Lever)
             {
-                string title = GetString(item, "text");
-                string url = GetString(item, "hostedUrl");
-                string desc = GetString(item, "descriptionPlain");
-                string loc = item.TryGetProperty("categories", out var catObj) ? GetString(catObj, "location") : "Québec, Canada";
+                string title = ExtractJsonString(item, "text");
+                string url = ExtractJsonString(item, "hostedUrl");
+                string desc = ExtractJsonString(item, "descriptionPlain");
+                string loc = ExtractJsonString(item, "categories.location");
+                if (string.IsNullOrWhiteSpace(loc)) loc = "Québec, Canada";
 
                 if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)) return null;
                 return (title, source.Name, loc, desc, url);
@@ -195,60 +230,78 @@ namespace MasterStack.Services
 
             if (source.ProviderType == JobSourceProviderType.Ashby)
             {
-                string title = GetString(item, "title");
-                string url = GetString(item, "jobUrl");
-                string desc = GetString(item, "descriptionHtml");
-                string loc = GetString(item, "location");
+                string title = ExtractJsonString(item, "title");
+                string url = ExtractJsonString(item, "jobUrl");
+                string desc = ExtractJsonString(item, "descriptionHtml");
+                string loc = ExtractJsonString(item, "location");
 
                 if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)) return null;
                 return (title, source.Name, loc, desc, url);
             }
 
-            // CustomJson dinâmico
-            string cTitle = GetString(item, source.MapTitleField ?? "title");
-            string cUrl = GetString(item, source.MapUrlField ?? "url");
-            string cDesc = GetString(item, source.MapDescriptionField ?? "description");
-            string cLoc = GetString(item, source.MapLocationField ?? "location");
+            // CustomJson dinâmico com suporte a caminhos aninhados (ex: "company.name", "location.city")
+            string cTitle = ExtractJsonString(item, source.MapTitleField ?? "title");
+            string cUrl = ExtractJsonString(item, source.MapUrlField ?? "url");
+            string cDesc = ExtractJsonString(item, source.MapDescriptionField ?? "description");
+            string cLoc = ExtractJsonString(item, source.MapLocationField ?? "location");
             string cComp = !string.IsNullOrWhiteSpace(source.MapCompanyField)
-                ? GetString(item, source.MapCompanyField)
+                ? ExtractJsonString(item, source.MapCompanyField)
                 : source.Name;
 
             if (string.IsNullOrWhiteSpace(cTitle) || string.IsNullOrWhiteSpace(cUrl)) return null;
             return (cTitle, string.IsNullOrWhiteSpace(cComp) ? source.Name : cComp, cLoc, cDesc, cUrl);
         }
 
-        private string GetString(JsonElement el, string propName)
-        {
-            if (el.ValueKind == JsonValueKind.Object && el.TryGetProperty(propName, out var prop))
-                return prop.ToString();
-            return string.Empty;
-        }
-
         private bool MatchesFilters(string title, string location, ExternalJobSource source)
         {
             if (!string.IsNullOrWhiteSpace(source.LocationFilter))
             {
-                var allowedLocs = source.LocationFilter.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (!allowedLocs.Any(l => location.Contains(l, StringComparison.OrdinalIgnoreCase)))
+                string normalizedLocation = RemoveDiacritics(location);
+                var allowedLocs = source.LocationFilter
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(RemoveDiacritics);
+
+                if (!allowedLocs.Any(l => normalizedLocation.Contains(l, StringComparison.OrdinalIgnoreCase)))
                     return false;
             }
 
             if (!string.IsNullOrWhiteSpace(source.TechKeywordsFilter))
             {
-                var keywords = source.TechKeywordsFilter.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (!keywords.Any(k => title.Contains(k, StringComparison.OrdinalIgnoreCase)))
+                string normalizedTitle = RemoveDiacritics(title);
+                var keywords = source.TechKeywordsFilter
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(RemoveDiacritics);
+
+                if (!keywords.Any(k => normalizedTitle.Contains(k, StringComparison.OrdinalIgnoreCase)))
                     return false;
             }
 
             return true;
         }
 
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            var normalized = text.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(normalized.Length);
+
+            foreach (var c in normalized)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    sb.Append(c);
+            }
+
+            return sb.ToString().Normalize(NormalizationForm.FormC);
+        }
+
         private string NormalizeQuebecLocation(string rawLocation)
         {
             if (string.IsNullOrWhiteSpace(rawLocation)) return "Québec, Canada";
-            if (rawLocation.Contains("Montreal", StringComparison.OrdinalIgnoreCase) || rawLocation.Contains("Montréal", StringComparison.OrdinalIgnoreCase))
+            string clean = RemoveDiacritics(rawLocation);
+
+            if (clean.Contains("Montreal", StringComparison.OrdinalIgnoreCase))
                 return "Montréal, QC";
-            if (rawLocation.Contains("Quebec City", StringComparison.OrdinalIgnoreCase) || rawLocation.Contains("Ville de Québec", StringComparison.OrdinalIgnoreCase))
+            if (clean.Contains("Quebec City", StringComparison.OrdinalIgnoreCase) || clean.Contains("Ville de Quebec", StringComparison.OrdinalIgnoreCase))
                 return "Québec, QC";
             return rawLocation;
         }
